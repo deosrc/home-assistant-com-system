@@ -127,8 +127,8 @@ records the conventions and how things work as built.
   options flow is a stub. `integration_discovery` aborts with
   `not_available` without a hub or a known type, otherwise sets the unique
   id, aborts if configured and shows a confirm-only `confirm` step that
-  creates the receiver (core's Ignore needs no code). Reconfigure renames a receiver; the
-  hub aborts `not_implemented`.
+  creates the receiver (core's Ignore needs no code). Reconfigure renames a
+  receiver; the hub aborts `not_implemented`.
 - `__init__.py`: `async_setup` registers the built-in types and creates the
   registry and the component; setting up the hub starts the detector;
   receiver entries set up and unload their entities.
@@ -229,9 +229,9 @@ records the conventions and how things work as built.
   Avoid a `title` property on elements: it clashes with `HTMLElement.title`.
   `receivers-view.ts` also has the edit form (native inputs); a method
   named `remove` would clash with `HTMLElement`, and an expression at the
-  very start of a template needs a wrapper `div` like trailing ones. Add views by adding an element, an entry
-  in `VIEWS` and a command. Elements use
-  `static properties` and `declare` fields (no decorators). The build is one
+  very start of a template needs a wrapper `div` like trailing ones. Add
+  views by adding an element, an entry in `VIEWS` and a command. Elements
+  use `static properties` and `declare` fields (no decorators). The build is one
   ES module and the HMR client is imported only when the mode is
   `development`. Commands: `npm run lint`, `npm test`, `npm run build` in
   `frontend/`; `scripts/develop` for hot reload.
