@@ -43,26 +43,41 @@ Each receiver needs (details **TBD**):
 - Association data used for target resolution: which **people** and/or
   **areas** it relates to (section 2.7).
 
-**Storage and discovery:**
+**Storage, discovery and settings:**
 
-- Com System has a single config entry, and each receiver is a **config
-  subentry** of it. Receiver entities are derived from the subentries.
-  Config subentries require a recent minimum Home Assistant version (to be
-  verified; see section 8).
-- Receivers of the built-in types are **created automatically**. Com System
-  detects notification-capable devices and integrations that are already
-  set up (e.g. a webOS TV, a mobile app device) and creates a subentry for
-  each, without a confirmation step. (Home Assistant has no native
-  "discovered" card for subentries, but subentries can be added in code.)
-  Auto-created receivers start enabled, and the user can edit or disable
-  them. Detection always ensures a receiver exists for every detected
-  device, so a deleted auto-created receiver is **recreated** on the next
-  detection; to stop a receiver being used, disable it instead.
+- Com System uses **one hub config entry** and **one config entry per
+  receiver** (top-level entries, not subentries). Receiver entities are
+  created by each receiver's own entry.
+- The **hub** entry is created once by the user. It holds the
+  integration-level settings (an options flow; initially the history
+  retention limits) and starts detection. One hub is enforced in the config
+  flow; the manifest does not use `single_config_entry`, which would block
+  receiver entries. The user flow creates the hub if none exists, and once
+  one exists it becomes "add a custom receiver".
+- Integration-level parts (receiver registry, history store, the
+  `notify.com_system` action, the websocket API and the panel) are set up
+  once in the integration's `async_setup`, not per entry, so receiver
+  entries can load in any order and without the hub. Settings are read at
+  use time, so changing them does not reload receivers.
+- Removing the hub removes the receiver entries it created (after the user
+  confirms); removing a receiver entry removes only that receiver.
+- Receivers of the built-in types are **offered as discoveries**. The hub
+  detects notification-capable devices and integrations that are already set
+  up (e.g. a webOS TV, a mobile app device) and raises a discovery flow for
+  each, using a unique ID per source device so none is offered twice. The
+  user confirms the discovery to create the receiver, or **ignores** it
+  permanently. New receivers start enabled.
+- A receiver that is deleted is offered again as a discovery on the next
+  detection unless the user ignored it. To stop a receiver being used
+  without deleting it, disable it with its enabled switch (section 2.4).
+  Disabling the config entry itself removes the receiver's entities, so
+  the documentation tells users to use the switch.
 - When the underlying device or integration is removed, the receiver is
   **kept as unavailable**, with its conditions and settings, so it recovers
   if the device returns. Stale receivers are removed manually. Deliveries to
   an unavailable receiver fail with a clear per-receiver result.
-- Custom receivers are always created manually, through the subentry flow.
+- Custom receivers are always created manually, through the user flow, and
+  edited through reconfigure and options flows.
 
 ### 2.2 Targets
 
@@ -243,31 +258,32 @@ dismiss notifications in the Home Assistant UI as normal.
 **Delivery and discovery per type:**
 
 - **Mobile app** – one receiver per registered device. Devices are detected
-  from the mobile app integration's config entries and a subentry is
-  created for each. Delivery calls that device's `notify.mobile_app_<device>`
+  from the mobile app integration's config entries and a discovery is
+  offered for each. Delivery calls that device's `notify.mobile_app_<device>`
   action with the title, message and data (actions, image, channel and so
   on).
 - **Alexa Media Player** (non-native integration) – one receiver per Echo
-  device, detected from that integration's config entries and created only
+  device, detected from that integration's config entries and offered only
   when the integration is installed. Delivery calls the integration's
   `notify.alexa_media_*` action with announce/TTS data. If the integration
   later goes missing, the receiver shows as unavailable and deliveries to it
   fail with a clear per-receiver result. Exact action names and data are
   verified against the integration during implementation.
-- **Persistent notification** – a single receiver, used only when named
-  explicitly. Delivery calls `persistent_notification.create` and is
-  create-only (see section 2.5).
+- **Persistent notification** – a single receiver (offered as a
+  discovery like the others), used only when named explicitly. Delivery
+  calls `persistent_notification.create` and is create-only (see section
+  2.5).
 - **Pushover** – one receiver per Pushover config entry (notify target),
-  created as a subentry. Delivery calls the Pushover notify action:
+  offered as a discovery. Delivery calls the Pushover notify action:
   `priority` maps to Pushover priority, `image` to an attachment, and other
   options (e.g. sound, URL) go in `data`. Pushover has no user link, so the
   person is chosen manually by editing the receiver.
-- **webOS TV** – one receiver per webostv config entry, created as a
-  subentry. Delivery calls the TV's notify action (an on-screen toast:
+- **webOS TV** – one receiver per webostv config entry, offered as a
+  discovery. Delivery calls the TV's notify action (an on-screen toast:
   message only, with an optional icon in `data`). TVs are shared devices
   with no person; the area comes from the device registry.
-- **Music Assistant** – one receiver per Music Assistant player, created as
-  a subentry. Delivery calls Music Assistant's announcement action rather
+- **Music Assistant** – one receiver per Music Assistant player, offered as
+  a discovery. Delivery calls Music Assistant's announcement action rather
   than a notify action (the message is spoken; options such as an
   announcement URL or volume go in `data`). How a notification is delivered
   is an implementation detail of each receiver type's definition, so
@@ -310,7 +326,7 @@ decide, per notification, whether that receiver is used.
   given text, using a template condition on the notification variable.
 - A receiver with no conditions always passes.
 - Conditions are stored and edited **per receiver only**, as part of its
-  subentry. There are no global or shared condition sets.
+  config entry's options. There are no global or shared condition sets.
 - If a condition errors (e.g. a template fails to render), it is treated as
   not passed: the receiver is skipped, the error is logged, and the result
   is recorded as skipped (condition error) in history, the entity's last
@@ -550,8 +566,8 @@ dependencies. In outline:
 - **M0 Foundation** – dev environment with devcontainer and debugging,
   integration skeleton, test harness and CI.
 - **M1 Spikes** – the new `notification_receiver` domain, the
-  `notify.com_system` action, programmatic subentries, the mobile app person
-  link and the frontend panel build.
+  `notify.com_system` action, the hub entry and discovery flows, the mobile
+  app person link and the frontend panel build.
 - **M2 Core** – receiver model, entities, detection, UI foundation, target
   resolution, the action with a testing tool, mobile app and custom
   receivers (basic notifications: message and title).
@@ -575,3 +591,9 @@ work still to do. When the last item is done, this file can be deleted.
   domain cleanly, and how much of the core `EventEntity` can be reused (the
   spike #4 confirms)? Fallback: real `event` entities filtered by
   integration.
+- Can a receiver's config entry attach its entities to another
+  integration's device? Does editing or disabling one receiver entry affect
+  the others? Do discovery flows raised from the hub de-duplicate, support
+  Ignore and survive restarts, and does the hub's removal cascade work as
+  designed (spike #6 confirms)?
+- Which Integrations-page titles keep 10 to 30 receiver entries readable?
