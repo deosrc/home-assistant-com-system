@@ -224,7 +224,12 @@ Evaluation order for a notification:
 Targeting by person or area needs a way to decide which receivers belong to
 whom. Each receiver type provides an association mechanism (part of the
 receiver type definition, section 2.5), and users can override or extend it
-manually on any receiver. The final rules are **TBD**.
+manually on any receiver. Manual associations are stored as part of the
+receiver's own configuration.
+
+A receiver is associated with **at most one person**. A device used by
+several people is treated as shared (see below) and reached through areas or
+explicit targets. Whether a receiver can have more than one area is **TBD**.
 
 **Mobile app (first implementation):**
 
@@ -415,8 +420,6 @@ Every phase includes updating the matching document(s) in `docs/`
 - What are the allowed `priority` values and how does each receiver type
   map them? What forms of `image` are accepted (URL, local media, camera
   entity)?
-- How is a receiver associated with a person or area? Explicit mapping on
-  the receiver, or derived from the entity, device or area registry?
 - When both people and areas are given, is the result a union or an
   intersection?
 - Can a custom integration register a new `notification_receiver` entity
@@ -462,8 +465,7 @@ Every phase includes updating the matching document(s) in `docs/`
   versus the person's device trackers), and what if there is no person?
 - What is the default for the personal/shared select, and can it be
   inferred (e.g. a tablet logged in as a kiosk user)?
-- Can a receiver be associated with several people (shared by a couple)?
-  Are manual associations stored on the receiver or elsewhere?
+- Can a receiver have more than one area?
 - Should the personal/shared setting be generalised to all receiver types?
 - How does the persistent notification receiver take part in targeting:
   only for the default (everyone) and explicit targets, or whenever any
