@@ -42,6 +42,20 @@ Each receiver needs (details **TBD**):
 - Association data used for target resolution: which **people** and/or
   **areas** it relates to (section 2.7).
 
+**Storage and discovery:**
+
+- COM System has a single config entry, and each receiver is a **config
+  subentry** of it. Receiver entities are derived from the subentries.
+  Config subentries require a recent minimum Home Assistant version (to be
+  verified; see section 8).
+- Receivers are not created automatically. Where possible, COM System
+  detects notification-capable devices and integrations that are already
+  set up (e.g. a webOS TV, a mobile app device) and **offers to create a
+  subentry** for each, which the user confirms. Whether Home Assistant's
+  subentry flows can support such offers is **TBD**; the fallback is a
+  "add receiver" flow that lists detected candidates.
+- Custom receivers are always created manually.
+
 ### 2.2 Targets
 
 Targets determine which receivers are triggered by a notification.
@@ -432,8 +446,9 @@ Every phase includes updating the matching document(s) in `docs/`
 - Does the standard Home Assistant UI (more-info dialog, tile and entity
   cards) offer a toggle for a `notification_receiver` entity? If not, which
   alternative is chosen (see section 2.4)?
-- How are receivers stored: config entries, config subentries or stored
-  data, with entities derived from them?
+- Can config subentries be offered automatically for detected receivers
+  (discovery), or only created from an "add receiver" flow that lists
+  detected candidates?
 - If a disabled receiver is named explicitly as a target, is it still
   skipped? Does the testing tool show disabled receivers as skipped?
 - Should the entity expose attributes (type, associated people and areas,
@@ -451,8 +466,6 @@ Every phase includes updating the matching document(s) in `docs/`
   absent, and its differing action names across versions?
 - Music Assistant announcements are not a notify action: how does the
   receiver model accommodate non-notify delivery mechanisms?
-- Should receivers of a type be created automatically from the underlying
-  integration's actions/entities, or added manually?
 - What variables describe the notification to conditions (title, message,
   data, targets, resolved receiver), and are they stable enough to document?
 - If a condition errors (e.g. a template fails), is the receiver skipped,
