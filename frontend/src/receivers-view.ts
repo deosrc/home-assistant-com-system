@@ -1,7 +1,12 @@
 import { LitElement, css, html } from "lit";
 import { ComSystemApi, errorMessage } from "./api";
 import { sharedStyles } from "./styles";
-import type { DiscoveryInfo, HomeAssistant, ReceiverInfo } from "./types";
+import type {
+  DiscoveryInfo,
+  HomeAssistant,
+  ReceiverInfo,
+  ScriptCheckResult,
+} from "./types";
 
 /** The receiver being edited. */
 interface Draft {
@@ -23,6 +28,9 @@ export class ComSystemReceivers extends LitElement {
   declare private discoveries: DiscoveryInfo[];
   declare private error?: string;
   declare private draft?: Draft;
+  declare private scriptId: string;
+  declare private scriptResult?: ScriptCheckResult;
+  declare private scriptMessage?: string;
 
   static properties = {
     hass: { attribute: false },
@@ -30,6 +38,9 @@ export class ComSystemReceivers extends LitElement {
     discoveries: { state: true },
     error: { state: true },
     draft: { state: true },
+    scriptId: { state: true },
+    scriptResult: { state: true },
+    scriptMessage: { state: true },
   };
 
   static styles = [
@@ -98,6 +109,16 @@ export class ComSystemReceivers extends LitElement {
         display: flex;
         gap: 8px;
       }
+      .checks {
+        list-style: none;
+        padding: 0;
+      }
+      .checks .ok {
+        color: var(--success-color, #43a047);
+      }
+      .checks .problem {
+        color: var(--error-color, #db4437);
+      }
       .card + .card {
         margin-top: 16px;
       }
@@ -109,6 +130,7 @@ export class ComSystemReceivers extends LitElement {
   constructor() {
     super();
     this.discoveries = [];
+    this.scriptId = "";
   }
 
   protected updated(): void {
@@ -170,6 +192,90 @@ export class ComSystemReceivers extends LitElement {
       const code = (err as { code?: string })?.code ?? "";
       this.draft = { ...d, error: ERRORS[code] ?? errorMessage(err) };
     }
+  }
+
+  private async checkScript(entityId: string) {
+    this.scriptId = entityId;
+    this.scriptResult = undefined;
+    this.scriptMessage = undefined;
+    if (!entityId) return;
+    try {
+      this.scriptResult = await new ComSystemApi(this.hass).checkScript(
+        entityId,
+      );
+    } catch (err) {
+      this.scriptMessage = errorMessage(err);
+    }
+  }
+
+  private async rescan() {
+    try {
+      await new ComSystemApi(this.hass).rescanScripts();
+      await this.load();
+      // Check again: the script is now waiting to be added.
+      await this.checkScript(this.scriptId);
+      this.scriptMessage =
+        "Rescan finished. Review the script in Pending discoveries.";
+    } catch (err) {
+      this.scriptMessage = errorMessage(err);
+    }
+  }
+
+  private renderScriptCheck() {
+    const scripts = Object.keys(this.hass.states)
+      .filter((id) => id.startsWith("script."))
+      .sort();
+    const result = this.scriptResult;
+    return html`<div class="card">
+      <strong>Check a script</strong>
+      <p class="muted">
+        Pick a script to see whether it can be a custom receiver. It needs one
+        object field named notification.
+      </p>
+      <select
+        id="script"
+        @change=${(e: Event) =>
+          this.checkScript((e.target as HTMLSelectElement).value)}
+      >
+        <option value="">Choose a script…</option>
+        ${scripts.map(
+          (id) =>
+            html`<option value=${id} ?selected=${id === this.scriptId}>
+              ${this.hass.states[id]?.attributes?.friendly_name ?? id}
+            </option>`,
+        )}
+      </select>
+      <div>
+        ${
+          result
+            ? html`<ul class="checks">
+                ${result.checks.map(
+                  (c) =>
+                    html`<li class=${c.ok ? "ok" : "problem"}>
+                      ${c.ok ? "✓" : "✗"} ${c.message}
+                    </li>`,
+                )}
+              </ul>`
+            : html``
+        }
+      </div>
+      ${
+        result?.can_rescan
+          ? html`<p>
+              <button id="rescan" @click=${() => this.rescan()}>
+                Rescan scripts
+              </button>
+            </p>`
+          : html``
+      }
+      <div>
+        ${
+          this.scriptMessage
+            ? html`<p id="script-message">${this.scriptMessage}</p>`
+            : html``
+        }
+      </div>
+    </div>`;
   }
 
   private async removeReceiver(r: ReceiverInfo) {
@@ -325,6 +431,7 @@ export class ComSystemReceivers extends LitElement {
             : html`<p class="muted">No receivers yet.</p>`
         }
       </div>
+      <div>${this.renderScriptCheck()}</div>
       <div class="card">
         <strong>Pending discoveries</strong>
         ${

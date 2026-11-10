@@ -29,6 +29,22 @@ Detection runs when the hub loads, after scripts are reloaded or added, and
 once an hour. Choose **Add** on the discovery to create the receiver, or
 **Ignore** to never be offered that script again.
 
+## Checking a script
+
+If a script you expected is not offered, use **Check a script** on the
+panel's Receivers view. Choose the script and Com System reports:
+
+- whether the script exists;
+- whether it has exactly one field, named `notification`, using the object
+  selector, and what is wrong if not (no fields, a missing or misnamed
+  field, the wrong selector, other fields);
+- whether it is already a receiver, was ignored (delete the ignored entry in
+  Devices & services to offer it again), or is waiting to be added.
+
+When the script is fine and not yet known, **Rescan scripts** runs detection
+now instead of waiting for the next one, and the script appears under
+Pending discoveries.
+
 ## What the script receives
 
 The whole notification is passed in the `notification` field, as a mapping:

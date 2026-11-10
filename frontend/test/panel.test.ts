@@ -30,6 +30,17 @@ function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
         };
       case "com_system/receivers/list":
         return { receivers: [RECEIVER] };
+      case "com_system/scripts/check":
+        return {
+          entity_id: "script.speaker",
+          checks: [
+            { id: "exists", ok: true, message: "The script exists." },
+            { id: "fields", ok: true, message: "It has one object field." },
+          ],
+          can_rescan: true,
+        };
+      case "com_system/scripts/rescan":
+        return {};
       case "com_system/discoveries/list":
         return {
           discoveries: [{ flow_id: "f1", name: "Pixel", type: "Mobile app" }],
@@ -199,6 +210,32 @@ describe("panel", () => {
       type: "com_system/receivers/remove",
       entry_id: "e1",
     });
+  });
+
+  it("checks a script and offers a rescan", async () => {
+    const { hass, callWS } = makeHass();
+    hass.states["script.speaker"] = {
+      state: "off",
+      attributes: { friendly_name: "Speaker" },
+    };
+    const panel = await mount("/receivers", hass);
+    const view = panel.shadowRoot!.querySelector("com-system-receivers")!;
+    await settle(view);
+    const select = view.shadowRoot!.querySelector(
+      "#script",
+    ) as HTMLSelectElement;
+    select.value = "script.speaker";
+    select.dispatchEvent(new Event("change"));
+    await settle(view);
+    expect(callWS).toHaveBeenCalledWith({
+      type: "com_system/scripts/check",
+      entity_id: "script.speaker",
+    });
+    expect(view.shadowRoot!.querySelectorAll(".checks li.ok").length).toBe(2);
+    (view.shadowRoot!.querySelector("#rescan") as HTMLButtonElement).click();
+    await settle(view);
+    expect(callWS).toHaveBeenCalledWith({ type: "com_system/scripts/rescan" });
+    expect(view.shadowRoot!.querySelector("#script-message")).not.toBeNull();
   });
 
   it("shows an error when a command fails", async () => {

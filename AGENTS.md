@@ -192,7 +192,10 @@ records the conventions and how things work as built.
 - `websocket_api.py`: the commands behind the panel
   (`com_system/ping`, `dashboard`, `receivers/list`, `receivers/set_enabled`,
   `receivers/update` (partial: name and people of any receiver),
-  `receivers/remove`,
+  `receivers/remove`, `scripts/check` (`_script_checks`: why a script is or
+  is not a receiver, built on `notification_script_problems`; `can_rescan`
+  is false when registered, ignored or already pending) and
+  `scripts/rescan` (calls the hub detector's `async_detect`),
   `discoveries/list`, `notify/preview`, `notify/test`). Every command must have `@websocket_api.require_admin`;
   `tests/test_panel.py` checks all of them reject a read-only user. They read
   the registry and config entries (`areas` come from

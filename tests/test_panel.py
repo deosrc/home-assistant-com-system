@@ -28,6 +28,8 @@ COMMANDS = [
     {"type": "com_system/discoveries/list"},
     {"type": "com_system/receivers/update", "entry_id": "x", "name": "n"},
     {"type": "com_system/receivers/remove", "entry_id": "x"},
+    {"type": "com_system/scripts/check", "entity_id": "script.x"},
+    {"type": "com_system/scripts/rescan"},
     {"type": "com_system/notify/preview"},
     {"type": "com_system/notify/test", "message": "x"},
 ]

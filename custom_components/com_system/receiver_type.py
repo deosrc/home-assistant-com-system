@@ -77,15 +77,32 @@ class ReceiverType:
         return True
 
 
-def is_notification_script(description: Mapping[str, Any]) -> bool:
-    """Return whether a script's service description is a notification script.
+def notification_script_problems(description: Mapping[str, Any]) -> list[str]:
+    """Return why a script's service description is not a notification script.
 
-    It must have exactly one field, ``notification``, with an object selector.
+    It must have exactly one field, ``notification``, with an object
+    selector. An empty list means it is one.
     """
     fields = description.get("fields") or {}
-    if set(fields) != {SCRIPT_FIELD}:
-        return False
-    return "object" in (fields[SCRIPT_FIELD].get("selector") or {})
+    if not fields:
+        return ["The script has no fields."]
+    problems = []
+    if SCRIPT_FIELD not in fields:
+        problems.append(f"There is no field named {SCRIPT_FIELD}.")
+    elif "object" not in (fields[SCRIPT_FIELD].get("selector") or {}):
+        problems.append(f"The {SCRIPT_FIELD} field does not use the object selector.")
+    others = sorted(set(fields) - {SCRIPT_FIELD})
+    if others:
+        problems.append(
+            f"The script has other fields ({', '.join(others)}); "
+            f"{SCRIPT_FIELD} must be the only one."
+        )
+    return problems
+
+
+def is_notification_script(description: Mapping[str, Any]) -> bool:
+    """Return whether a script's service description is a notification script."""
+    return not notification_script_problems(description)
 
 
 class CustomReceiverType(ReceiverType):

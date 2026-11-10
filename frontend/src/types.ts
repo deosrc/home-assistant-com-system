@@ -90,3 +90,16 @@ export interface ReceiverEdit {
   name: string;
   people: string[];
 }
+
+export interface ScriptCheck {
+  id: string;
+  ok: boolean;
+  message: string;
+}
+
+export interface ScriptCheckResult {
+  entity_id: string;
+  checks: ScriptCheck[];
+  /** True when a rescan would offer the script as a receiver. */
+  can_rescan: boolean;
+}

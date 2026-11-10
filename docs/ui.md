@@ -35,6 +35,10 @@ Each row has **Edit** (name and people) and **Remove**, which asks first.
 Validation errors are shown in the editor. Receivers are added from
 discoveries; see [custom receivers](receivers/custom.md) for scripts.
 
+**Check a script** explains why a script is or is not detected as a
+[custom receiver](receivers/custom.md#checking-a-script) and, when it
+would be offered, has a **Rescan scripts** button.
+
 Below the table, **Pending discoveries** lists the sources waiting to be
 added. Choose **Review in Devices & services** to add or ignore them; see
 [receiver discovery](receivers/README.md#automatic-detection). A receiver
@@ -79,6 +83,9 @@ admin user.
 - `com_system/receivers/update`: renames a receiver and sets its people
   (`entry_id`, optional `name`, `people`).
 - `com_system/receivers/remove`: removes a receiver.
+- `com_system/scripts/check`: checks a script (`entity_id`) and returns
+  `checks` (each `id`, `ok`, `message`) and `can_rescan`.
+- `com_system/scripts/rescan`: runs detection now (needs the hub loaded).
 - `com_system/discoveries/list`: the pending discoveries.
 - `com_system/notify/preview`: the receivers the targets (`person` and
   `receivers`, as in the action) would reach, each `reached` or

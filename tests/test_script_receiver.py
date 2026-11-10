@@ -122,3 +122,69 @@ async def test_delivery_fails_when_script_missing(hass: HomeAssistant) -> None:
     )
     assert results[0].result == "failed"
     assert "script gone" in results[0].reason.lower()
+
+
+async def _check(hass, hass_ws_client, entity_id):
+    client = await hass_ws_client(hass)
+    await client.send_json(
+        {"id": 1, "type": "com_system/scripts/check", "entity_id": entity_id}
+    )
+    msg = await client.receive_json()
+    assert msg["success"], msg
+    return msg["result"]
+
+
+async def test_check_reports_problems(hass: HomeAssistant, hass_ws_client) -> None:
+    await _scripts(hass)
+    assert await async_setup_component(hass, DOMAIN, {})
+    result = await _check(hass, hass_ws_client, "script.plain")
+    assert not result["can_rescan"]
+    assert [c["ok"] for c in result["checks"]] == [True, False]
+    result = await _check(hass, hass_ws_client, "script.two_fields")
+    assert not result["can_rescan"]
+    assert "other fields (x)" in result["checks"][-1]["message"]
+    result = await _check(hass, hass_ws_client, "script.missing")
+    assert [c["ok"] for c in result["checks"]] == [False]
+
+
+async def test_check_registered_and_rescan(hass: HomeAssistant, hass_ws_client) -> None:
+    await _scripts(hass)
+    MockConfigEntry(domain=DOMAIN, data={CONF_ENTRY_TYPE: ENTRY_TYPE_HUB}).add_to_hass(
+        hass
+    )
+    assert await async_setup_component(hass, DOMAIN, {})
+    await hass.async_block_till_done()
+    # Startup detection may already have offered it; clear that first.
+    for flow in hass.config_entries.flow.async_progress_by_handler(DOMAIN):
+        hass.config_entries.flow.async_abort(flow["flow_id"])
+
+    # Fine and not yet a receiver: a rescan would offer it.
+    result = await _check(hass, hass_ws_client, "script.speaker")
+    assert all(c["ok"] for c in result["checks"])
+    assert result["can_rescan"] is True
+
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 2, "type": "com_system/scripts/rescan"})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+    assert any(f["context"]["title_placeholders"]["name"] == "Speaker" for f in flows)
+
+    # Now it is waiting, so no rescan is needed.
+    result = await _check(hass, hass_ws_client, "script.speaker")
+    assert result["can_rescan"] is False
+    assert "waiting" in result["checks"][-1]["message"]
+
+    # Once added it is registered.
+    flow = next(
+        f for f in flows if f["context"]["title_placeholders"]["name"] == "Speaker"
+    )
+    await hass.config_entries.flow.async_configure(flow["flow_id"], {})
+    await hass.async_block_till_done()
+    result = await _check(hass, hass_ws_client, "script.speaker")
+    assert result["checks"][-1] == {
+        "id": "registered",
+        "ok": False,
+        "message": "It is already a receiver.",
+    }
+    assert result["can_rescan"] is False

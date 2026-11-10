@@ -6,6 +6,7 @@ import type {
   PreviewEntry,
   ReceiverEdit,
   ReceiverInfo,
+  ScriptCheckResult,
   SendResponse,
 } from "./types";
 
@@ -73,6 +74,17 @@ export class ComSystemApi {
       type: "com_system/receivers/remove",
       entry_id: entryId,
     });
+  }
+
+  checkScript(entityId: string): Promise<ScriptCheckResult> {
+    return this.hass.callWS({
+      type: "com_system/scripts/check",
+      entity_id: entityId,
+    });
+  }
+
+  rescanScripts(): Promise<void> {
+    return this.hass.callWS({ type: "com_system/scripts/rescan" });
   }
 
   setEnabled(entryId: string, enabled: boolean): Promise<void> {
