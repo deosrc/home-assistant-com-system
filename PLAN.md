@@ -153,6 +153,8 @@ Implementation notes:
 
 - Where possible, base the entity on Home Assistant's `ToggleEntity`
   and the `EntityComponent` pattern, so behaviour matches switches.
+- The `notification_receiver` domain is provided by `com_system` itself
+  (one integration, not a separate one).
 - Whether a custom integration can cleanly register a brand-new entity
   domain (and its actions) is a risk to validate early. See section 8.
 
@@ -424,9 +426,9 @@ Every phase includes updating the matching document(s) in `docs/`
 - What are the allowed `priority` values and how does each receiver type
   map them? What forms of `image` are accepted (URL, local media, camera
   entity)?
-- Can a custom integration register a new `notification_receiver` entity
-  domain (with its own actions) cleanly? Should it live in `com_system` or a
-  separate integration? Fallback: `switch` entities filtered by integration.
+- Can `com_system` register a new `notification_receiver` entity domain
+  (with its own actions) cleanly? To be settled by the phase 3 spike.
+  Fallback: `switch` entities filtered by integration.
 - Does the standard Home Assistant UI (more-info dialog, tile and entity
   cards) offer a toggle for a `notification_receiver` entity? If not, which
   alternative is chosen (see section 2.4)?
