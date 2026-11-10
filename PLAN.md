@@ -434,6 +434,9 @@ Notes:
 - The panel is **admin-only**, and the websocket commands behind it require
   an admin user. It exposes notification contents, receivers and conditions
   and can send notifications, so it is not offered to non-admins.
+- Only the frontend source is committed. CI builds the panel and the
+  compiled bundle is attached to releases, which HACS installs from.
+  Local development needs a build step (documented for contributors).
 - The designer and testing tool both build on the `notify.com_system`
   action, so they must exercise the same code path as automations.
 - Warnings about unsupported content are shown in recent notifications and
@@ -553,7 +556,5 @@ Every phase includes updating the matching document(s) in `docs/`
 - Can config subentries be offered automatically for detected receivers
   (discovery), or only created from an "add receiver" flow that lists
   detected candidates?
-- Frontend build and release process: are built assets committed to the
-  repository, or built in CI and attached to releases (HACS support)?
 - Minimum supported Home Assistant version.
 - Domain name and display name confirmation (`com_system` assumed).
