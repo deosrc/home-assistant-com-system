@@ -434,7 +434,38 @@ and do not register a separate Com System device.
   are also logged and recorded in history.
 - The action itself only raises an error when nothing could be attempted
   (e.g. invalid input), not when individual receivers fail.
-- Exact schema and response format: **TBD**.
+- Exact response format: **TBD**.
+
+**Registration (spike #5, confirmed on Home Assistant 2026.10.4):**
+
+- Register from `async_setup` with
+  `hass.services.async_register("notify", "com_system", handler,
+  schema=..., supports_response=SupportsResponse.OPTIONAL)`. It coexists
+  with the core `notify` integration's own services and survives `notify`
+  being set up afterwards. Use `OPTIONAL` so automations that ignore the
+  response still work.
+- Response data is returned by the handler as a dict and reaches callers
+  via `return_response=True` (and `response_variable` in automations).
+- UI metadata comes from `async_set_service_schema(hass, "notify",
+  "com_system", {...})`, not `services.yaml`: the `notify` domain's
+  `services.yaml` belongs to core, and the integration's own
+  `services.yaml` is not read for it. The description gives `name`,
+  `description` and `fields` with selectors, and HA adds the response
+  marker itself. It appears in the `get_services` websocket result that the
+  automation editor uses.
+- `name` and `description` are plain strings set in code. They cannot be
+  translated through `strings.json`, as translations for the `notify`
+  domain's services belong to core.
+- Targets: the `target:` selector in the description only supports entity
+  and device filters (it always offers areas, floors and labels). It has no
+  person concept. Use explicit fields instead: `person` (entity selector,
+  `domain: person`, `multiple`), `area_id` (area selector, `multiple`) and
+  `entity_id` (entity selector, `multiple`), plus `title` and `message`
+  (text selectors).
+- The schema is validated by the voluptuous schema passed to
+  `async_register`; invalid input raises before the handler runs.
+- Not verified: rendering in a real frontend (only the websocket
+  description was checked).
 
 ## 4. Architecture (initial outline)
 
