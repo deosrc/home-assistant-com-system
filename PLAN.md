@@ -173,7 +173,7 @@ device.
   explicitly.
 - It is **modelled on Home Assistant's `event` entities**, reusing their
   behaviour and patterns where possible (for example subclassing or copying
-  the core `EventEntity` logic, to be decided in the phase 3 spike). A real
+  the core `EventEntity` logic, to be decided in spike #4). A real
   `event` entity was considered, but a dedicated domain keeps selector
   filtering simple.
 - Its **state** is the date and time of the last notification attempt for
@@ -200,8 +200,8 @@ Implementation notes:
 - The `notification_receiver` domain is provided by `com_system` itself
   (one integration, not a separate one), using the `EntityComponent`
   pattern. Home Assistant locates the platform through the config entry's
-  domain, so this should work without a separate integration; the phase 3
-  spike confirms it.
+  domain, so this should work without a separate integration; spike #4
+  confirms it.
 - The two entities, and the personal/shared select for mobile app
   receivers (section 2.7), are grouped on the receiver's device.
 - The switch is the source of truth for enabled state; the receiver entity
@@ -573,5 +573,5 @@ work still to do. When the last item is done, this file can be deleted.
 
 - Can `com_system` register a read-only `notification_receiver` entity
   domain cleanly, and how much of the core `EventEntity` can be reused (the
-  phase 3 spike confirms)? Fallback: real `event` entities filtered by
+  spike #4 confirms)? Fallback: real `event` entities filtered by
   integration.
