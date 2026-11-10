@@ -39,26 +39,44 @@ export class ComSystemPanel extends LitElement {
         background: var(--primary-background-color);
         color: var(--primary-text-color);
       }
+      /* Matches the toolbar of Home Assistant's own pages. */
       header {
         display: flex;
         align-items: center;
-        gap: 16px;
-        padding: 12px 16px;
-        background: var(--app-header-background-color, var(--primary-color));
+        box-sizing: border-box;
+        height: var(--header-height, 56px);
+        padding: 8px 12px;
+        font-size: 20px;
+        font-weight: 400;
+        background-color: var(--app-header-background-color, var(--primary-color));
         color: var(--app-header-text-color, #fff);
+        border-bottom: var(--app-header-border-bottom, none);
       }
       h1 {
-        margin: 0;
-        font-size: 1.25rem;
-        font-weight: 400;
+        margin: 0 24px 0 0;
+        font-size: inherit;
+        font-weight: inherit;
+        white-space: nowrap;
+      }
+      nav {
+        display: flex;
+        align-self: stretch;
       }
       nav a {
+        display: flex;
+        align-items: center;
+        padding: 0 24px;
         color: inherit;
         text-decoration: none;
-        padding: 8px 12px;
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0.0892857em;
+        text-transform: uppercase;
         border-bottom: 2px solid transparent;
+        opacity: 0.8;
       }
       nav a.active {
+        opacity: 1;
         border-bottom-color: currentColor;
       }
       main {
@@ -88,6 +106,10 @@ export class ComSystemPanel extends LitElement {
     const prefix = this.route?.prefix ?? "/com-system";
     return html`
       <header>
+        <ha-menu-button
+          .hass=${this.hass}
+          .narrow=${this.narrow}
+        ></ha-menu-button>
         <h1>Com System</h1>
         <nav>
           ${VIEWS.map(
