@@ -291,7 +291,14 @@ or entity in the Home Assistant area registry, with a manual override.
   (section 2.3).
 - Resolves targets to a set of receivers, drops disabled ones, drops those
   whose conditions do not pass, then delivers to each remaining receiver.
-- Exact schema, response/return value and error handling: **TBD**.
+- Delivery is independent per receiver: one receiver failing never blocks
+  the others.
+- The action returns **response data** listing each receiver's result
+  (success, failed or skipped, with the reason and any warnings). Failures
+  are also logged and recorded in history.
+- The action itself only raises an error when nothing could be attempted
+  (e.g. invalid input), not when individual receivers fail.
+- Exact schema and response format: **TBD**.
 
 ## 4. Architecture (initial outline)
 
@@ -454,8 +461,6 @@ Every phase includes updating the matching document(s) in `docs/`
 - Can config subentries be offered automatically for detected receivers
   (discovery), or only created from an "add receiver" flow that lists
   detected candidates?
-- How are delivery failures reported (per receiver, aggregated, or
-  fire-and-forget)?
 - Frontend approach: custom panel built with Lit/web components, or other?
   Build and release process for the frontend assets.
 - How much history is kept, where is it stored (HA storage or database),
