@@ -74,13 +74,19 @@ Content parameters are split into two tiers:
   concept fold it into the message. Everything else, including priority and
   images, is receiver-specific.
 - **Receiver-specific content** – only meaningful for certain receiver
-  types, e.g. actions (buttons) on mobile app notifications. It is passed in
-  a single free-form **`data`** object, as in core notify services. Each
-  receiver type documents the keys it understands and ignores or passes
-  through the rest. Because the block is shared, keys that mean different
-  things to different types can clash; type definitions should avoid this
-  where they can. The exact keys per type are **TBD** and documented in
-  each receiver's document.
+  types, e.g. actions (buttons) on mobile app notifications. It is expressed
+  in two ways:
+  - **Typed fields** – commonly used parameters (used by several receiver
+    types, or common in notification content) are explicit, validated
+    top-level fields in the action schema. Receivers that do not support a
+    typed field handle it as described in section 8. Which parameters become
+    typed fields is **TBD**.
+  - **Free-form `data`** – anything COM System does not support explicitly
+    goes in a `data` object keyed by receiver type, e.g.
+    `data: {mobile_app: {...}, pushover: {...}}`. Each receiver reads only
+    its own block, so one notification can carry settings for several
+    types. (Keying by type is an assumption from "mixed per-type blocks and
+    typed fields"; to be confirmed.)
 
 Receiver-specific content raises a design question: what happens when a
 notification carries content that a resolved receiver does not support?
@@ -379,6 +385,8 @@ Every phase includes updating the matching document(s) in `docs/`
 
 ## 8. Open questions
 
+- Which commonly used parameters become typed fields (e.g. actions, image,
+  priority, sound), and how is a typed field mapped to each receiver type?
 - When a receiver does not support a piece of content, is it ignored,
   downgraded (e.g. actions folded into the message text) or treated as an
   error?
