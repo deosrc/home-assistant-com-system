@@ -55,8 +55,9 @@ records the conventions and how things work as built.
   by each type's own feature. `DeviceReceiverType` offers one receiver per
   device of `source_domain` (source id is the device identifier in that
   domain, and the receiver's entities attach to that device via
-  `source_device_identifiers`); `EntryReceiverType` offers one per config entry (source id is its
-  unique id, else its entry id). To add a built-in type, subclass one, set
+  `source_device_identifiers`); `EntryReceiverType` offers one per config
+  entry (source id is its unique id, else its entry id; no source device, so
+  entities get their own). To add a built-in type, subclass one, set
   `type_id`, `name`, `source_domain`, and add it to `BUILTIN_RECEIVER_TYPES`.
   The Alexa Media Player and Music Assistant device identifiers are assumed
   to be `(domain, <serial or player id>)` and were not checked against the
