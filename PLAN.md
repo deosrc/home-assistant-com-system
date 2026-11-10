@@ -339,6 +339,9 @@ explicit targets. A receiver has **at most one area**.
   with a linked person starts as **personal**, and one with no linked person
   starts as **shared**. The user can change it at any time.
 
+The personal/shared select applies to **mobile app receivers only**. Other
+types already have a clear nature (see below).
+
 **Other receiver types:** the mechanism is TBD for each. For example, Alexa
 devices and TVs are likely to be associated by area rather than by person,
 while Pushover could be associated with a person manually. The persistent
@@ -552,6 +555,5 @@ Every phase includes updating the matching document(s) in `docs/`
   detected candidates?
 - Frontend build and release process: are built assets committed to the
   repository, or built in CI and attached to releases (HACS support)?
-- Should the personal/shared setting be generalised to all receiver types?
 - Minimum supported Home Assistant version.
 - Domain name and display name confirmation (`com_system` assumed).
