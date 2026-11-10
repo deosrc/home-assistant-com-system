@@ -1,11 +1,10 @@
 name: HACS validation
 
+# Disabled while the repository is private: the HACS action cannot validate a
+# private repository. Restore the push, pull_request and schedule triggers
+# (push and pull_request on main, nightly at 00:00) once it is public.
 on:
-  push:
-    branches: [main]
-  pull_request:
-  schedule:
-    - cron: "0 0 * * *"
+  workflow_dispatch:
 
 jobs:
   hacs:

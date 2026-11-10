@@ -42,5 +42,6 @@ in the integration work.
 
 ### Continuous integration
 
-GitHub Actions run Ruff, the tests, markdownlint, hassfest and HACS
-validation on every pull request and push to `main`.
+GitHub Actions run Ruff, the tests, markdownlint and hassfest on every pull
+request and push to `main`. HACS validation is manual-only until the
+repository is public.
