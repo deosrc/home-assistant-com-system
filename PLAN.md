@@ -207,6 +207,16 @@ record-of-last-resort. Its handling of content (e.g. a notification ID so a
 notification can be replaced or dismissed) and its association with people
 and areas are **TBD** (see section 2.7).
 
+**Delivery and discovery per type:**
+
+- **Mobile app** – one receiver per registered device. Devices are detected
+  from the mobile app integration's config entries and a subentry is
+  offered for each. Delivery calls that device's `notify.mobile_app_<device>`
+  action with the title, message and data (actions, image, channel and so
+  on).
+- **Alexa Media Player, persistent notification, Pushover, webOS TV, Music
+  Assistant** – **TBD**.
+
 Receiver type definitions are written in code, and each declares its
 capabilities: which typed fields and `data` keys it supports. Custom
 (user-mapped action) receivers use a generic definition that declares no
@@ -472,8 +482,9 @@ Every phase includes updating the matching document(s) in `docs/`
   detected candidates?
 - Frontend build and release process: are built assets committed to the
   repository, or built in CI and attached to releases (HACS support)?
-- How does each supported type deliver notifications: which actions or
-  entities does it use, and how are its receivers discovered?
+- How do Alexa Media Player, persistent notification, Pushover, webOS TV
+  and Music Assistant each deliver notifications (which actions or
+  entities), and how are their receivers discovered?
 - Alexa Media Player is a non-native integration: how do we handle it being
   absent, and its differing action names across versions?
 - Music Assistant announcements are not a notify action: how does the
