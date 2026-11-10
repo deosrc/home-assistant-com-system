@@ -356,9 +356,8 @@ notification), each receiver creates its own device in the device registry
 (e.g. "Pushover - Dale"), so the user can assign an area to it in the normal
 Home Assistant UI. For types with an underlying device (mobile app, webOS
 TV, Music Assistant players, Echo devices), the area comes from that
-underlying device. (Interpretation to confirm: whether receivers of these
-types should also register their own COM System device, and how it would be
-linked to the underlying device.)
+underlying device. Their receiver entities attach to that existing device
+and do not register a separate COM System device.
 
 ## 3. The `notify.com_system` action
 
@@ -553,8 +552,6 @@ Every phase includes updating the matching document(s) in `docs/`
   detected candidates?
 - Frontend build and release process: are built assets committed to the
   repository, or built in CI and attached to releases (HACS support)?
-- Should receivers with an underlying device also register their own COM
-  System device, linked to it, or only use the underlying device's area?
 - Should the personal/shared setting be generalised to all receiver types?
 - Minimum supported Home Assistant version.
 - Domain name and display name confirmation (`com_system` assumed).
