@@ -142,9 +142,10 @@ records the conventions and how things work as built.
   `title`, `person`, `receivers`; title is first, which sets the order in
   the form) and its UI description through
   `async_set_service_schema` (the `notify` domain's `services.yaml` is
-  core's, so there is no `services.yaml`; name and description are plain
-  strings). `person` and `receivers` are `choose` selectors whose choice
-  names are the labels the form shows, because the selector has no label
+  core's, so the integration's `services.yaml` is deliberately empty (hassfest
+  requires the file); name and description are plain strings). `person` and
+  `receivers` are `choose` selectors whose choice names are the labels the
+  form shows, because the selector has no label
   field and the notify domain's translations are core's: `person` is
   `Individuals` (entity selector) or `Everyone`, `receivers` is `Select`
   (a `target` selector limited to `notification_receiver` entities of this
