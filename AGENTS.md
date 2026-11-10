@@ -49,6 +49,16 @@ records the conventions and how things work as built.
   receiver's area is the area of its `notification_receiver` entity, which is
   its device's (`ReceiverRegistry.areas_of`; the switch's area is ignored),
   so it is changed in Home Assistant, not in Com System.
+- Custom receivers: entry data also has `action` (`domain.action`) and
+  `action_data` (dict, strings are templates); `Receiver.action` and
+  `Receiver.action_data` carry them. `custom_receiver.py` holds
+  `validate_custom_receiver` (returns an error key: `name_required`,
+  `name_exists`, `invalid_action`, `unknown_action`, `invalid_action_data`,
+  `invalid_template`; the same keys are the flow errors and websocket error
+  codes) and `async_deliver_custom`, which `CustomReceiverType` uses: it
+  renders the data with `title`, `message`, `priority`, `image`, `data` and
+  calls the action blocking; a missing action or template error raises, so
+  the dispatcher reports `failed`. See `docs/receivers/custom.md`.
 - `receiver.py`: frozen `Receiver` dataclass built by `Receiver.from_entry`.
 - `receiver_type.py`: `ReceiverType` is the extension point (id, name,
   capabilities, `async_deliver`, association hooks, `async_detect`,
@@ -110,12 +120,14 @@ records the conventions and how things work as built.
   translation warning for the domain. Editing a receiver reloads only that
   entry.
 - `config_flow.py`: the user step creates the hub if none exists, otherwise
-  it continues to `custom_receiver` (name only). One hub is enforced there.
-  The options flow of a receiver edits its people; the hub's
+  it continues to `custom_receiver` (name, action, action data). One hub is
+  enforced there. The options flow of a receiver edits its people; the hub's
   options flow is a stub. `integration_discovery` aborts with
   `not_available` without a hub or a known type, otherwise sets the unique
   id, aborts if configured and shows a confirm-only `confirm` step that
-  creates the receiver (core's Ignore needs no code). Reconfigure is a stub.
+  creates the receiver (core's Ignore needs no code). Reconfigure edits a
+  custom receiver's name, action and data (step `reconfigure_custom`), or
+  just the name of a discovered receiver; the hub aborts `not_implemented`.
 - `__init__.py`: `async_setup` registers the built-in types and creates the
   registry and the component; setting up the hub starts the detector;
   receiver entries set up and unload their entities.
@@ -178,6 +190,9 @@ records the conventions and how things work as built.
   Conditions are not evaluated yet.
 - `websocket_api.py`: the commands behind the panel
   (`com_system/ping`, `dashboard`, `receivers/list`, `receivers/set_enabled`,
+  `receivers/get`, `receivers/create` (runs the config flow, so validation is
+  shared), `receivers/update` (partial; any receiver's name and people,
+  custom receivers' action and data), `receivers/remove`,
   `discoveries/list`, `notify/preview`, `notify/test`). Every command must have `@websocket_api.require_admin`;
   `tests/test_panel.py` checks all of them reject a read-only user. They read
   the registry and config entries (`areas` come from
@@ -212,7 +227,11 @@ records the conventions and how things work as built.
   `.card-content` and `.card-actions` (button right-aligned, an
   `ha-progress-button raised` when HA has loaded it, else a native button).
   Avoid a `title` property on elements: it clashes with `HTMLElement.title`.
-  Add views by adding an element, an entry in `VIEWS` and a command. Elements use
+  `receivers-view.ts` also has the add/edit editor (native inputs; action data
+  is JSON); a name like `remove` must not be a method (clashes with
+  `HTMLElement`), and an expression at the very start of a template needs a
+  wrapper `div` like trailing ones. Add views by adding an element, an entry
+  in `VIEWS` and a command. Elements use
   `static properties` and `declare` fields (no decorators). The build is one
   ES module and the HMR client is imported only when the mode is
   `development`. Commands: `npm run lint`, `npm test`, `npm run build` in

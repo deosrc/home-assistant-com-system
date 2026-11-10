@@ -50,9 +50,8 @@ added as that type is built.
 
 ## Custom receivers
 
-A custom receiver is added manually: with the hub in place, choose **Add
-integration** and **Com System**, then give the receiver a name. Mapping a
-receiver to Home Assistant actions is not implemented yet.
+A custom receiver calls a Home Assistant action you choose; see
+[custom receivers](custom.md).
 
 ## People and areas
 

@@ -1,7 +1,34 @@
 import { LitElement, css, html } from "lit";
 import { ComSystemApi, errorMessage } from "./api";
 import { sharedStyles } from "./styles";
-import type { DiscoveryInfo, HomeAssistant, ReceiverInfo } from "./types";
+import type {
+  DiscoveryInfo,
+  HomeAssistant,
+  ReceiverEdit,
+  ReceiverInfo,
+} from "./types";
+
+/** The receiver being added (no entry id) or edited. */
+interface Draft {
+  entryId?: string;
+  custom: boolean;
+  name: string;
+  action: string;
+  actionData: string;
+  people: string[];
+  error?: string;
+}
+
+/** Messages for the error codes the create and update commands return. */
+const ERRORS: Record<string, string> = {
+  name_required: "Enter a name.",
+  name_exists: "A receiver with this name already exists.",
+  invalid_action: "Enter the action as domain.action, e.g. notify.phone.",
+  unknown_action: "This action is not available in Home Assistant.",
+  invalid_action_data: "The action data must be a JSON object.",
+  invalid_template: "The action data contains an invalid template.",
+  no_hub: "Set up the Com System hub first.",
+};
 
 /** Configured receivers with enable/disable, plus pending discoveries. */
 export class ComSystemReceivers extends LitElement {
@@ -9,12 +36,14 @@ export class ComSystemReceivers extends LitElement {
   declare private receivers?: ReceiverInfo[];
   declare private discoveries: DiscoveryInfo[];
   declare private error?: string;
+  declare private draft?: Draft;
 
   static properties = {
     hass: { attribute: false },
     receivers: { state: true },
     discoveries: { state: true },
     error: { state: true },
+    draft: { state: true },
   };
 
   static styles = [
@@ -56,6 +85,37 @@ export class ComSystemReceivers extends LitElement {
         --mdc-icon-size: 16px;
         display: inline-flex;
         color: var(--secondary-text-color);
+      }
+      .editor {
+        display: grid;
+        gap: 12px;
+        max-width: 560px;
+      }
+      .editor label {
+        display: grid;
+        gap: 4px;
+      }
+      .editor input,
+      .editor textarea {
+        font: inherit;
+        padding: 8px;
+        color: var(--primary-text-color);
+        background: var(--card-background-color, #fff);
+        border: 1px solid var(--divider-color, #e0e0e0);
+        border-radius: 4px;
+      }
+      .editor textarea {
+        font-family: monospace;
+        min-height: 100px;
+      }
+      .people {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
       }
       .card + .card {
         margin-top: 16px;
@@ -111,6 +171,144 @@ export class ComSystemReceivers extends LitElement {
     }
   }
 
+  private startAdd() {
+    this.draft = {
+      custom: true,
+      name: "",
+      action: "",
+      actionData: "{}",
+      people: [],
+    };
+  }
+
+  private startEdit(r: ReceiverInfo) {
+    this.draft = {
+      entryId: r.entry_id,
+      custom: r.type_id === "custom",
+      name: r.name,
+      action: r.action ?? "",
+      actionData: JSON.stringify(r.action_data ?? {}, null, 2),
+      people: [...r.people],
+    };
+  }
+
+  private async save() {
+    const d = this.draft;
+    if (!d) return;
+    const edit: ReceiverEdit = { name: d.name, people: d.people };
+    if (d.custom) {
+      try {
+        const data = JSON.parse(d.actionData.trim() || "{}");
+        if (typeof data !== "object" || data === null || Array.isArray(data)) {
+          throw new Error("not an object");
+        }
+        edit.action_data = data;
+      } catch {
+        this.draft = { ...d, error: ERRORS.invalid_action_data };
+        return;
+      }
+      edit.action = d.action;
+    }
+    const api = new ComSystemApi(this.hass);
+    try {
+      if (d.entryId) await api.updateReceiver(d.entryId, edit);
+      else await api.createReceiver(edit);
+      this.draft = undefined;
+      await this.load();
+    } catch (err) {
+      const code = (err as { code?: string })?.code ?? "";
+      this.draft = { ...d, error: ERRORS[code] ?? errorMessage(err) };
+    }
+  }
+
+  private async removeReceiver(r: ReceiverInfo) {
+    if (!confirm(`Remove the receiver ${r.name}?`)) return;
+    try {
+      await new ComSystemApi(this.hass).removeReceiver(r.entry_id);
+      await this.load();
+    } catch (err) {
+      this.error = errorMessage(err);
+    }
+  }
+
+  private renderEditor(d: Draft) {
+    const update = (changes: Partial<Draft>) =>
+      (this.draft = { ...d, ...changes, error: undefined });
+    const persons = Object.keys(this.hass.states).filter((id) =>
+      id.startsWith("person."),
+    );
+    return html`<div class="card editor">
+      <strong>${d.entryId ? "Edit receiver" : "Add custom receiver"}</strong>
+      <label
+        >Name
+        <input
+          id="name"
+          .value=${d.name}
+          @input=${(e: Event) =>
+            update({ name: (e.target as HTMLInputElement).value })}
+      /></label>
+      ${
+        d.custom
+          ? html`<label
+                >Action
+                <input
+                  id="action"
+                  placeholder="notify.living_room_speaker"
+                  .value=${d.action}
+                  @input=${(e: Event) =>
+                    update({ action: (e.target as HTMLInputElement).value })}
+              /></label>
+              <label
+                >Action data (JSON; strings may use templates such as {{ message
+                }})
+                <textarea
+                  id="action-data"
+                  .value=${d.actionData}
+                  @input=${(e: Event) =>
+                    update({
+                      actionData: (e.target as HTMLTextAreaElement).value,
+                    })}
+                ></textarea>
+              </label>`
+          : html``
+      }
+      <div>
+        People
+        <div class="people">
+          ${
+            persons.length
+              ? persons.map(
+                  (id) =>
+                    html`<label
+                      ><input
+                        type="checkbox"
+                        .checked=${d.people.includes(id)}
+                        @change=${(e: Event) =>
+                          update({
+                            people: (e.target as HTMLInputElement).checked
+                              ? [...d.people, id]
+                              : d.people.filter((p) => p !== id),
+                          })}
+                      />
+                      ${
+                        this.hass.states[id]?.attributes?.friendly_name ?? id
+                      }</label
+                    >`,
+                )
+              : html`<span class="muted">No people</span>`
+          }
+        </div>
+      </div>
+      ${d.error ? html`<p class="error">${d.error}</p>` : html``}
+      <div class="actions">
+        <button id="save" @click=${() => this.save()}>Save</button>
+        <button id="cancel" @click=${() => (this.draft = undefined)}>
+          Cancel
+        </button>
+      </div>
+    </div>`;
+  }
+
   /** The areas and people a receiver is linked to: by type, then name. */
   private targets(r: ReceiverInfo): { icon: string; name: string }[] {
     const areas = r.areas.map((id) => ({
@@ -133,9 +331,10 @@ export class ComSystemReceivers extends LitElement {
     }
     return html`<div class="badges">
       ${targets.map(
-        (t) => html`<span class="badge">
-          <ha-icon icon=${t.icon}></ha-icon>${t.name}
-        </span>`,
+        (t) =>
+          html`<span class="badge">
+            <ha-icon icon=${t.icon}></ha-icon>${t.name}
+          </span>`,
       )}
     </div>`;
   }
@@ -148,54 +347,77 @@ export class ComSystemReceivers extends LitElement {
       return html`<p class="muted">Loading…</p>`;
     }
     return html`
+      <div>${this.draft ? this.renderEditor(this.draft) : html``}</div>
       <div class="card">
         <strong>Receivers</strong>
-        ${this.receivers.length
-          ? html`<table>
-              <thead>
-                <tr>
-                  <th class="switch" aria-label="Enabled"></th>
-                  <th>Name</th>
-                  <th>Type</th>
-                  <th>Targets</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${this.receivers.map(
-                  (r) => html`
-                    <tr class=${r.available ? "" : "unavailable"}>
-                      <td class="switch">
-                        <ha-switch
-                          .checked=${r.enabled === true}
-                          ?disabled=${!r.available || r.enabled === null}
-                          title=${r.available ? "" : "Unavailable"}
-                          @change=${(ev: Event) => this.toggle(r, ev)}
-                        ></ha-switch>
-                      </td>
-                      <td>${r.name}</td>
-                      <td>${r.type}</td>
-                      <td>${this.renderTargets(r)}</td>
-                    </tr>
-                  `,
-                )}
-              </tbody>
-            </table>`
-          : html`<p class="muted">No receivers yet.</p>`}
+        <button id="add" @click=${() => this.startAdd()}>
+          Add custom receiver
+        </button>
+        ${
+          this.receivers.length
+            ? html`<table>
+                <thead>
+                  <tr>
+                    <th class="switch" aria-label="Enabled"></th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Targets</th>
+                    <th aria-label="Actions"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${this.receivers.map(
+                    (r) => html`
+                      <tr class=${r.available ? "" : "unavailable"}>
+                        <td class="switch">
+                          <ha-switch
+                            .checked=${r.enabled === true}
+                            ?disabled=${!r.available || r.enabled === null}
+                            title=${r.available ? "" : "Unavailable"}
+                            @change=${(ev: Event) => this.toggle(r, ev)}
+                          ></ha-switch>
+                        </td>
+                        <td>${r.name}</td>
+                        <td>${r.type}</td>
+                        <td>${this.renderTargets(r)}</td>
+                        <td class="actions">
+                          <button
+                            class="edit"
+                            @click=${() => this.startEdit(r)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            class="remove"
+                            @click=${() => this.removeReceiver(r)}
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                    `,
+                  )}
+                </tbody>
+              </table>`
+            : html`<p class="muted">No receivers yet.</p>`
+        }
       </div>
       <div class="card">
         <strong>Pending discoveries</strong>
-        ${this.discoveries.length
-          ? html`<ul>
-                ${this.discoveries.map(
-                  (d) => html`<li>${d.name} (${d.type})</li>`,
-                )}
-              </ul>
-              <p>
-                <a href="/config/integrations/integration/com_system"
-                  >Review in Devices &amp; services</a
-                >
-              </p>`
-          : html`<p class="muted">Nothing waiting to be added.</p>`}
+        ${
+          this.discoveries.length
+            ? html`<ul>
+                  ${this.discoveries.map(
+                    (d) => html`<li>${d.name} (${d.type})</li>`,
+                  )}
+                </ul>
+                <p>
+                  <a href="/config/integrations/integration/com_system"
+                    >Review in Devices &amp; services</a
+                  >
+                </p>`
+            : html`<p class="muted">Nothing waiting to be added.</p>`
+        }
       </div>
     `;
   }

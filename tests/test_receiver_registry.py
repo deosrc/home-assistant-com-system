@@ -138,8 +138,9 @@ async def test_custom_receiver_flow_stores_type_and_options(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
     assert result["step_id"] == "custom_receiver"
+    hass.services.async_register("notify", "lounge", lambda call: None)
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_NAME: "Lounge"}
+        result["flow_id"], {CONF_NAME: "Lounge", "action": "notify.lounge"}
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_RECEIVER_TYPE] == RECEIVER_TYPE_CUSTOM

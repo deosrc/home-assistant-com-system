@@ -20,6 +20,10 @@ CONF_RECEIVER_TYPE = "receiver_type"
 CONF_SOURCE_ID = "source_id"
 RECEIVER_TYPE_CUSTOM = "custom"
 
+# Custom receiver entry data: the action it calls and the data it sends.
+CONF_ACTION = "action"
+CONF_ACTION_DATA = "action_data"
+
 # Receiver entry options: who and where the receiver relates to.
 CONF_PEOPLE = "people"
 

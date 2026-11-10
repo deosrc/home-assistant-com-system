@@ -26,6 +26,14 @@ COMMANDS = [
     {"type": "com_system/receivers/list"},
     {"type": "com_system/receivers/set_enabled", "entry_id": "x", "enabled": False},
     {"type": "com_system/discoveries/list"},
+    {"type": "com_system/receivers/get", "entry_id": "x"},
+    {
+        "type": "com_system/receivers/create",
+        "name": "n",
+        "action": "notify.x",
+    },
+    {"type": "com_system/receivers/update", "entry_id": "x", "name": "n"},
+    {"type": "com_system/receivers/remove", "entry_id": "x"},
     {"type": "com_system/notify/preview"},
     {"type": "com_system/notify/test", "message": "x"},
 ]

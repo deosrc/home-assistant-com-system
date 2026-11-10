@@ -9,6 +9,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 
 from .const import RECEIVER_TYPE_CUSTOM
+from .custom_receiver import async_deliver_custom
 from .receiver import Receiver
 
 
@@ -80,6 +81,14 @@ class CustomReceiverType(ReceiverType):
 
     type_id = RECEIVER_TYPE_CUSTOM
     name = "Custom"
+
+    async def async_deliver(
+        self, hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
+    ) -> list[str]:
+        """Call the receiver's mapped action."""
+        return await async_deliver_custom(
+            hass, receiver.action, receiver.action_data, notification
+        )
 
 
 _RECEIVER_TYPES: dict[str, ReceiverType] = {}

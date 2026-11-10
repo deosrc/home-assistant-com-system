@@ -15,10 +15,26 @@ from homeassistant.components import websocket_api
 from homeassistant.config_entries import SOURCE_INTEGRATION_DISCOVERY, ConfigEntryState
 from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 
-from .const import DATA_REGISTRY, DOMAIN, NOTIFICATION_RECEIVER_DOMAIN
+from .const import (
+    CONF_ACTION,
+    CONF_ACTION_DATA,
+    CONF_NAME,
+    CONF_PEOPLE,
+    DATA_REGISTRY,
+    DOMAIN,
+    NOTIFICATION_RECEIVER_DOMAIN,
+    RECEIVER_TYPE_CUSTOM,
+)
+from .custom_receiver import (
+    ERROR_NAME_REQUIRED,
+    custom_receiver_data,
+    validate_custom_receiver,
+)
 from .dispatcher import REASON_DISABLED
 from .notify import (
     ATTR_MESSAGE,
@@ -45,6 +61,10 @@ def async_register_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_receivers_list)
     websocket_api.async_register_command(hass, ws_receivers_set_enabled)
     websocket_api.async_register_command(hass, ws_discoveries_list)
+    websocket_api.async_register_command(hass, ws_receivers_get)
+    websocket_api.async_register_command(hass, ws_receivers_create)
+    websocket_api.async_register_command(hass, ws_receivers_update)
+    websocket_api.async_register_command(hass, ws_receivers_remove)
     websocket_api.async_register_command(hass, ws_notify_preview)
     websocket_api.async_register_command(hass, ws_notify_test)
 
@@ -92,6 +112,8 @@ def _receiver_info(hass: HomeAssistant, receiver: Receiver) -> dict[str, Any]:
         ),
         "people": list(registry.people_of(receiver)),
         "areas": list(registry.areas_of(receiver)),
+        "action": receiver.action,
+        "action_data": dict(receiver.action_data),
     }
 
 
@@ -286,3 +308,164 @@ async def ws_notify_test(
         connection.send_error(msg["id"], "send_failed", str(err))
         return
     connection.send_result(msg["id"], response)
+
+
+_PEOPLE = vol.All(cv.ensure_list, [cv.entity_id], [cv.entity_domain("person")])
+_CUSTOM_FIELDS = {
+    vol.Required(CONF_NAME): str,
+    vol.Required(CONF_ACTION): str,
+    vol.Optional(CONF_ACTION_DATA, default=dict): dict,
+}
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {vol.Required("type"): "com_system/receivers/get", vol.Required("entry_id"): str}
+)
+@callback
+def ws_receivers_get(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Return one receiver, with the action and data of a custom receiver."""
+    receiver = hass.data[DOMAIN][DATA_REGISTRY].get(msg["entry_id"])
+    if receiver is None:
+        connection.send_error(msg["id"], "not_found", "Receiver not found")
+        return
+    connection.send_result(msg["id"], _receiver_info(hass, receiver))
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "com_system/receivers/create",
+        vol.Optional(CONF_PEOPLE, default=list): _PEOPLE,
+        **_CUSTOM_FIELDS,
+    }
+)
+@websocket_api.async_response
+async def ws_receivers_create(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Create a custom receiver through the config flow, so it is validated
+    exactly as in Devices & services. Needs the hub. Returns the new receiver.
+    """
+    flow = hass.config_entries.flow
+    result = await flow.async_init(DOMAIN, context={"source": "user"})
+    if result["type"] is not FlowResultType.FORM or (
+        result["step_id"] != "custom_receiver"
+    ):
+        # No hub yet: the user step would create it, so stop and clean up.
+        flow.async_abort(result["flow_id"])
+        connection.send_error(
+            msg["id"], "no_hub", "Set up the Com System hub before adding receivers"
+        )
+        return
+    result = await flow.async_configure(
+        result["flow_id"],
+        {
+            CONF_NAME: msg[CONF_NAME],
+            CONF_ACTION: msg[CONF_ACTION],
+            CONF_ACTION_DATA: msg[CONF_ACTION_DATA],
+        },
+    )
+    if result["type"] is not FlowResultType.CREATE_ENTRY:
+        flow.async_abort(result["flow_id"])
+        connection.send_error(
+            msg["id"], result["errors"]["base"], result["errors"]["base"]
+        )
+        return
+    entry = result["result"]
+    if msg[CONF_PEOPLE]:
+        hass.config_entries.async_update_entry(
+            entry, options={**entry.options, CONF_PEOPLE: msg[CONF_PEOPLE]}
+        )
+    receiver = hass.data[DOMAIN][DATA_REGISTRY].get(entry.entry_id)
+    connection.send_result(msg["id"], _receiver_info(hass, receiver))
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "com_system/receivers/update",
+        vol.Required("entry_id"): str,
+        vol.Optional(CONF_NAME): str,
+        vol.Optional(CONF_ACTION): str,
+        vol.Optional(CONF_ACTION_DATA): dict,
+        vol.Optional(CONF_PEOPLE): _PEOPLE,
+    }
+)
+@callback
+def ws_receivers_update(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Edit a receiver. Any receiver can change its name and people; a custom
+    receiver can also change its action and action data. Only the given
+    fields change. The receiver reloads (the update listener).
+    """
+    receiver = hass.data[DOMAIN][DATA_REGISTRY].get(msg["entry_id"])
+    entry = hass.config_entries.async_get_entry(msg["entry_id"])
+    if receiver is None or entry is None:
+        connection.send_error(msg["id"], "not_found", "Receiver not found")
+        return
+    is_custom = receiver.type_id == RECEIVER_TYPE_CUSTOM
+    if not is_custom and (CONF_ACTION in msg or CONF_ACTION_DATA in msg):
+        connection.send_error(
+            msg["id"], "not_custom", "Only custom receivers have an action"
+        )
+        return
+
+    name = msg.get(CONF_NAME, receiver.name)
+    data = dict(entry.data)
+    if is_custom:
+        action = msg.get(CONF_ACTION, receiver.action or "")
+        action_data = msg.get(CONF_ACTION_DATA, dict(receiver.action_data))
+        error = validate_custom_receiver(
+            hass,
+            name=name,
+            action=action,
+            action_data=action_data,
+            exclude_entry_id=entry.entry_id,
+        )
+        if error:
+            connection.send_error(msg["id"], error, error)
+            return
+        data.update(custom_receiver_data(name, action, action_data))
+    else:
+        if not name.strip():
+            connection.send_error(msg["id"], ERROR_NAME_REQUIRED, ERROR_NAME_REQUIRED)
+            return
+        data[CONF_NAME] = name.strip()
+    options = dict(entry.options)
+    if CONF_PEOPLE in msg:
+        options[CONF_PEOPLE] = msg[CONF_PEOPLE]
+    hass.config_entries.async_update_entry(
+        entry, title=data[CONF_NAME], data=data, options=options
+    )
+    connection.send_result(
+        msg["id"],
+        _receiver_info(hass, hass.data[DOMAIN][DATA_REGISTRY].get(entry.entry_id)),
+    )
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {vol.Required("type"): "com_system/receivers/remove", vol.Required("entry_id"): str}
+)
+@websocket_api.async_response
+async def ws_receivers_remove(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Remove a receiver (its config entry, entities and device)."""
+    if hass.data[DOMAIN][DATA_REGISTRY].get(msg["entry_id"]) is None:
+        connection.send_error(msg["id"], "not_found", "Receiver not found")
+        return
+    await hass.config_entries.async_remove(msg["entry_id"])
+    connection.send_result(msg["id"])

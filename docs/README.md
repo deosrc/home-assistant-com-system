@@ -15,15 +15,16 @@ described in the [repository README](../README.md#development).
    them under **Discovered** on the Devices & services page. Choose
    **Add** to create a receiver, or **Ignore** to never be offered it again.
    See [receiver discovery](receivers/README.md#automatic-detection).
-4. Choose **Add integration** again to add a custom receiver. Once the hub
-   exists, this flow adds receivers.
+4. Choose **Add integration** again to add a
+   [custom receiver](receivers/custom.md). Once the hub exists, this flow
+   adds receivers.
 
-Reconfiguration and hub options are stubs for now and do nothing yet.
+Hub options are a stub for now and do nothing yet.
 
 ## Contents
 
-- [Receivers](receivers/README.md): the receiver concept and custom
-  receivers.
+- [Receivers](receivers/README.md): the receiver concept.
+- [Custom receivers](receivers/custom.md): mapping a receiver to an action.
 - [Targets](targets.md): how people, areas and receivers decide where a
   notification goes.
 - [The notify.com_system action](services.md): sending a notification, its
