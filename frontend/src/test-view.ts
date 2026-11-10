@@ -64,8 +64,40 @@ export class ComSystemTest extends LitElement {
   static styles = [
     sharedStyles,
     css`
-      .card + .card {
-        margin-top: 16px;
+      /* Copies the cards of Developer tools > Actions. ha-card styles the
+         slotted .card-header, .card-content and .card-actions itself. */
+      ha-card {
+        display: block;
+        margin-bottom: 16px;
+      }
+      .card-header {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .secondary {
+        margin: 0;
+        font-size: 14px;
+        font-weight: normal;
+        letter-spacing: normal;
+        line-height: normal;
+        color: var(--secondary-text-color);
+      }
+      .card-content {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+        margin: 8px;
+      }
+      .card-content > * {
+        margin: 0;
+      }
+      .card-actions {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
       }
       label.field {
         display: block;
@@ -126,10 +158,11 @@ export class ComSystemTest extends LitElement {
       }
       button.send {
         padding: 8px 16px;
+        font-weight: 500;
         color: var(--text-primary-color, #fff);
         background: var(--primary-color);
         border: none;
-        border-radius: 4px;
+        border-radius: var(--ha-button-border-radius, 9999px);
       }
       button.send[disabled] {
         opacity: 0.5;
@@ -276,19 +309,26 @@ export class ComSystemTest extends LitElement {
     const options = this.options(key);
     return html`<fieldset>
       <legend>${legend}</legend>
-      ${options.length
-        ? options.map(
-            (o) => html`<label
-              ><input
-                type="checkbox"
-                .checked=${this.selected[key].includes(o.id)}
-                @change=${(ev: Event) =>
-                  this.toggle(key, o.id, (ev.target as HTMLInputElement).checked)}
-              />
-              ${o.name}</label
-            >`,
-          )
-        : html`<span class="muted">None available</span>`}
+      ${
+        options.length
+          ? options.map(
+              (o) =>
+                html`<label
+                  ><input
+                    type="checkbox"
+                    .checked=${this.selected[key].includes(o.id)}
+                    @change=${(ev: Event) =>
+                      this.toggle(
+                        key,
+                        o.id,
+                        (ev.target as HTMLInputElement).checked,
+                      )}
+                  />
+                  ${o.name}</label
+                >`,
+            )
+          : html`<span class="muted">None available</span>`
+      }
     </fieldset>`;
   }
 
@@ -307,13 +347,14 @@ export class ComSystemTest extends LitElement {
       </thead>
       <tbody>
         ${this.preview.map(
-          (p) => html`<tr>
-            <td>${p.name}</td>
-            <td>${p.type}</td>
-            <td class=${p.outcome}>
-              ${p.reason ? `${p.outcome} (${p.reason})` : p.outcome}
-            </td>
-          </tr>`,
+          (p) =>
+            html`<tr>
+              <td>${p.name}</td>
+              <td>${p.type}</td>
+              <td class=${p.outcome}>
+                ${p.reason ? `${p.outcome} (${p.reason})` : p.outcome}
+              </td>
+            </tr>`,
         )}
       </tbody>
     </table>`;
@@ -322,64 +363,88 @@ export class ComSystemTest extends LitElement {
   private renderResponse() {
     const r = this.response;
     if (!r) return "";
-    return html`<div class="card">
-      <strong>Result</strong>
-      <p class="counts">
-        ${r.counts.delivered} delivered, ${r.counts.failed} failed,
-        ${r.counts.skipped} skipped
-      </p>
-      <table class="results">
-        <thead>
-          <tr>
-            <th>Receiver</th>
-            <th>Type</th>
-            <th>Outcome</th>
-            <th>Details</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${r.results.map(
-            (x) => html`<tr>
-              <td>${x.name}</td>
-              <td>${x.type}</td>
-              <td class=${x.result}>${x.result}</td>
-              <td>
-                ${[x.reason, ...x.warnings.map((w) => `Warning: ${w}`)]
-                  .filter(Boolean)
-                  .join("; ")}
-              </td>
-            </tr>`,
-          )}
-        </tbody>
-      </table>
-    </div>`;
+    return html`<ha-card>
+      <div class="card-header">
+        Result
+        <p class="secondary counts">
+          ${r.counts.delivered} delivered, ${r.counts.failed} failed,
+          ${r.counts.skipped} skipped
+        </p>
+      </div>
+      <div class="card-content">
+        <table class="results">
+          <thead>
+            <tr>
+              <th>Receiver</th>
+              <th>Type</th>
+              <th>Outcome</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${r.results.map(
+              (x) =>
+                html`<tr>
+                  <td>${x.name}</td>
+                  <td>${x.type}</td>
+                  <td class=${x.result}>${x.result}</td>
+                  <td>
+                    ${[x.reason, ...x.warnings.map((w) => `Warning: ${w}`)]
+                      .filter(Boolean)
+                      .join("; ")}
+                  </td>
+                </tr>`,
+            )}
+          </tbody>
+        </table>
+      </div>
+    </ha-card>`;
   }
 
   private renderFallbackForm() {
     return html`
-        <label class="field"
-          ><span>Message</span
-          ><textarea
-            rows="2"
-            .value=${this.message}
-            @input=${(ev: Event) =>
-              (this.message = (ev.target as HTMLTextAreaElement).value)}
-          ></textarea
-        ></label>
-        <label class="field"
-          ><span>Title (optional)</span
-          ><input
-            type="text"
-            .value=${this.subject}
-            @input=${(ev: Event) =>
-              (this.subject = (ev.target as HTMLInputElement).value)}
-        /></label>
-        <div class="targets">
-          ${this.renderTargets("person", "People")}
-          ${this.renderTargets("area_id", "Areas")}
-          ${this.renderTargets("entity_id", "Receivers")}
-        </div>
+      <label class="field"
+        ><span>Message</span
+        ><textarea
+          rows="2"
+          .value=${this.message}
+          @input=${(ev: Event) =>
+            (this.message = (ev.target as HTMLTextAreaElement).value)}
+        ></textarea>
+      </label>
+      <label class="field"
+        ><span>Title (optional)</span
+        ><input
+          type="text"
+          .value=${this.subject}
+          @input=${(ev: Event) =>
+            (this.subject = (ev.target as HTMLInputElement).value)}
+      /></label>
+      <div class="targets">
+        ${this.renderTargets("person", "People")}
+        ${this.renderTargets("area_id", "Areas")}
+        ${this.renderTargets("entity_id", "Receivers")}
+      </div>
     `;
+  }
+
+  /** HA's raised button when it is loaded, otherwise a styled native one. */
+  private renderSendButton(canSend: boolean) {
+    return customElements.get("ha-progress-button")
+      ? html`<ha-progress-button
+          raised
+          class="send"
+          ?disabled=${!canSend}
+          @click=${() => this.send()}
+          >Send test</ha-progress-button
+        >`
+      : html`<button
+          class="send"
+          ?disabled=${!canSend}
+          @click=${() => this.send()}
+        >
+          Send test
+        </button>`;
   }
 
   protected render() {
@@ -388,37 +453,38 @@ export class ComSystemTest extends LitElement {
       this.message.trim() !== "" &&
       (this.preview?.some((p) => p.outcome === "reached") ?? false);
     return html`
-      <div class="card">
-        <strong>Send a test notification</strong>
-        ${this.haControl
-          ? html`<ha-service-control
-              hide-picker
-              hide-description
-              .hass=${this.hass}
-              .value=${this.actionValue}
-              @value-changed=${(ev: CustomEvent<{ value: { data?: object } }>) =>
-                this.controlChanged(ev)}
-            ></ha-service-control>`
-          : this.haControl === false
-            ? this.renderFallbackForm()
-            : html`<p class="muted">Loading…</p>`}
-        <p class="muted">
-          With nothing selected the notification goes to all people and
-          areas, as it does from an automation.
-        </p>
-        ${this.error ? html`<p class="error">${this.error}</p>` : ""}
-        <button
-          class="send"
-          ?disabled=${!canSend}
-          @click=${() => this.send()}
-        >
-          Send test
-        </button>
-      </div>
-      <div class="card">
-        <strong>Receivers reached</strong>
-        ${this.renderPreview()}
-      </div>
+      <ha-card>
+        <div class="card-header">
+          Send a test notification
+          <p class="secondary">
+            Calls notify.com_system. With no targets chosen it goes to all
+            people and areas, as it does from an automation.
+          </p>
+        </div>
+        <div class="card-content">
+          ${
+            this.haControl
+              ? html`<ha-service-control
+                  hide-picker
+                  hide-description
+                  .hass=${this.hass}
+                  .value=${this.actionValue}
+                  @value-changed=${(
+                    ev: CustomEvent<{ value: { data?: object } }>,
+                  ) => this.controlChanged(ev)}
+                ></ha-service-control>`
+              : this.haControl === false
+                ? this.renderFallbackForm()
+                : html`<p class="muted">Loading…</p>`
+          }
+          ${this.error ? html`<p class="error">${this.error}</p>` : ""}
+        </div>
+        <div class="card-actions">${this.renderSendButton(canSend)}</div>
+      </ha-card>
+      <ha-card>
+        <div class="card-header">Receivers reached</div>
+        <div class="card-content">${this.renderPreview()}</div>
+      </ha-card>
       <div class="response">${this.renderResponse()}</div>
     `;
   }

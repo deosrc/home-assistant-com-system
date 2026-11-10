@@ -184,9 +184,12 @@ records the conventions and how things work as built.
   built-in form that edits the same state. Lit in jsdom drops template
   expressions that are the last thing in a template (the response card, the
   fallback's target lists), so `test-view.ts` wraps them in a `div`; keep a
-  wrapper if you add a trailing expression. Avoid a
-  `title` property on elements: it clashes with `HTMLElement.title`. Add views
-  by adding an element, an entry in `VIEWS` and a command. Elements use
+  wrapper if you add a trailing expression. The cards copy Developer tools
+  > Actions: `ha-card` with `.card-header` (title and a `.secondary` line),
+  `.card-content` and `.card-actions` (button right-aligned, an
+  `ha-progress-button raised` when HA has loaded it, else a native button).
+  Avoid a `title` property on elements: it clashes with `HTMLElement.title`.
+  Add views by adding an element, an entry in `VIEWS` and a command. Elements use
   `static properties` and `declare` fields (no decorators). The build is one
   ES module and the HMR client is imported only when the mode is
   `development`. Commands: `npm run lint`, `npm test`, `npm run build` in

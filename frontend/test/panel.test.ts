@@ -235,7 +235,7 @@ describe("testing tool", () => {
       "Den Custom skipped (Receiver is disabled)",
     ]);
 
-    const send = root.querySelector<HTMLButtonElement>("button.send")!;
+    const send = root.querySelector<HTMLButtonElement>(".send")!;
     expect(send.disabled).toBe(true); // no message yet
     const message = root.querySelector("textarea")!;
     message.value = "Hello";
@@ -288,7 +288,7 @@ describe("testing tool", () => {
     message.value = "Hello";
     message.dispatchEvent(new Event("input"));
     await settle(view);
-    root.querySelector<HTMLButtonElement>("button.send")!.click();
+    root.querySelector<HTMLButtonElement>(".send")!.click();
     await settle(view);
     expect(root.querySelector(".error")!.textContent).toContain(
       "No receiver matches the targets",
@@ -346,7 +346,7 @@ describe("testing tool with the Home Assistant Actions form", () => {
         },
       });
 
-      root.querySelector<HTMLButtonElement>("button.send")!.click();
+      root.querySelector<HTMLButtonElement>(".send")!.click();
       await settle(view);
       expect(callWS).toHaveBeenCalledWith({
         type: "com_system/notify/test",
