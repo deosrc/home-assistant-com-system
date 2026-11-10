@@ -173,9 +173,18 @@ records the conventions and how things work as built.
   (`dashboard-view.ts`, `receivers-view.ts`, `test-view.ts`); the first two
   refetch when switch states change. `test-view.ts` is the testing tool: it
   previews with `notify/preview` on every target change and sends with
-  `notify/test`. Lit in jsdom drops a template expression that is the last
-  thing in a template (the response card), so `test-view.ts` wraps it in a
-  `div`; keep a wrapper if you add a trailing expression. Avoid a
+  `notify/test`. The form is Home Assistant's `ha-service-control` with
+  `hide-picker hide-description` and `.value = {action: "notify.com_system",
+  data}`; its `value-changed` `detail.value.data` holds `message`, `title`,
+  `person`, `area_id` and `entity_id`, which are the preview and send
+  fields. It reads the fields from `hass.services` (our
+  `async_set_service_schema` description), is an internal element that HA
+  loads lazily, and its loading from a custom panel is unverified in a real
+  frontend; the view waits `controlTimeoutMs` for it and otherwise shows a
+  built-in form that edits the same state. Lit in jsdom drops template
+  expressions that are the last thing in a template (the response card, the
+  fallback's target lists), so `test-view.ts` wraps them in a `div`; keep a
+  wrapper if you add a trailing expression. Avoid a
   `title` property on elements: it clashes with `HTMLElement.title`. Add views
   by adding an element, an entry in `VIEWS` and a command. Elements use
   `static properties` and `declare` fields (no decorators). The build is one

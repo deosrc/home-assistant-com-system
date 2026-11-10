@@ -41,9 +41,12 @@ its type.
 
 The testing tool sends a test notification and shows what happens.
 
-- Enter a **message** and an optional **title**, and tick the people,
-  areas and receivers to target. With nothing ticked the notification goes
-  to all people and areas, as it does from an automation.
+- The form is Home Assistant's own action form, as on **Developer tools >
+  Actions**, without the action picker. Enter a **message** and an optional
+  **title**, and choose the people, areas and receivers to target. With
+  nothing chosen the notification goes to all people and areas, as it does
+  from an automation. If Home Assistant has not loaded that form, a simple
+  form with the same fields is shown instead.
 - **Receivers reached** updates as you change the targets, without sending
   anything. Each matching receiver is `reached`, or `skipped` with the
   reason (it is disabled).

@@ -215,6 +215,12 @@ describe("panel layout", () => {
 });
 
 describe("testing tool", () => {
+  // jsdom has no Home Assistant frontend, so the fallback form is used.
+  beforeAll(async () => {
+    const { ComSystemTest } = await import("../src/test-view");
+    ComSystemTest.controlTimeoutMs = 0;
+  });
+
   it("previews receivers and sends a test through the action", async () => {
     const { hass, callWS } = makeHass();
     const panel = await mount("/test", hass);
@@ -287,5 +293,68 @@ describe("testing tool", () => {
     expect(root.querySelector(".error")!.textContent).toContain(
       "No receiver matches the targets",
     );
+  });
+});
+
+describe("testing tool with the Home Assistant Actions form", () => {
+  it("drives the preview and send from the form's value", async () => {
+    // Defined for the rest of the file; the other tests run before this one.
+    customElements.define("ha-service-control", class extends HTMLElement {});
+    {
+      const { hass, callWS } = makeHass();
+      const panel = await mount("/test", hass);
+      const view = panel.shadowRoot!.querySelector("com-system-test")!;
+      await settle(view);
+      const root = view.shadowRoot!;
+      const control = root.querySelector("ha-service-control")!;
+      expect(control).not.toBeNull();
+      expect(control.hasAttribute("hide-picker")).toBe(true);
+      // The built-in form is not shown.
+      expect(root.querySelector("textarea")).toBeNull();
+
+      callWS.mockClear();
+      control.dispatchEvent(
+        new CustomEvent("value-changed", {
+          detail: {
+            value: {
+              action: "notify.com_system",
+              data: {
+                message: "Hello",
+                title: "Hi",
+                person: "person.alice",
+                area_id: ["office"],
+                entity_id: [],
+              },
+            },
+          },
+        }),
+      );
+      await settle(view);
+      expect(callWS).toHaveBeenCalledWith({
+        type: "com_system/notify/preview",
+        person: ["person.alice"],
+        area_id: ["office"],
+      });
+      // The form is given back the same selection.
+      expect((control as unknown as { value: unknown }).value).toEqual({
+        action: "notify.com_system",
+        data: {
+          message: "Hello",
+          title: "Hi",
+          person: ["person.alice"],
+          area_id: ["office"],
+        },
+      });
+
+      root.querySelector<HTMLButtonElement>("button.send")!.click();
+      await settle(view);
+      expect(callWS).toHaveBeenCalledWith({
+        type: "com_system/notify/test",
+        message: "Hello",
+        title: "Hi",
+        person: ["person.alice"],
+        area_id: ["office"],
+      });
+    }
   });
 });

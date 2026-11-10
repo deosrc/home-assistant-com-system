@@ -11,9 +11,26 @@ import type {
 
 type TargetKey = keyof NotifyTargets;
 
+const ACTION = "notify.com_system";
+const TARGET_KEYS: TargetKey[] = ["person", "area_id", "entity_id"];
+
+/** Home Assistant's own Actions form; loaded lazily, so it may be absent. */
+const CONTROL = "ha-service-control";
+
+function ensureList(value: unknown): string[] {
+  if (value === undefined || value === null || value === "") return [];
+  return (Array.isArray(value) ? value : [value]).map(String);
+}
+
 /**
  * The testing tool: choose targets, preview which receivers they reach, and
  * send a test through the `notify.com_system` action.
+ *
+ * The form is Home Assistant's `ha-service-control` with its action picker
+ * hidden, so it matches Developer tools > Actions. The element is loaded
+ * lazily by Home Assistant, so if it is not defined shortly after the view
+ * opens, a built-in form with the same fields is used instead. Both edit the
+ * same state, which feeds the preview and the send.
  */
 export class ComSystemTest extends LitElement {
   declare hass: HomeAssistant;
@@ -25,6 +42,11 @@ export class ComSystemTest extends LitElement {
   declare private response?: SendResponse;
   declare private sending: boolean;
   declare private error?: string;
+  /** Whether Home Assistant's Actions form is available (undefined: waiting). */
+  declare private haControl?: boolean;
+
+  /** How long to wait for `ha-service-control` before using the fallback. */
+  static controlTimeoutMs = 1500;
 
   static properties = {
     hass: { attribute: false },
@@ -36,6 +58,7 @@ export class ComSystemTest extends LitElement {
     response: { state: true },
     sending: { state: true },
     error: { state: true },
+    haControl: { state: true },
   };
 
   static styles = [
@@ -131,6 +154,45 @@ export class ComSystemTest extends LitElement {
       this.loaded = true;
       void this.init();
     }
+  }
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    if (customElements.get(CONTROL)) {
+      this.haControl = true;
+      return;
+    }
+    const timeout = new Promise<boolean>((resolve) =>
+      setTimeout(() => resolve(false), ComSystemTest.controlTimeoutMs),
+    );
+    const defined = customElements.whenDefined(CONTROL).then(() => true);
+    void Promise.race([defined, timeout]).then((ok) => (this.haControl = ok));
+  }
+
+  /** The action call the form edits: only the fields with a value. */
+  private get actionValue() {
+    const data: Record<string, unknown> = {};
+    if (this.message) data.message = this.message;
+    if (this.subject) data.title = this.subject;
+    for (const key of TARGET_KEYS) {
+      if (this.selected[key].length) data[key] = this.selected[key];
+    }
+    return { action: ACTION, data };
+  }
+
+  private controlChanged(ev: CustomEvent<{ value: { data?: object } }>): void {
+    ev.stopPropagation();
+    const data = (ev.detail.value.data ?? {}) as Record<string, unknown>;
+    this.message = data.message === undefined ? "" : String(data.message);
+    this.subject = data.title === undefined ? "" : String(data.title);
+    this.selected = {
+      person: ensureList(data.person),
+      area_id: ensureList(data.area_id),
+      entity_id: ensureList(data.entity_id),
+    };
+    // The previous send no longer describes the selection.
+    this.response = undefined;
+    void this.refreshPreview();
   }
 
   private async init(): Promise<void> {
@@ -293,14 +355,8 @@ export class ComSystemTest extends LitElement {
     </div>`;
   }
 
-  protected render() {
-    const canSend =
-      !this.sending &&
-      this.message.trim() !== "" &&
-      (this.preview?.some((p) => p.outcome === "reached") ?? false);
+  private renderFallbackForm() {
     return html`
-      <div class="card">
-        <strong>Send a test notification</strong>
         <label class="field"
           ><span>Message</span
           ><textarea
@@ -318,9 +374,34 @@ export class ComSystemTest extends LitElement {
             @input=${(ev: Event) =>
               (this.subject = (ev.target as HTMLInputElement).value)}
         /></label>
-        ${this.renderTargets("person", "People")}
-        ${this.renderTargets("area_id", "Areas")}
-        ${this.renderTargets("entity_id", "Receivers")}
+        <div class="targets">
+          ${this.renderTargets("person", "People")}
+          ${this.renderTargets("area_id", "Areas")}
+          ${this.renderTargets("entity_id", "Receivers")}
+        </div>
+    `;
+  }
+
+  protected render() {
+    const canSend =
+      !this.sending &&
+      this.message.trim() !== "" &&
+      (this.preview?.some((p) => p.outcome === "reached") ?? false);
+    return html`
+      <div class="card">
+        <strong>Send a test notification</strong>
+        ${this.haControl
+          ? html`<ha-service-control
+              hide-picker
+              hide-description
+              .hass=${this.hass}
+              .value=${this.actionValue}
+              @value-changed=${(ev: CustomEvent<{ value: { data?: object } }>) =>
+                this.controlChanged(ev)}
+            ></ha-service-control>`
+          : this.haControl === false
+            ? this.renderFallbackForm()
+            : html`<p class="muted">Loading…</p>`}
         <p class="muted">
           With nothing selected the notification goes to all people and
           areas, as it does from an automation.
