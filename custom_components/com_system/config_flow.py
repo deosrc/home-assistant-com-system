@@ -13,13 +13,19 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.core import callback
+from homeassistant.helpers import selector
 
 from .const import (
+    CONF_AREAS,
     CONF_ENTRY_TYPE,
     CONF_NAME,
+    CONF_PEOPLE,
+    CONF_RECEIVER_TYPE,
     DOMAIN,
     ENTRY_TYPE_CUSTOM_RECEIVER,
     ENTRY_TYPE_HUB,
+    RECEIVER_ENTRY_TYPES,
+    RECEIVER_TYPE_CUSTOM,
 )
 
 
@@ -58,6 +64,7 @@ class ComSystemConfigFlow(ConfigFlow, domain=DOMAIN):
                 title=user_input[CONF_NAME],
                 data={
                     CONF_ENTRY_TYPE: ENTRY_TYPE_CUSTOM_RECEIVER,
+                    CONF_RECEIVER_TYPE: RECEIVER_TYPE_CUSTOM,
                     CONF_NAME: user_input[CONF_NAME],
                 },
             )
@@ -91,7 +98,33 @@ class ComSystemOptionsFlow(OptionsFlow):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Show the options form."""
+        """Show the options form: people and areas for receivers."""
+        if self.config_entry.data.get(CONF_ENTRY_TYPE) not in RECEIVER_ENTRY_TYPES:
+            if user_input is not None:
+                return self.async_create_entry(data=self.config_entry.options)
+            return self.async_show_form(step_id="init")
+
         if user_input is not None:
-            return self.async_create_entry(data=self.config_entry.options)
-        return self.async_show_form(step_id="init")
+            return self.async_create_entry(data=user_input)
+
+        options = self.config_entry.options
+        schema = vol.Schema(
+            {
+                vol.Optional(CONF_PEOPLE): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="person", multiple=True)
+                ),
+                vol.Optional(CONF_AREAS): selector.AreaSelector(
+                    selector.AreaSelectorConfig(multiple=True)
+                ),
+            }
+        )
+        return self.async_show_form(
+            step_id="receiver",
+            data_schema=self.add_suggested_values_to_schema(schema, options),
+        )
+
+    async def async_step_receiver(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Save the receiver's people and areas."""
+        return await self.async_step_init(user_input)

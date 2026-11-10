@@ -36,12 +36,27 @@ records the conventions and how things work as built.
 - Domain `com_system`. The manifest does not use `single_config_entry`
   because receivers are separate config entries.
 - One hub entry (`entry_type: hub`) and one entry per receiver
-  (`entry_type: custom_receiver` so far); see `const.py`.
+  (`entry_type: custom_receiver` so far, listed in `RECEIVER_ENTRY_TYPES`);
+  see `const.py`.
+- Receiver entry data: `entry_type`, `receiver_type` (missing means
+  `custom`), `name`, optional `source_id`. Options: `people` (`person.*`
+  entity ids) and `areas` (area ids). Entries are the only storage.
+- `receiver.py`: frozen `Receiver` dataclass built by `Receiver.from_entry`.
+- `receiver_type.py`: `ReceiverType` is the extension point (id, name,
+  capabilities, `async_deliver`, association hooks, `async_detect`).
+  Subclass it and call `register_receiver_type()` to add a type; ids are
+  unique. `CustomReceiverType` is the generic type. `async_deliver` and
+  discovery are not wired up yet.
+- `registry.py`: `ReceiverRegistry` reads receivers from the config entries
+  on each call, so it is always current and needs no hub or load order. It
+  is created once in `async_setup` as `hass.data[DOMAIN]["registry"]`.
+  Unknown types stay listed (`type_of` returns `None`).
 - `config_flow.py`: the user step creates the hub if none exists, otherwise
   it continues to `custom_receiver` (name only). One hub is enforced there.
-  Integration discovery, reconfigure and the options flow are stubs.
-- `__init__.py`: `async_setup` is where integration-level parts will go;
-  entry setup and unload are no-ops.
+  The options flow of a receiver edits its people and areas; the hub's
+  options flow is a stub. Integration discovery and reconfigure are stubs.
+- `__init__.py`: `async_setup` creates the registry; entry setup and unload
+  are no-ops.
 - Strings live in `strings.json`; `translations/en.json` is a copy and must
   be kept in step.
 - `hacs.json` records the minimum Home Assistant version; keep it in step
