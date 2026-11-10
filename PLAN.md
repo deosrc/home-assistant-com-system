@@ -54,7 +54,7 @@ Targets determine which receivers are triggered by a notification.
 - **Default** – when no targets are specified, the notification goes to
   **all people and all areas**.
 
-Open questions on target resolution are listed in section 7.
+Open questions on target resolution are listed in section 8.
 
 ### 2.3 Message parameters
 
@@ -74,7 +74,7 @@ Content parameters are split into two tiers:
 
 Receiver-specific content raises a design question: what happens when a
 notification carries content that a resolved receiver does not support?
-See section 7.
+See section 8.
 
 ## 3. The `notify.com_system` action
 
@@ -97,6 +97,8 @@ custom_components/com_system/
   const.py
   notify.py         # notify.com_system implementation
   services.yaml / strings.json / translations/
+  websocket_api.py  # commands backing the UI
+  frontend/         # panel source and build output (TBD)
   (receiver registry, target resolver, dispatcher modules - TBD)
 tests/
 ```
@@ -114,7 +116,32 @@ Core components (names provisional):
 The target resolver also applies the default of "everyone" when no targets
 are given.
 
-## 5. Standards and tooling (proposed, to be confirmed)
+## 5. User interface
+
+The integration provides its own UI inside Home Assistant (for example a
+sidebar panel). Details of each view are **TBD**; the intended scope is:
+
+| View | Purpose |
+| --- | --- |
+| Dashboard | Overview of the system's state and recent activity |
+| Recent notifications | History of notifications sent and their delivery |
+| Receivers | View, add, edit and remove configured receivers |
+| Notification designer | Compose a notification (targets and content) |
+| Testing tool | Send a test notification and see how it resolves |
+
+Notes:
+
+- The designer and testing tool both build on the `notify.com_system`
+  action, so they must exercise the same code path as automations.
+- The testing tool should show which receivers a notification would reach
+  (target resolution) and the per-receiver outcome.
+- The designer must account for receiver-specific content (section 2.3),
+  e.g. showing mobile app action options only when relevant.
+- Recent notifications requires a history store; retention is **TBD**.
+- The UI talks to the backend through Home Assistant's websocket API, which
+  needs commands for receivers, history, resolution preview and test sends.
+
+## 6. Standards and tooling (proposed, to be confirmed)
 
 - HACS-compatible custom integration (`hacs.json`, `manifest.json`).
 - UI config flow; no YAML-only configuration.
@@ -125,7 +152,7 @@ are given.
 - Markdown files must pass the default markdownlint rules (including the
   80-character line limit).
 
-## 6. Proposed delivery phases (draft, to become GitHub issues)
+## 7. Proposed delivery phases (draft, to become GitHub issues)
 
 1. **Scaffold** – repository structure, manifest, HACS metadata, CI, test
    harness, `CLAUDE.md` pointing to this plan.
@@ -138,9 +165,13 @@ are given.
    dispatcher, delivery and error handling.
 6. **Content parameters** – common content first, then receiver-specific
    content (e.g. mobile app actions) with per-receiver-type handling.
-7. **Documentation and release** – README, examples, HACS release.
+7. **History store** – persist recent notifications and delivery results.
+8. **Websocket API** – commands for receivers, history, preview and test.
+9. **UI** – panel shell and dashboard, then recent notifications,
+   receivers, notification designer and testing tool.
+10. **Documentation and release** – README, examples, HACS release.
 
-## 7. Open questions
+## 8. Open questions
 
 - Which content parameters are common, and which are receiver-specific?
 - How are receiver-specific parameters expressed in the action schema: a
@@ -160,5 +191,10 @@ are given.
   data only?
 - How are delivery failures reported (per receiver, aggregated, or
   fire-and-forget)?
+- Frontend approach: custom panel built with Lit/web components, or other?
+  Build and release process for the frontend assets.
+- How much history is kept, where is it stored (HA storage or database),
+  and is it configurable?
+- Should the UI be admin-only, or visible to all users?
 - Minimum supported Home Assistant version.
 - Domain name and display name confirmation (`com_system` assumed).
