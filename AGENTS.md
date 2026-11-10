@@ -91,6 +91,11 @@ pushes to `main`: `lint.yml` (Ruff check and format), `tests.yml` (pytest on
 Python 3.14), `markdownlint.yml`, `hassfest.yml` and `hacs.yml` (HACS
 validation). Hassfest also runs nightly. All must pass.
 
+`sync-issue-labels.yml` is not a check. When a pull request is opened or
+reopened (`pull_request_target`, never checks out PR code), it copies the
+labels of the issues the PR links to (closing keywords or the Development
+sidebar) onto the PR.
+
 HACS validation is temporarily manual-only (`workflow_dispatch`) because the
 HACS action fails on a private repository. Restore its triggers when the
 repository is made public.
