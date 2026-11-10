@@ -45,8 +45,10 @@ The testing tool sends a test notification and shows what happens.
   Actions**, without the action picker. Enter an optional **title** and a
   **message**, and choose the targets: **Individuals** (one or more
   people) or **Everyone**, and **Select** (receivers, areas and so on) or
-  **All Areas**. Everyone and All Areas are the defaults. They are combined
-  as in the [action](services.md#people). If Home Assistant has not loaded
+  **All Areas**. Everyone and All Areas are what it starts with; untick a
+  field (or choose None in the simple form) to leave that group out, so it
+  is not targeted. The groups are combined as in the
+  [action](services.md#people). If Home Assistant has not loaded
   that form, a simple form with the same fields is shown instead.
 - **Receivers reached** updates as you change the targets, without sending
   anything. Each matching receiver is `reached`, or `skipped` with the

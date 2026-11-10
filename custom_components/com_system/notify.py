@@ -114,7 +114,7 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
     "name": "Send a Com System notification",
     "description": (
         "Sends a notification to the receivers that match the targets. "
-        "With no targets it goes to all people and all areas."
+        "A target that is not given is not used."
     ),
     "fields": {
         ATTR_TITLE: {
@@ -184,25 +184,18 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
 }
 
 
-def _receiver_entry_ids(
-    hass: HomeAssistant, entity_ids: Iterable[str], *, keep_unknown: bool = True
-) -> list[str]:
+def _receiver_entry_ids(hass: HomeAssistant, entity_ids: Iterable[str]) -> list[str]:
     """Map receiver entity ids to receiver config entry ids.
 
-    Entities that do not exist or are not Com System's match nothing. With
-    ``keep_unknown`` they are kept (as the entity id, which is never an entry
-    id) so that a target list naming only such entities is still a target
-    list and does not fall back to the default.
+    Entities that do not exist or are not Com System's match nothing.
     """
     registry = er.async_get(hass)
-    entry_ids = []
-    for entity_id in entity_ids:
-        entry = registry.async_get(entity_id)
-        if entry is not None and entry.platform == DOMAIN and entry.config_entry_id:
-            entry_ids.append(entry.config_entry_id)
-        elif keep_unknown:
-            entry_ids.append(entity_id)
-    return entry_ids
+    entries = (registry.async_get(entity_id) for entity_id in entity_ids)
+    return [
+        entry.config_entry_id
+        for entry in entries
+        if entry is not None and entry.platform == DOMAIN and entry.config_entry_id
+    ]
 
 
 def _select_targets(
@@ -210,37 +203,34 @@ def _select_targets(
 ) -> tuple[list[str], list[str]]:
     """Turn a selected target into ``(areas, receiver entry ids)``.
 
-    Areas stay areas, so they follow the rules of area targets (the
-    persistent notification receiver is not reached by area). A floor is its
+    Areas stay areas, matched against each receiver's area. A floor is its
     areas. Devices and labels are expanded by Home Assistant to entities,
     and the Com System receiver entities among them are named receivers.
-    Anything that resolves to nothing is kept so it still counts as a target.
     """
     areas = list(target.get(ATTR_AREA_ID, []))
     area_registry = ar.async_get(hass)
     for floor_id in target.get(ATTR_FLOOR_ID, []):
-        floor_areas = [a.id for a in area_registry.areas.get_areas_for_floor(floor_id)]
-        areas.extend(floor_areas or [floor_id])
+        areas.extend(a.id for a in area_registry.areas.get_areas_for_floor(floor_id))
     entry_ids = _receiver_entry_ids(hass, target.get(ATTR_ENTITY_ID, []))
     indirect = {k: target[k] for k in (ATTR_DEVICE_ID, ATTR_LABEL_ID) if k in target}
     if indirect:
         selected = async_extract_referenced_entity_ids(
             hass, TargetSelection(indirect), primary_entities_only=False
         )
-        found = _receiver_entry_ids(
-            hass,
-            selected.referenced | selected.indirectly_referenced,
-            keep_unknown=False,
-        )
-        # Keep an indirect target that matched nothing a target.
         entry_ids.extend(
-            found or [f"{k}:{v}" for k, ids in indirect.items() for v in ids]
+            _receiver_entry_ids(
+                hass, selected.referenced | selected.indirectly_referenced
+            )
         )
     return areas, entry_ids
 
 
 def resolve_call_targets(hass: HomeAssistant, data: dict[str, Any]) -> ResolvedTargets:
-    """Resolve the target fields of an action call to receivers."""
+    """Resolve the target fields of an action call to receivers.
+
+    A field that is not given targets nothing, so a call with neither
+    ``person`` nor ``receivers`` resolves to no receivers.
+    """
     person = validate_person(data[ATTR_PERSON]) if ATTR_PERSON in data else None
     receivers = (
         validate_receivers(data[ATTR_RECEIVERS]) if ATTR_RECEIVERS in data else None
@@ -276,9 +266,12 @@ async def async_send(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any
     """Resolve, deliver and return the response data.
 
     Raises ``ServiceValidationError`` only when no receiver could be
-    attempted (none matched, or all that matched are disabled). Receivers
+    attempted (no target given, none matched, or all that matched are
+    disabled). Receivers
     that fail are reported in the response instead.
     """
+    if ATTR_PERSON not in data and ATTR_RECEIVERS not in data:
+        raise ServiceValidationError("No targets given: set people, receivers or both")
     resolved = resolve_call_targets(hass, data)
     if not resolved.receivers:
         if resolved.skipped:

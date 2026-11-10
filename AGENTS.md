@@ -130,10 +130,11 @@ records the conventions and how things work as built.
 - `targets.py`: `resolve_targets(hass, people=, areas=, receivers=)` returns
   `ResolvedTargets(receivers, skipped)` (sorted by name). Union of people,
   areas (`ReceiverRegistry.people_of` / `areas_of`) and named receiver entry
-  ids; no targets means every receiver with a person or area. There is no
-  per-type exclusion: the persistent notification receiver has no person or
-  area until the user sets one, so it matches only when named, but once
-  mapped it is reached like any receiver. Disabled receivers (the enabled
+  ids; a group that is not given is not targeted, so no targets at all match
+  nothing (there is no default). There is no per-type exclusion: the
+  persistent notification receiver has no person or area until the user
+  sets one, so it matches only when named, but once mapped it is reached
+  like any receiver. Disabled receivers (the enabled
   switch entity in `hass.data[DOMAIN][DATA_ENTITIES]`, or not loaded) go to
   `skipped` whichever way they matched. See `docs/targets.md`.
 - `notify.py`: registers `notify.com_system` from `async_setup`
@@ -157,8 +158,9 @@ records the conventions and how things work as built.
   receivers (receiver entities, plus the receiver entities Home Assistant's
   `async_extract_referenced_entity_ids` finds for devices and labels).
   Receiver entities are mapped to entry ids through the entity registry;
-  ids that match nothing stay in the list as ids so a selection of only
-  unknown things matches nothing instead of triggering the default.
+  ones that are not Com System's match nothing. A call with neither
+  `person` nor `receivers` raises "No targets given", and the panel leaves
+  an unticked field out of the data.
   `async_send` resolves, dispatches and returns `{results, counts}`; it
   raises `ServiceValidationError` only when no enabled receiver matched
   (none, or all disabled). The websocket test send calls the action through

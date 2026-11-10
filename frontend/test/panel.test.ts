@@ -241,7 +241,14 @@ describe("testing tool", () => {
     const radios = [
       ...root.querySelectorAll<HTMLInputElement>("input[type=radio]"),
     ].map((r) => r.parentElement!.textContent!.trim());
-    expect(radios).toEqual(["Individuals", "Everyone", "Select", "All Areas"]);
+    expect(radios).toEqual([
+      "Individuals",
+      "Everyone",
+      "None",
+      "Select",
+      "All Areas",
+      "None",
+    ]);
     // The fallback form lists the title first.
     const labels = [...root.querySelectorAll("label.field span")].map(
       (e) => e.textContent,
@@ -259,6 +266,38 @@ describe("testing tool", () => {
     message.dispatchEvent(new Event("input"));
     await settle(view);
     expect(send.disabled).toBe(false);
+
+    // None leaves a group out of the call, so it is not targeted.
+    const none = (name: string) =>
+      [...root.querySelectorAll<HTMLInputElement>("input[type=radio]")].filter(
+        (r) =>
+          r.name === name && r.parentElement!.textContent!.includes("None"),
+      )[0];
+    none("people").checked = true;
+    none("people").dispatchEvent(new Event("change"));
+    await settle(view);
+    expect(callWS).toHaveBeenLastCalledWith({
+      type: "com_system/notify/preview",
+      receivers: allAreas,
+    });
+    none("receivers").checked = true;
+    none("receivers").dispatchEvent(new Event("change"));
+    await settle(view);
+    expect(callWS).toHaveBeenLastCalledWith({
+      type: "com_system/notify/preview",
+    });
+    // Everyone again, before the individuals below.
+    const everyoneRadio = [
+      ...root.querySelectorAll<HTMLInputElement>("input[type=radio]"),
+    ].find((r) => r.parentElement!.textContent!.includes("Everyone"))!;
+    everyoneRadio.checked = true;
+    everyoneRadio.dispatchEvent(new Event("change"));
+    const allAreasRadio = [
+      ...root.querySelectorAll<HTMLInputElement>("input[type=radio]"),
+    ].find((r) => r.parentElement!.textContent!.includes("All Areas"))!;
+    allAreasRadio.checked = true;
+    allAreasRadio.dispatchEvent(new Event("change"));
+    await settle(view);
 
     // Individuals lists the people; choosing one re-runs the preview.
     expect(root.querySelector(".people")!.textContent).not.toContain("Alice");
@@ -424,6 +463,27 @@ describe("testing tool with the Home Assistant Actions form", () => {
         person: ["person.alice"],
         receivers: selected,
       });
+
+      // Unticking people in the form removes the field: not targeted.
+      callWS.mockClear();
+      control.dispatchEvent(
+        new CustomEvent("value-changed", {
+          detail: {
+            value: {
+              action: "notify.com_system",
+              data: { message: "Hello", title: "Hi", receivers: selected },
+            },
+          },
+        }),
+      );
+      await settle(view);
+      expect(callWS).toHaveBeenCalledWith({
+        type: "com_system/notify/preview",
+        receivers: selected,
+      });
+      expect(
+        (control as unknown as { value: { data: object } }).value.data,
+      ).not.toHaveProperty("person");
     }
   });
 });

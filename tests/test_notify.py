@@ -77,6 +77,9 @@ async def _add(hass, name, type_id="test_ok", people=()):
     return entry
 
 
+EVERYONE = {"active_choice": "Everyone", "Everyone": True}
+
+
 def _select(*entity_ids: str, **target) -> dict:
     """A receivers value choosing Select with the given receiver entities."""
     if entity_ids:
@@ -115,7 +118,7 @@ async def test_delivers_to_each_receiver(hass: HomeAssistant, types) -> None:
     alice = await _add(hass, "Alice", people=["person.alice"])
     await _add(hass, "Shared")  # no person or area: not in the default
 
-    response = await _send(hass, message="Hello", title="Hi")
+    response = await _send(hass, message="Hello", title="Hi", person=EVERYONE)
 
     assert response["counts"] == {"delivered": 1, "failed": 0, "skipped": 0}
     [result] = response["results"]
@@ -139,7 +142,7 @@ async def test_failure_does_not_block_others(hass: HomeAssistant, types) -> None
     await _add(hass, "C custom", "custom", people=["person.a"])
     await _add(hass, "D unknown", "gone", people=["person.a"])
 
-    response = await _send(hass, message="x")
+    response = await _send(hass, message="x", person=EVERYONE)
 
     by_name = {r["name"]: r for r in response["results"]}
     assert [r["name"] for r in response["results"]] == sorted(by_name)
@@ -161,7 +164,7 @@ async def test_disabled_receiver_is_skipped(hass: HomeAssistant, types) -> None:
         "switch", "turn_off", {"entity_id": "switch.off_enabled"}, blocking=True
     )
 
-    response = await _send(hass, message="x")
+    response = await _send(hass, message="x", person=EVERYONE)
 
     by_name = {r["name"]: r for r in response["results"]}
     assert by_name["Off"]["result"] == "skipped"
@@ -176,7 +179,7 @@ async def test_warnings_returned_and_recorded(hass: HomeAssistant, types) -> Non
     await _add(hass, "Alice", people=["person.alice"])
     types.deliver.return_value = ["dropped title"]
 
-    response = await _send(hass, message="x", title="t")
+    response = await _send(hass, message="x", title="t", person=EVERYONE)
 
     assert response["results"][0]["warnings"] == ["dropped title"]
     state = hass.states.get("notification_receiver.alice")
@@ -197,7 +200,7 @@ async def test_attempts_recorded_for_failed_and_skipped(
     )
     await _add(hass, "On", people=["person.a"])
 
-    await _send(hass, message="x")
+    await _send(hass, message="x", person=EVERYONE)
 
     assert (
         hass.states.get("notification_receiver.broken").attributes["event_type"]
@@ -231,8 +234,10 @@ async def test_targets(hass: HomeAssistant, types) -> None:
 async def test_raises_when_nothing_can_be_attempted(hass: HomeAssistant, types) -> None:
     """No match, or only disabled matches, raises; unknown entities match nothing."""
     assert await async_setup_component(hass, DOMAIN, {})
-    with pytest.raises(ServiceValidationError, match="No receiver matches"):
+    with pytest.raises(ServiceValidationError, match="No targets given"):
         await _send(hass, message="x")
+    with pytest.raises(ServiceValidationError, match="No receiver matches"):
+        await _send(hass, message="x", person=EVERYONE)
 
     await _add(hass, "Off", people=["person.a"])
     await hass.services.async_call(
@@ -399,3 +404,24 @@ async def test_receivers_choice_invalid(hass: HomeAssistant) -> None:
         await _send(hass, message="x", receivers={"active_choice": "Nobody"})
     with pytest.raises(vol.Invalid):
         await _send(hass, message="x", receivers=_select("light.kitchen"))
+
+
+async def test_ungiven_group_is_not_targeted(hass: HomeAssistant, types) -> None:
+    """Without people, a receiver is only reached through a targeted area."""
+    assert await async_setup_component(hass, DOMAIN, {})
+    kitchen = ar.async_get(hass).async_create("Kitchen").id
+    await _add(hass, "Alice", people=["person.alice"])
+    echo = await _add(hass, "Echo", people=["person.bob"])
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, echo.entry_id), echo.entry_id
+    )
+    dr.async_get(hass).async_update_device(device.id, area_id=kitchen)
+
+    # No people given: Alice is not reached, Echo is, through its area.
+    response = await _send(hass, message="x", receivers=_select(area_id=[kitchen]))
+    assert [r["name"] for r in response["results"]] == ["Echo"]
+    # No receivers given: only people are targeted.
+    response = await _send(hass, message="x", person=EVERYONE)
+    assert [r["name"] for r in response["results"]] == ["Alice", "Echo"]
+    response = await _send(hass, message="x", person=["person.alice"])
+    assert [r["name"] for r in response["results"]] == ["Alice"]

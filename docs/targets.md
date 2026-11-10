@@ -19,21 +19,27 @@ The results are combined as a **union**: a receiver is used if it matches
 any listed person, any listed area, or is named. A receiver that matches in
 more than one way is used once.
 
-## Default
+## A group that is not given is not targeted
 
-When no targets are given, the notification goes to **all people and all
-areas**: every receiver that is associated with a person or has an area.
+Each group is targeted only when you give it. If you leave out people, no
+person is targeted: a receiver with a person is reached only if it also
+falls under a targeted area or is named. The same goes for receivers and
+areas. There is no default; with no targets at all nothing is reached, and
+the action reports an error.
 
-## Receivers that are not reached by people or areas
+## Which receivers are reached
 
-- A **shared** receiver has no person, so a person target never reaches it
-  and the default does not include it unless it has an area. Reach it by
-  area, or name it.
-- A receiver with no area is never reached by an area target.
-- The **persistent notification** receiver is system-wide, so it starts
-  with no person and no area and is used only when named explicitly. If you
-  set people on it (or give its device an area), it is reached by those
-  people and areas, and by the default, like any other receiver.
+A receiver is used when it is assigned to a targeted person, or targeted
+through the receivers target. A receiver with no person and no area is only
+used when it is named (or reached through its device or a label).
+
+- **Everyone** reaches every receiver that has a person. **All Areas**
+  reaches every receiver that has an area.
+- A receiver with no area is never reached by an area or floor target, and
+  one with no person is never reached by a person target.
+- The **persistent notification** receiver needs no special handling: it
+  starts with no person and no area, so it is only used when named. Give it
+  a person or an area and it is reached like any other receiver.
 - Unknown people, areas and receivers match nothing.
 
 ## Disabled receivers

@@ -16,6 +16,7 @@ const INDIVIDUALS = "Individuals";
 type PersonChoice = typeof EVERYONE | typeof INDIVIDUALS;
 
 /** The receivers field is a choice: a selection, or all areas. */
+const NONE = "None";
 const SELECT = "Select";
 const ALL_AREAS = "All Areas";
 type ReceiversChoice = typeof SELECT | typeof ALL_AREAS;
@@ -50,10 +51,12 @@ export class ComSystemTest extends LitElement {
   declare private subject: string;
   /** The individuals chosen when `personChoice` is Individuals. */
   declare private people: string[];
-  declare private personChoice: PersonChoice;
+  /** Undefined: the field is not given, so people are not targeted. */
+  declare private personChoice?: PersonChoice;
   /** The selection (area_id, entity_id, ...) when `receiversChoice` is Select. */
   declare private selection: SelectedTarget;
-  declare private receiversChoice: ReceiversChoice;
+  /** Undefined: the field is not given, so receivers are not targeted. */
+  declare private receiversChoice?: ReceiversChoice;
   declare private preview?: PreviewEntry[];
   declare private response?: SendResponse;
   declare private sending: boolean;
@@ -229,15 +232,17 @@ export class ComSystemTest extends LitElement {
     const data: Record<string, unknown> = {};
     if (this.subject) data.title = this.subject;
     if (this.message) data.message = this.message;
-    // Always present, so the form keeps showing the chosen option.
-    data.person =
-      this.personChoice === EVERYONE
-        ? { active_choice: EVERYONE, [EVERYONE]: true }
-        : { active_choice: INDIVIDUALS, [INDIVIDUALS]: this.people };
-    data.receivers =
-      this.receiversChoice === ALL_AREAS
-        ? { active_choice: ALL_AREAS, [ALL_AREAS]: true }
-        : { active_choice: SELECT, [SELECT]: this.selection };
+    // A field that is not given is left out, which unticks it in the form.
+    if (this.personChoice === EVERYONE) {
+      data.person = { active_choice: EVERYONE, [EVERYONE]: true };
+    } else if (this.personChoice === INDIVIDUALS) {
+      data.person = { active_choice: INDIVIDUALS, [INDIVIDUALS]: this.people };
+    }
+    if (this.receiversChoice === ALL_AREAS) {
+      data.receivers = { active_choice: ALL_AREAS, [ALL_AREAS]: true };
+    } else if (this.receiversChoice === SELECT) {
+      data.receivers = { active_choice: SELECT, [SELECT]: this.selection };
+    }
     return { action: ACTION, data };
   }
 
@@ -248,11 +253,19 @@ export class ComSystemTest extends LitElement {
     this.subject = data.title === undefined ? "" : String(data.title);
     const person = (data.person ?? {}) as Record<string, unknown>;
     this.personChoice =
-      person.active_choice === INDIVIDUALS ? INDIVIDUALS : EVERYONE;
+      data.person === undefined
+        ? undefined
+        : person.active_choice === INDIVIDUALS
+          ? INDIVIDUALS
+          : EVERYONE;
     this.people = ensureList(person[INDIVIDUALS]);
     const receivers = (data.receivers ?? {}) as Record<string, unknown>;
     this.receiversChoice =
-      receivers.active_choice === SELECT ? SELECT : ALL_AREAS;
+      data.receivers === undefined
+        ? undefined
+        : receivers.active_choice === SELECT
+          ? SELECT
+          : ALL_AREAS;
     // Keep every key of the target selector (areas, devices, floors, ...).
     const selection: SelectedTarget = {};
     for (const [key, value] of Object.entries(
@@ -285,7 +298,10 @@ export class ComSystemTest extends LitElement {
     }
     if (this.receiversChoice === ALL_AREAS) {
       targets.receivers = { active_choice: ALL_AREAS, [ALL_AREAS]: true };
-    } else if (Object.keys(this.selection).length) {
+    } else if (
+      this.receiversChoice === SELECT &&
+      Object.keys(this.selection).length
+    ) {
       targets.receivers = { active_choice: SELECT, [SELECT]: this.selection };
     }
     return targets;
@@ -358,7 +374,7 @@ export class ComSystemTest extends LitElement {
       .sort(byName);
   }
 
-  private setPersonChoice(choice: PersonChoice): void {
+  private setPersonChoice(choice: PersonChoice | undefined): void {
     this.personChoice = choice;
     this.response = undefined;
     void this.refreshPreview();
@@ -369,14 +385,17 @@ export class ComSystemTest extends LitElement {
     return html`<div class="people">
       <fieldset>
         <legend>People</legend>
-        ${[INDIVIDUALS, EVERYONE].map(
+        ${[INDIVIDUALS, EVERYONE, NONE].map(
           (choice) =>
             html`<label
               ><input
                 type="radio"
                 name="people"
-                .checked=${this.personChoice === choice}
-                @change=${() => this.setPersonChoice(choice as PersonChoice)}
+                .checked=${(this.personChoice ?? NONE) === choice}
+                @change=${() =>
+                  this.setPersonChoice(
+                    choice === NONE ? undefined : (choice as PersonChoice),
+                  )}
               />
               ${choice}</label
             >`,
@@ -390,7 +409,7 @@ export class ComSystemTest extends LitElement {
     </div>`;
   }
 
-  private setReceiversChoice(choice: ReceiversChoice): void {
+  private setReceiversChoice(choice: ReceiversChoice | undefined): void {
     this.receiversChoice = choice;
     this.response = undefined;
     void this.refreshPreview();
@@ -401,15 +420,17 @@ export class ComSystemTest extends LitElement {
     return html`<div class="receivers">
       <fieldset>
         <legend>Receivers</legend>
-        ${[SELECT, ALL_AREAS].map(
+        ${[SELECT, ALL_AREAS, NONE].map(
           (choice) =>
             html`<label
               ><input
                 type="radio"
                 name="receivers"
-                .checked=${this.receiversChoice === choice}
+                .checked=${(this.receiversChoice ?? NONE) === choice}
                 @change=${() =>
-                  this.setReceiversChoice(choice as ReceiversChoice)}
+                  this.setReceiversChoice(
+                    choice === NONE ? undefined : (choice as ReceiversChoice),
+                  )}
               />
               ${choice}</label
             >`,
@@ -576,8 +597,8 @@ export class ComSystemTest extends LitElement {
         <div class="card-header">
           Send a test notification
           <p class="secondary">
-            Calls notify.com_system. People and receivers are combined, as they
-            are from an automation.
+            Calls notify.com_system. People and receivers are combined, and one
+            that is not given is not targeted.
           </p>
         </div>
         <div class="card-content">

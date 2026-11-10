@@ -71,14 +71,28 @@ def _ids(receivers) -> set[str]:
     return {r.entry_id for r in receivers}
 
 
-async def test_default_is_all_people_and_areas(hass: HomeAssistant) -> None:
-    """With no targets, receivers with a person or area; not shared, not persistent."""
-    e = await _setup(hass)
+async def test_no_targets_targets_nothing(hass: HomeAssistant) -> None:
+    """A group that is not given is not targeted, so no targets match nothing."""
+    await _setup(hass)
     result = resolve_targets(hass)
-    assert _ids(result.receivers) == {
-        e[k].entry_id for k in ("alice", "bob", "echo", "both")
-    }
+    assert result.receivers == ()
     assert result.skipped == ()
+
+
+async def test_groups_are_independent(hass: HomeAssistant) -> None:
+    """People are not targeted unless given, except through a targeted area."""
+    e = await _setup(hass)
+    # Only areas: receivers with a person but no area are not reached.
+    result = resolve_targets(hass, areas=[e["kitchen"], e["lounge"]])
+    assert _ids(result.receivers) == {e["echo"].entry_id, e["both"].entry_id}
+    # Only all people: receivers with only an area are not reached.
+    assert _ids(resolve_targets(hass, all_people=True).receivers) == {
+        e[k].entry_id for k in ("alice", "bob", "both")
+    }
+    # All areas: only receivers with an area.
+    assert _ids(resolve_targets(hass, all_areas=True).receivers) == {
+        e[k].entry_id for k in ("echo", "both")
+    }
 
 
 async def test_union_of_people_areas_and_receivers(hass: HomeAssistant) -> None:
@@ -103,12 +117,14 @@ async def test_person_and_area_match_once(hass: HomeAssistant) -> None:
     assert _ids(result.receivers) == {e["bob"].entry_id, e["both"].entry_id}
 
 
-async def test_shared_receiver_not_reached_by_person_or_default(
+async def test_shared_receiver_only_reached_by_name(
     hass: HomeAssistant,
 ) -> None:
     """A receiver with no person or area is only reached by name."""
     e = await _setup(hass)
-    assert e["shared"].entry_id not in _ids(resolve_targets(hass).receivers)
+    shared = e["shared"].entry_id
+    assert shared not in _ids(resolve_targets(hass, all_people=True).receivers)
+    assert shared not in _ids(resolve_targets(hass, all_areas=True).receivers)
     assert e["shared"].entry_id not in _ids(
         resolve_targets(hass, people=["person.alice"]).receivers
     )
@@ -121,8 +137,8 @@ async def test_persistent_notification_follows_its_mapping(
     e = await _setup(hass)
     pid = e["persistent"].entry_id
     # With no person or area it is only reached when named.
-    assert pid not in _ids(resolve_targets(hass).receivers)
     assert pid not in _ids(resolve_targets(hass, all_people=True).receivers)
+    assert pid not in _ids(resolve_targets(hass, all_areas=True).receivers)
     assert pid not in _ids(resolve_targets(hass, people=["person.carol"]).receivers)
     assert pid in _ids(resolve_targets(hass, receivers=[pid]).receivers)
 
@@ -133,7 +149,6 @@ async def test_persistent_notification_follows_its_mapping(
     await hass.async_block_till_done()
     assert pid in _ids(resolve_targets(hass, people=["person.carol"]).receivers)
     assert pid in _ids(resolve_targets(hass, all_people=True).receivers)
-    assert pid in _ids(resolve_targets(hass).receivers)
     assert pid not in _ids(resolve_targets(hass, people=["person.alice"]).receivers)
 
     # Given an area, area targets reach it too.
@@ -152,7 +167,7 @@ async def test_disabled_receivers_are_skipped(hass: HomeAssistant) -> None:
         blocking=True,
     )
     for result in (
-        resolve_targets(hass),
+        resolve_targets(hass, all_people=True),
         resolve_targets(hass, people=["person.alice"]),
         resolve_targets(hass, receivers=[e["alice"].entry_id]),
     ):
@@ -172,7 +187,7 @@ async def test_unknown_targets_match_nothing(hass: HomeAssistant) -> None:
 async def test_result_is_ordered_by_name(hass: HomeAssistant) -> None:
     """Receivers come back ordered by name."""
     await _setup(hass)
-    names = [r.name for r in resolve_targets(hass).receivers]
+    names = [r.name for r in resolve_targets(hass, all_people=True).receivers]
     assert names == sorted(names, key=str.casefold)
 
 

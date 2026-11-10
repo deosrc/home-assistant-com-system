@@ -49,31 +49,22 @@ def resolve_targets(
     ``people`` are ``person.*`` entity ids, ``areas`` are area ids and
     ``receivers`` are receiver config entry ids. ``all_people`` matches every
     receiver that has a person, whoever it is, and ``all_areas`` every
-    receiver that has an area. The result is the union of
-    the receivers that match any of them. With no targets at all, every
-    receiver associated with any person or area matches. Shared receivers
-    (no person) are never matched by person; a receiver without an area is
-    never matched by area, so the persistent notification receiver, which
-    has neither until you give it one, is only reached when named. Disabled
-    receivers are returned as skipped, however they were matched. Unknown ids
-    match nothing.
+    receiver that has an area. The result is the union of the receivers that
+    match any of them. A group that is not given is not targeted, so with no
+    targets at all nothing matches. A receiver with no person and no area is
+    only matched when named. Disabled receivers are returned as skipped,
+    however they were matched. Unknown ids match nothing.
     """
     registry = hass.data[DOMAIN][DATA_REGISTRY]
     people_set = set(people or ())
     area_set = set(areas or ())
     named = set(receivers or ())
-    default = not (people_set or all_people or area_set or all_areas or named)
 
     matched: list[Receiver] = []
     for receiver in registry.all():
         receiver_people = registry.people_of(receiver)
         receiver_areas = registry.areas_of(receiver)
-        if receiver.entry_id in named:
-            matched.append(receiver)
-        elif default:
-            if receiver_people or receiver_areas:
-                matched.append(receiver)
-        elif (
+        if receiver.entry_id in named or (
             (all_people and receiver_people)
             or (all_areas and receiver_areas)
             or people_set.intersection(receiver_people)

@@ -14,10 +14,10 @@ send a notification to the receivers that match its [targets](targets.md).
 | `receivers` | no | Selected receivers, or all areas (see below). |
 
 `person` and `receivers` are the targets. They are combined as a union;
-see [targets](targets.md). In the form, **Everyone** and **All Areas** are
-the defaults, which together reach every receiver that has a person or an
-area. If you leave out both fields in YAML, the notification also goes to
-all people and all areas.
+see [targets](targets.md). A field that is not given is not targeted, so
+with only `receivers` no person is targeted, and the other way round. Give
+at least one. In the form, untick a field to leave it out; **Everyone** and
+**All Areas** are what the Test page starts with.
 
 ### People
 
@@ -67,9 +67,8 @@ receivers:
 
 A plain target (`entity_id`, `area_id` and so on, without `active_choice`)
 is also accepted and means Select. An `entity_id` that is not a Com System
-receiver matches nothing, but still counts as a target, so it never falls
-back to the default. See [targets](targets.md) for which receivers people
-and areas reach, including the persistent notification receiver.
+receiver matches nothing. See [targets](targets.md) for which receivers
+people and areas reach.
 
 Priority, images and receiver-specific `data` are not supported yet. Input
 that does not fit the fields is rejected before anything is sent.
@@ -130,7 +129,8 @@ Ignoring the response is fine: the action works without
 
 The action raises an error only when nothing could be attempted:
 
-- the input is invalid (for example `message` is missing), or
+- the input is invalid (for example `message` is missing),
+- neither `person` nor `receivers` is given, or
 - no receiver matches the targets, or every receiver that matches is
   disabled.
 
