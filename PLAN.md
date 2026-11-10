@@ -172,6 +172,13 @@ record-of-last-resort. Its handling of content (e.g. a notification ID so a
 notification can be replaced or dismissed) and its association with people
 and areas are **TBD** (see section 2.7).
 
+Receiver type definitions are written in code, and each declares its
+capabilities: which typed fields and `data` keys it supports. Custom
+(user-mapped action) receivers use a generic definition that declares no
+capabilities. They receive the common content, `priority`, `image` and
+their `data` block as variables for the mapped action, with no
+unsupported-content warnings.
+
 The custom (user-mapped action) receiver from section 2.1 remains the
 fallback for anything not on this list. Further types can be added later,
 so the type definition should be an extension point rather than hard-coded.
@@ -398,8 +405,6 @@ Every phase includes updating the matching document(s) in `docs/`
 - What are the allowed `priority` values and how does each receiver type
   map them? What forms of `image` are accepted (URL, local media, camera
   entity)?
-- How does a receiver declare its type and capabilities, and can custom
-  receivers declare their own?
 - How are responses to notification actions (e.g. a button press on a mobile
   notification) surfaced, given one notification may reach many receivers?
 - How is a receiver associated with a person or area? Explicit mapping on
