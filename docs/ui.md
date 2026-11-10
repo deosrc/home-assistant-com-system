@@ -19,14 +19,17 @@ An overview of the receivers:
 
 ## Receivers
 
-A table of every receiver with its name, type, targets and status
-(**Enabled**, **Disabled**, **Unavailable** or **Unknown**). Targets are shown
-as badges, one for each area (with an area icon) and person (with a person
-icon) the receiver is linked to, by name. A receiver's area is
-the area of its device; change it in Home Assistant. Use **Enable** or
-**Disable** to turn a receiver on or off. This operates the receiver's
-enabled switch, so it is the same as using the switch entity or an
-automation, and the list updates when the switch changes.
+A table of every receiver. The first column is a switch that turns the
+receiver on or off; the other columns are its name, type and targets.
+Targets are shown as badges, one for each area (with an area icon) and
+person (with a person icon) the receiver is linked to, by name. A
+receiver's area is the area of its device; change it in Home Assistant.
+
+The switch operates the receiver's enabled switch, so it is the same as
+using the switch entity or an automation, and the list updates when that
+switch changes. It is disabled, and the row dimmed, for a receiver that is
+unavailable (not loaded, or its source device is gone) or whose state
+cannot be read.
 
 Below the table, **Pending discoveries** lists the sources waiting to be
 added. Choose **Review in Devices & services** to add or ignore them; see

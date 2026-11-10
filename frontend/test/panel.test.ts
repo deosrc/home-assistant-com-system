@@ -121,7 +121,12 @@ describe("panel", () => {
       "mdi:account",
     ]);
 
-    view.shadowRoot!.querySelector("button")!.click();
+    const control = view.shadowRoot!.querySelector(
+      "ha-switch",
+    ) as HTMLElement & { checked: boolean };
+    expect(control.checked).toBe(true);
+    control.checked = false;
+    control.dispatchEvent(new Event("change"));
     await settle(view);
     expect(callWS).toHaveBeenCalledWith({
       type: "com_system/receivers/set_enabled",
@@ -139,6 +144,24 @@ describe("panel", () => {
     expect(view.shadowRoot!.querySelector(".error")!.textContent).toBe(
       "Unauthorized",
     );
+  });
+});
+
+describe("receivers switch", () => {
+  it("is off and disabled for an unavailable receiver", async () => {
+    const { hass, callWS } = makeHass();
+    const base = callWS.getMockImplementation()!;
+    callWS.mockImplementation(async (msg: { type: string }) =>
+      msg.type === "com_system/receivers/list"
+        ? { receivers: [{ ...RECEIVER, available: false, enabled: null }] }
+        : base(msg),
+    );
+    const panel = await mount("/receivers", hass);
+    const view = panel.shadowRoot!.querySelector("com-system-receivers")!;
+    await settle(view);
+    const control = view.shadowRoot!.querySelector("ha-switch")!;
+    expect(control.hasAttribute("disabled")).toBe(true);
+    expect(view.shadowRoot!.querySelector("tr.unavailable")).not.toBeNull();
   });
 });
 

@@ -30,6 +30,12 @@ export class ComSystemReceivers extends LitElement {
         padding: 8px;
         border-bottom: 1px solid var(--divider-color, #e0e0e0);
       }
+      .switch {
+        width: 1%;
+      }
+      tr.unavailable td:not(.switch) {
+        opacity: 0.6;
+      }
       .badges {
         display: flex;
         flex-wrap: wrap;
@@ -90,11 +96,17 @@ export class ComSystemReceivers extends LitElement {
     }
   }
 
-  private async toggle(receiver: ReceiverInfo, enabled: boolean) {
+  private async toggle(receiver: ReceiverInfo, ev: Event) {
+    const control = ev.target as HTMLInputElement;
     try {
-      await new ComSystemApi(this.hass).setEnabled(receiver.entry_id, enabled);
+      await new ComSystemApi(this.hass).setEnabled(
+        receiver.entry_id,
+        control.checked,
+      );
       await this.load();
     } catch (err) {
+      // Put the switch back; the state did not change.
+      control.checked = receiver.enabled === true;
       this.error = errorMessage(err);
     }
   }
@@ -128,12 +140,6 @@ export class ComSystemReceivers extends LitElement {
     </div>`;
   }
 
-  private status(r: ReceiverInfo): string {
-    if (!r.available) return "Unavailable";
-    if (r.enabled === null) return "Unknown";
-    return r.enabled ? "Enabled" : "Disabled";
-  }
-
   protected render() {
     if (this.error) {
       return html`<p class="error">${this.error}</p>`;
@@ -148,29 +154,27 @@ export class ComSystemReceivers extends LitElement {
           ? html`<table>
               <thead>
                 <tr>
+                  <th class="switch" aria-label="Enabled"></th>
                   <th>Name</th>
                   <th>Type</th>
                   <th>Targets</th>
-                  <th>Status</th>
-                  <th>Enabled</th>
                 </tr>
               </thead>
               <tbody>
                 ${this.receivers.map(
                   (r) => html`
-                    <tr>
+                    <tr class=${r.available ? "" : "unavailable"}>
+                      <td class="switch">
+                        <ha-switch
+                          .checked=${r.enabled === true}
+                          ?disabled=${!r.available || r.enabled === null}
+                          title=${r.available ? "" : "Unavailable"}
+                          @change=${(ev: Event) => this.toggle(r, ev)}
+                        ></ha-switch>
+                      </td>
                       <td>${r.name}</td>
                       <td>${r.type}</td>
                       <td>${this.renderTargets(r)}</td>
-                      <td>${this.status(r)}</td>
-                      <td>
-                        <button
-                          ?disabled=${r.enabled === null}
-                          @click=${() => this.toggle(r, !r.enabled)}
-                        >
-                          ${r.enabled ? "Disable" : "Enable"}
-                        </button>
-                      </td>
                     </tr>
                   `,
                 )}
