@@ -129,9 +129,10 @@ Initially supported receiver types, in priority order:
 | --- | --- | --- |
 | 1 | Mobile app | Core; per-device notify actions; rich content |
 | 2 | Alexa Media Player | Non-native (custom); speech/announcements |
-| 3 | Pushover | Core; priority, sound, attachments |
-| 4 | webOS TV | Core; on-screen toast notifications |
-| 5 | Music Assistant | Announcements via its own actions |
+| 3 | Persistent notification | Core; HA UI notification area |
+| 4 | Pushover | Core; priority, sound, attachments |
+| 5 | webOS TV | Core; on-screen toast notifications |
+| 6 | Music Assistant | Announcements via its own actions |
 
 Each type needs a receiver-type definition (names provisional) covering:
 
@@ -141,6 +142,14 @@ Each type needs a receiver-type definition (names provisional) covering:
 - How a COM System notification is translated into the underlying Home
   Assistant action call.
 - How its receivers are associated with people and areas (section 2.7).
+
+The **persistent notification** receiver posts to the notification area in
+the Home Assistant UI (using the `persistent_notification` actions). Unlike
+the other types it is not tied to a person or device: every user sees the
+same notifications. It also has no push behaviour, so it suits a
+record-of-last-resort. Its handling of content (e.g. a notification ID so a
+notification can be replaced or dismissed) and its association with people
+and areas are **TBD** (see section 2.7).
 
 The custom (user-mapped action) receiver from section 2.1 remains the
 fallback for anything not on this list. Further types can be added later,
@@ -200,7 +209,9 @@ manually on any receiver. The final rules are **TBD**.
 
 **Other receiver types:** the mechanism is TBD for each. For example, Alexa
 devices and TVs are likely to be associated by area rather than by person,
-while Pushover could be associated with a person manually.
+while Pushover could be associated with a person manually. The persistent
+notification receiver is system-wide, so it has no natural person or area;
+how it takes part in person and area targeting is TBD.
 
 **Areas:** a receiver can usually take its area from the underlying device
 or entity in the Home Assistant area registry, with a manual override.
@@ -312,6 +323,7 @@ docs/
     custom.md           # custom (action-mapped) receivers
     mobile-app.md
     alexa-media-player.md
+    persistent-notification.md
     pushover.md
     webostv.md
     music-assistant.md
@@ -349,7 +361,8 @@ Every phase includes updating the matching document(s) in `docs/`
    content (e.g. mobile app actions) with per-receiver-type handling.
 9. **Receiver types** – extensible type definition, then in priority order:
    mobile app (including person association and the personal/shared
-   select), Alexa Media Player, Pushover, webOS TV, Music Assistant.
+   select), Alexa Media Player, persistent notification, Pushover, webOS TV,
+   Music Assistant.
 10. **History store** – persist recent notifications and delivery results.
 11. **Websocket API** – commands for receivers, history, preview and test.
 12. **UI** – panel shell and dashboard, then recent notifications,
@@ -419,5 +432,12 @@ Every phase includes updating the matching document(s) in `docs/`
 - Can a receiver be associated with several people (shared by a couple)?
   Are manual associations stored on the receiver or elsewhere?
 - Should the personal/shared setting be generalised to all receiver types?
+- How does the persistent notification receiver take part in targeting:
+  only for the default (everyone) and explicit targets, or whenever any
+  person or area is targeted? Can it be associated with a person to show the
+  notification only to them (not supported natively)?
+- Should persistent notifications be created with a stable ID so repeated
+  notifications replace each other, and can the user dismiss them via COM
+  System?
 - Minimum supported Home Assistant version.
 - Domain name and display name confirmation (`com_system` assumed).
