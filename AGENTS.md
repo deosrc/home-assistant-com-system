@@ -51,8 +51,9 @@ records the conventions and how things work as built.
   so it is changed in Home Assistant, not in Com System.
 - Custom receivers are scripts (type id `custom`, name "Script").
   `CustomReceiverType` in `receiver_type.py` detects them: a script whose
-  service description (`async_get_all_descriptions`) has exactly one field,
-  `notification`, with an `object` selector (`is_notification_script`). The
+  service description (`async_get_all_descriptions`) has a `notification`
+  field with an `object` selector and no other required field
+  (`is_notification_script`). The
   source id is the script's object id; availability is whether the
   `script.<id>` service exists. Delivery calls `script.<id>` (blocking) with
   `{notification: {title, message, ...}}`, the whole notification; a missing

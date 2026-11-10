@@ -80,8 +80,9 @@ class ReceiverType:
 def notification_script_problems(description: Mapping[str, Any]) -> list[str]:
     """Return why a script's service description is not a notification script.
 
-    It must have exactly one field, ``notification``, with an object
-    selector. An empty list means it is one.
+    It must have a ``notification`` field with an object selector. Any other
+    fields must be optional, because only ``notification`` is passed. An
+    empty list means it is one.
     """
     fields = description.get("fields") or {}
     if not fields:
@@ -91,11 +92,15 @@ def notification_script_problems(description: Mapping[str, Any]) -> list[str]:
         problems.append(f"There is no field named {SCRIPT_FIELD}.")
     elif "object" not in (fields[SCRIPT_FIELD].get("selector") or {}):
         problems.append(f"The {SCRIPT_FIELD} field does not use the object selector.")
-    others = sorted(set(fields) - {SCRIPT_FIELD})
-    if others:
+    required = sorted(
+        name
+        for name, field in fields.items()
+        if name != SCRIPT_FIELD and (field or {}).get("required")
+    )
+    if required:
         problems.append(
-            f"The script has other fields ({', '.join(others)}); "
-            f"{SCRIPT_FIELD} must be the only one."
+            f"These fields are required but only {SCRIPT_FIELD} is passed: "
+            f"{', '.join(required)}. Make them optional."
         )
     return problems
 

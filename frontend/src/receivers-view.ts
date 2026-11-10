@@ -289,7 +289,7 @@ export class ComSystemReceivers extends LitElement {
         Check a script
         <p class="secondary">
           Pick a script to see whether it can be a custom receiver. It needs one
-          object field named notification.
+          object field named notification; other fields must be optional.
         </p>
       </div>
       <div class="card-content">

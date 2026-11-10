@@ -396,7 +396,7 @@ async def _script_checks(hass: HomeAssistant, entity_id: str) -> dict[str, Any]:
         structural_ok = not problems
         if structural_ok:
             checks.append(
-                _check("fields", True, "It has one object field named notification.")
+                _check("fields", True, "It has an object field named notification.")
             )
         else:
             checks.extend(_check("fields", False, p) for p in problems)

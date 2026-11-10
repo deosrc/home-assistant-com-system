@@ -32,9 +32,10 @@ def test_is_notification_script() -> None:
     assert not is_notification_script(
         {"fields": {"notification": {"selector": {"text": {}}}}}
     )
-    assert not is_notification_script(
-        {"fields": {**OBJECT_FIELD, "other": {"selector": {"text": {}}}}}
-    )
+    optional = {"other": {"selector": {"text": {}}}}
+    assert is_notification_script({"fields": {**OBJECT_FIELD, **optional}})
+    required = {"other": {"selector": {"text": {}}, "required": True}}
+    assert not is_notification_script({"fields": {**OBJECT_FIELD, **required}})
     assert not is_notification_script(
         {"fields": {"message": {"selector": {"object": {}}}}}
     )
@@ -57,7 +58,7 @@ async def _scripts(hass: HomeAssistant) -> None:
                 "two_fields": {
                     "fields": {
                         "notification": {"selector": {"object": {}}},
-                        "x": {"selector": {"text": {}}},
+                        "x": {"selector": {"text": {}}, "required": True},
                     },
                     "sequence": [],
                 },
@@ -142,7 +143,9 @@ async def test_check_reports_problems(hass: HomeAssistant, hass_ws_client) -> No
     assert [c["ok"] for c in result["checks"]] == [True, False]
     result = await _check(hass, hass_ws_client, "script.two_fields")
     assert not result["can_rescan"]
-    assert "other fields (x)" in result["checks"][-1]["message"]
+    assert (
+        "required but only notification is passed: x" in result["checks"][-1]["message"]
+    )
     result = await _check(hass, hass_ws_client, "script.missing")
     assert [c["ok"] for c in result["checks"]] == [False]
 

@@ -7,9 +7,11 @@ it can do anything Home Assistant can.
 
 ## Which scripts are detected
 
-A script is offered only when it has exactly one field, named
-`notification`, with the **object** selector. Scripts with no fields,
-other fields, or another selector are ignored.
+A script is offered only when it has a field named `notification` with the
+**object** selector. It may have other fields, but they must all be
+optional, because only `notification` is passed to the script. Scripts with
+no `notification` field, another selector, or a required extra field are
+ignored.
 
 ```yaml
 fields:
@@ -36,9 +38,9 @@ If a script you expected is not offered, use **Check a script** on the
 panel's Receivers view. Choose the script and Com System reports:
 
 - whether the script exists;
-- whether it has exactly one field, named `notification`, using the object
-  selector, and what is wrong if not (no fields, a missing or misnamed
-  field, the wrong selector, other fields);
+- whether it has a `notification` field using the object selector and no
+  required extra fields, and what is wrong if not (no fields, a missing or
+  misnamed field, the wrong selector, required extra fields);
 - whether it is already a receiver, was ignored (delete the ignored entry in
   Devices & services to offer it again), or is waiting to be added.
 

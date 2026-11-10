@@ -22,7 +22,7 @@
       "already_in_progress": "This receiver is already waiting to be added.",
       "not_available": "This receiver cannot be added because its type is not available or the Com System hub does not exist.",
       "reconfigure_successful": "The receiver was updated.",
-      "receivers_are_discovered": "Receivers are added from discoveries. Create a script with a single object field named notification and it will be offered here."
+      "receivers_are_discovered": "Receivers are added from discoveries. Create a script with an object field named notification and it will be offered here."
     },
     "flow_title": "{name} ({type})"
   },
