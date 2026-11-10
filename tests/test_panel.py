@@ -61,6 +61,15 @@ async def test_panel_registered_admin_only(hass: HomeAssistant) -> None:
     assert panel.sidebar_title == "Com System"
 
 
+async def test_panel_dev_url(hass: HomeAssistant, monkeypatch) -> None:
+    """COM_SYSTEM_PANEL_DEV_URL loads the panel from the Vite dev server."""
+    url = "http://localhost:5173/src/com-system-panel.ts"
+    monkeypatch.setenv("COM_SYSTEM_PANEL_DEV_URL", url)
+    await _setup(hass)
+    config = hass.data["frontend_panels"]["com-system"].config
+    assert config["_panel_custom"]["module_url"] == url
+
+
 async def test_ping_admin(hass: HomeAssistant, hass_ws_client) -> None:
     """An admin gets a pong."""
     await _setup(hass)

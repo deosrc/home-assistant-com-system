@@ -31,7 +31,9 @@ records the conventions and how things work as built.
   `ruff format .`). Ruff is configured in `pyproject.toml`.
 - Lint Markdown: `npm run lint:md`.
 - Panel (in `frontend/`): `npm run lint`, `npm test`, `npm run build`.
-  Hot reload: `scripts/develop-frontend`.
+  Hot reload: `scripts/develop` starts Vite and sets
+  `COM_SYSTEM_PANEL_DEV_URL` (opt out with `COM_SYSTEM_PANEL_BUNDLE=1`);
+  `scripts/develop-frontend` does it on a throwaway config.
 
 ## Architecture as built
 
@@ -136,7 +138,7 @@ records the conventions and how things work as built.
   `static properties` and `declare` fields (no decorators). The build is one
   ES module and the HMR client is imported only when the mode is
   `development`. Commands: `npm run lint`, `npm test`, `npm run build` in
-  `frontend/`; `scripts/develop-frontend` for hot reload.
+  `frontend/`; `scripts/develop` for hot reload.
 - Strings live in `strings.json`; `translations/en.json` is a copy and must
   be kept in step.
 - `hacs.json` records the minimum Home Assistant version; keep it in step

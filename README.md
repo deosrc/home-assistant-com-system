@@ -41,10 +41,13 @@ writes `custom_components/com_system/frontend/dist/`, which is not
 committed.
 
 - Rebuild with `npm run build` in `frontend/`.
-- For hot reload, run `scripts/develop-frontend`. It starts the Vite dev
-  server and Home Assistant against a throwaway configuration, with
-  `COM_SYSTEM_PANEL_DEV_URL` set so the panel loads from the dev server.
-  Onboard at <http://localhost:8123> and open **Com System**.
+- Hot reload is on by default: `scripts/develop` (the **Start Home Assistant**
+  task) also starts the Vite dev server and sets `COM_SYSTEM_PANEL_DEV_URL`,
+  so Home Assistant loads the panel from it. Edit files in `frontend/src` and
+  the page reloads. Set `COM_SYSTEM_PANEL_BUNDLE=1` to serve the built bundle
+  instead.
+- `scripts/develop-frontend` does the same against a throwaway configuration
+  with a test admin (`test` / `test-pass-123`) and some checks.
 
 ### Test and lint
 

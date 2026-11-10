@@ -12,12 +12,17 @@ export default defineConfig({
     },
     outDir: "../custom_components/com_system/frontend/dist",
     emptyOutDir: true,
+    // Lets a debugger map the bundle back to the .ts source.
+    sourcemap: true,
   },
   server: {
+    // Reachable from outside the devcontainer (the port is forwarded).
+    host: "0.0.0.0",
     port: 5173,
     strictPort: true,
-    // Home Assistant imports the module from its own origin, so the dev
-    // server must tell the browser where relative imports resolve.
+    // Home Assistant (port 8123) loads the module from this server, so
+    // allow its origin and say where relative imports resolve.
+    cors: true,
     origin: "http://localhost:5173",
   },
   test: {
