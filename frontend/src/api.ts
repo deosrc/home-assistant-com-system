@@ -4,7 +4,6 @@ import type {
   HomeAssistant,
   NotifyTargets,
   PreviewEntry,
-  ReceiverEdit,
   ReceiverInfo,
   ScriptCheckResult,
   SendResponse,
@@ -58,21 +57,6 @@ export class ComSystemApi {
       message,
       ...(title ? { title } : {}),
       ...targets,
-    });
-  }
-
-  updateReceiver(entryId: string, edit: ReceiverEdit): Promise<ReceiverInfo> {
-    return this.hass.callWS({
-      type: "com_system/receivers/update",
-      entry_id: entryId,
-      ...edit,
-    });
-  }
-
-  removeReceiver(entryId: string): Promise<void> {
-    return this.hass.callWS({
-      type: "com_system/receivers/remove",
-      entry_id: entryId,
     });
   }
 

@@ -26,8 +26,6 @@ COMMANDS = [
     {"type": "com_system/receivers/list"},
     {"type": "com_system/receivers/set_enabled", "entry_id": "x", "enabled": False},
     {"type": "com_system/discoveries/list"},
-    {"type": "com_system/receivers/update", "entry_id": "x", "name": "n"},
-    {"type": "com_system/receivers/remove", "entry_id": "x"},
     {"type": "com_system/scripts/check", "entity_id": "script.x"},
     {"type": "com_system/scripts/rescan"},
     {"type": "com_system/notify/preview"},
@@ -136,6 +134,10 @@ async def test_receivers_list_and_enable_disable(
     assert receiver["type_id"] == "custom"
     assert receiver["type"] == "Script"
     assert receiver["enabled"] is True
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, entry.entry_id), entry.entry_id
+    )
+    assert receiver["device_id"] == device.id
     assert receiver["available"] is True
     assert receiver["entity_id"] == "switch.office_enabled"
     assert receiver["receiver_entity_id"] == "notification_receiver.office"
@@ -365,39 +367,3 @@ async def test_notify_preview_people_choice(
         client, {"type": "com_system/notify/preview", "person": {"active_choice": "x"}}
     )
     assert not msg["success"]
-
-
-async def test_update_and_remove_receiver(hass: HomeAssistant, hass_ws_client) -> None:
-    """Rename a receiver and set its people, then remove it."""
-    await _setup(hass)
-    entry = await _add_custom(hass, "Office")
-    client = await hass_ws_client(hass)
-    msg = await _call(
-        client,
-        {
-            "type": "com_system/receivers/update",
-            "entry_id": entry.entry_id,
-            "name": "Study",
-            "people": ["person.alice"],
-        },
-    )
-    assert msg["success"], msg
-    assert msg["result"]["name"] == "Study"
-    assert msg["result"]["people"] == ["person.alice"]
-    msg = await _call(
-        client,
-        {
-            "type": "com_system/receivers/update",
-            "entry_id": entry.entry_id,
-            "name": " ",
-        },
-    )
-    assert msg["error"]["code"] == "name_required"
-    msg = await _call(
-        client, {"type": "com_system/receivers/remove", "entry_id": entry.entry_id}
-    )
-    assert msg["success"]
-    msg = await _call(
-        client, {"type": "com_system/receivers/remove", "entry_id": entry.entry_id}
-    )
-    assert msg["error"]["code"] == "not_found"

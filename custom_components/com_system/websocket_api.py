@@ -16,14 +16,11 @@ from homeassistant.config_entries import SOURCE_INTEGRATION_DISCOVERY, ConfigEnt
 from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.service import async_get_all_descriptions
 
 from .const import (
     CONF_ENTRY_TYPE,
-    CONF_NAME,
-    CONF_PEOPLE,
     CONF_RECEIVER_TYPE,
     CONF_SOURCE_ID,
     DATA_REGISTRY,
@@ -61,8 +58,6 @@ def async_register_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_receivers_list)
     websocket_api.async_register_command(hass, ws_receivers_set_enabled)
     websocket_api.async_register_command(hass, ws_discoveries_list)
-    websocket_api.async_register_command(hass, ws_receivers_update)
-    websocket_api.async_register_command(hass, ws_receivers_remove)
     websocket_api.async_register_command(hass, ws_scripts_check)
     websocket_api.async_register_command(hass, ws_scripts_rescan)
     websocket_api.async_register_command(hass, ws_notify_preview)
@@ -97,6 +92,13 @@ def _receiver_info(hass: HomeAssistant, receiver: Receiver) -> dict[str, Any]:
         and (receiver_type is None or receiver_type.is_source_available(hass, receiver))
         and (state is None or state.state != STATE_UNAVAILABLE)
     )
+    entity_registry = er.async_get(hass)
+    receiver_entity_id = entity_registry.async_get_entity_id(
+        NOTIFICATION_RECEIVER_DOMAIN, DOMAIN, f"{receiver.entry_id}_receiver"
+    )
+    receiver_entity = (
+        entity_registry.async_get(receiver_entity_id) if receiver_entity_id else None
+    )
     return {
         "entry_id": receiver.entry_id,
         "name": receiver.name,
@@ -107,9 +109,9 @@ def _receiver_info(hass: HomeAssistant, receiver: Receiver) -> dict[str, Any]:
         "enabled": enabled,
         "available": available,
         "entity_id": entity_id,
-        "receiver_entity_id": er.async_get(hass).async_get_entity_id(
-            NOTIFICATION_RECEIVER_DOMAIN, DOMAIN, f"{receiver.entry_id}_receiver"
-        ),
+        "receiver_entity_id": receiver_entity_id,
+        # The device page is where a receiver is edited.
+        "device_id": receiver_entity.device_id if receiver_entity else None,
         "people": list(registry.people_of(receiver)),
         "areas": list(registry.areas_of(receiver)),
     }
@@ -306,64 +308,6 @@ async def ws_notify_test(
         connection.send_error(msg["id"], "send_failed", str(err))
         return
     connection.send_result(msg["id"], response)
-
-
-_PEOPLE = vol.All(cv.ensure_list, [cv.entity_id], [cv.entity_domain("person")])
-
-
-@websocket_api.require_admin
-@websocket_api.websocket_command(
-    {
-        vol.Required("type"): "com_system/receivers/update",
-        vol.Required("entry_id"): str,
-        vol.Optional(CONF_NAME): str,
-        vol.Optional(CONF_PEOPLE): _PEOPLE,
-    }
-)
-@callback
-def ws_receivers_update(
-    hass: HomeAssistant,
-    connection: websocket_api.ActiveConnection,
-    msg: dict[str, Any],
-) -> None:
-    """Rename a receiver or set its people; only the given fields change.
-
-    The receiver reloads (the update listener).
-    """
-    entry = hass.config_entries.async_get_entry(msg["entry_id"])
-    if hass.data[DOMAIN][DATA_REGISTRY].get(msg["entry_id"]) is None or entry is None:
-        connection.send_error(msg["id"], "not_found", "Receiver not found")
-        return
-    name = msg.get(CONF_NAME, entry.data[CONF_NAME]).strip()
-    if not name:
-        connection.send_error(msg["id"], "name_required", "Enter a name")
-        return
-    options = dict(entry.options)
-    if CONF_PEOPLE in msg:
-        options[CONF_PEOPLE] = msg[CONF_PEOPLE]
-    hass.config_entries.async_update_entry(
-        entry, title=name, data={**entry.data, CONF_NAME: name}, options=options
-    )
-    receiver = hass.data[DOMAIN][DATA_REGISTRY].get(entry.entry_id)
-    connection.send_result(msg["id"], _receiver_info(hass, receiver))
-
-
-@websocket_api.require_admin
-@websocket_api.websocket_command(
-    {vol.Required("type"): "com_system/receivers/remove", vol.Required("entry_id"): str}
-)
-@websocket_api.async_response
-async def ws_receivers_remove(
-    hass: HomeAssistant,
-    connection: websocket_api.ActiveConnection,
-    msg: dict[str, Any],
-) -> None:
-    """Remove a receiver (its config entry, entities and device)."""
-    if hass.data[DOMAIN][DATA_REGISTRY].get(msg["entry_id"]) is None:
-        connection.send_error(msg["id"], "not_found", "Receiver not found")
-        return
-    await hass.config_entries.async_remove(msg["entry_id"])
-    connection.send_result(msg["id"])
 
 
 def _check(check_id: str, ok: bool, message: str) -> dict[str, Any]:

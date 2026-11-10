@@ -31,9 +31,10 @@ switch changes. It is disabled, and the row dimmed, for a receiver that is
 unavailable (not loaded, or its source device is gone) or whose state
 cannot be read.
 
-Each row has **Edit** (name and people) and **Remove**, which asks first.
-Validation errors are shown in the editor. Receivers are added from
-discoveries; see [custom receivers](receivers/custom.md) for scripts.
+Click a row (not its switch) to open the receiver's device page, where you
+rename it, set its people or delete it (see
+[custom receivers](receivers/custom.md#editing-and-removing)). Receivers
+are added from discoveries; see [custom receivers](receivers/custom.md) for scripts.
 
 **Check a script**, below the table, explains why a script is or is not
 detected as a [custom receiver](receivers/custom.md#checking-a-script). You
@@ -79,12 +80,10 @@ admin user.
 - `com_system/dashboard`: the counts shown on the dashboard.
 - `com_system/receivers/list`: each receiver's name, type, enabled state,
   availability, switch entity id, `notification_receiver` entity id
-  (`receiver_entity_id`), people, areas.
+  (`receiver_entity_id`), device id (`device_id`, the page a row opens),
+  people, areas.
 - `com_system/receivers/set_enabled`: turns the receiver's enabled switch on
   or off (`entry_id`, `enabled`).
-- `com_system/receivers/update`: renames a receiver and sets its people
-  (`entry_id`, optional `name`, `people`).
-- `com_system/receivers/remove`: removes a receiver.
 - `com_system/scripts/check`: checks a script (`entity_id`) and returns
   `checks` (each `id`, `ok`, `message`) and `can_rescan`.
 - `com_system/scripts/rescan`: runs detection now (needs the hub loaded).

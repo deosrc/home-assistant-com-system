@@ -58,9 +58,9 @@ warnings are reported.
 
 ## Editing and removing
 
-- In the panel, **Edit** renames the receiver and sets its people, and
-  **Remove** deletes it. In Devices & services, **Reconfigure** renames it
-  and **Configure** sets the people.
+- In the panel, click a receiver's row to open its device page. From
+  there, or from Devices & services, use **Reconfigure** to rename the
+  receiver, **Configure** to set its people, and **Delete** to remove it.
 - Removing a receiver does not delete the script. If the script is still
   suitable, the receiver is offered again, unless you ignored it.
 - If the script is deleted, the receiver is kept and shown as unavailable.

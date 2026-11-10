@@ -8,26 +8,12 @@ import type {
   ScriptCheckResult,
 } from "./types";
 
-/** The receiver being edited. */
-interface Draft {
-  entryId: string;
-  name: string;
-  people: string[];
-  error?: string;
-}
-
-/** Messages for the error codes the update command returns. */
-const ERRORS: Record<string, string> = {
-  name_required: "Enter a name.",
-};
-
 /** Configured receivers, a script checker and a pending discoveries alert. */
 export class ComSystemReceivers extends LitElement {
   declare hass: HomeAssistant;
   declare private receivers?: ReceiverInfo[];
   declare private discoveries: DiscoveryInfo[];
   declare private error?: string;
-  declare private draft?: Draft;
   declare private scriptId: string;
   declare private scriptResult?: ScriptCheckResult;
   declare private scriptMessage?: string;
@@ -37,7 +23,6 @@ export class ComSystemReceivers extends LitElement {
     receivers: { state: true },
     discoveries: { state: true },
     error: { state: true },
-    draft: { state: true },
     scriptId: { state: true },
     scriptResult: { state: true },
     scriptMessage: { state: true },
@@ -98,6 +83,12 @@ export class ComSystemReceivers extends LitElement {
       .switch {
         width: 1%;
       }
+      tr.link {
+        cursor: pointer;
+      }
+      tr.link:hover {
+        background: var(--secondary-background-color, #f0f0f0);
+      }
       tr.unavailable td:not(.switch) {
         opacity: 0.6;
       }
@@ -121,26 +112,6 @@ export class ComSystemReceivers extends LitElement {
         --mdc-icon-size: 16px;
         display: inline-flex;
         color: var(--secondary-text-color);
-      }
-      .field {
-        display: grid;
-        gap: 4px;
-      }
-      .field input {
-        font: inherit;
-        padding: 8px;
-        color: var(--primary-text-color);
-        background: var(--card-background-color, #fff);
-        border: 1px solid var(--divider-color, #e0e0e0);
-        border-radius: 4px;
-      }
-      .people {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-      }
-      td.actions {
-        white-space: nowrap;
       }
       .checks {
         list-style: none;
@@ -201,26 +172,6 @@ export class ComSystemReceivers extends LitElement {
       // Put the switch back; the state did not change.
       control.checked = receiver.enabled === true;
       this.error = errorMessage(err);
-    }
-  }
-
-  private startEdit(r: ReceiverInfo) {
-    this.draft = { entryId: r.entry_id, name: r.name, people: [...r.people] };
-  }
-
-  private async save() {
-    const d = this.draft;
-    if (!d) return;
-    try {
-      await new ComSystemApi(this.hass).updateReceiver(d.entryId, {
-        name: d.name,
-        people: d.people,
-      });
-      this.draft = undefined;
-      await this.load();
-    } catch (err) {
-      const code = (err as { code?: string })?.code ?? "";
-      this.draft = { ...d, error: ERRORS[code] ?? errorMessage(err) };
     }
   }
 
@@ -324,71 +275,6 @@ export class ComSystemReceivers extends LitElement {
     </ha-card>`;
   }
 
-  private async removeReceiver(r: ReceiverInfo) {
-    if (!confirm(`Remove the receiver ${r.name}?`)) return;
-    try {
-      await new ComSystemApi(this.hass).removeReceiver(r.entry_id);
-      await this.load();
-    } catch (err) {
-      this.error = errorMessage(err);
-    }
-  }
-
-  private renderEditor(d: Draft) {
-    const update = (changes: Partial<Draft>) =>
-      (this.draft = { ...d, ...changes, error: undefined });
-    const persons = Object.keys(this.hass.states).filter((id) =>
-      id.startsWith("person."),
-    );
-    return html`<ha-card>
-      <div class="card-header">Edit receiver</div>
-      <div class="card-content">
-        <label class="field"
-          >Name
-          <input
-            id="name"
-            .value=${d.name}
-            @input=${(e: Event) =>
-              update({ name: (e.target as HTMLInputElement).value })}
-        /></label>
-        <div>
-          People
-          <div class="people">
-            ${
-              persons.length
-                ? persons.map(
-                    (id) =>
-                      html`<label
-                        ><input
-                          type="checkbox"
-                          .checked=${d.people.includes(id)}
-                          @change=${(e: Event) =>
-                            update({
-                              people: (e.target as HTMLInputElement).checked
-                                ? [...d.people, id]
-                                : d.people.filter((p) => p !== id),
-                            })}
-                        />
-                        ${
-                          this.hass.states[id]?.attributes?.friendly_name ?? id
-                        }</label
-                      >`,
-                  )
-                : html`<span class="muted">No people</span>`
-            }
-          </div>
-        </div>
-        ${d.error ? html`<p class="error">${d.error}</p>` : html``}
-      </div>
-      <div class="card-actions">
-        <button id="save" @click=${() => this.save()}>Save</button>
-        <button id="cancel" @click=${() => (this.draft = undefined)}>
-          Cancel
-        </button>
-      </div>
-    </ha-card>`;
-  }
-
   /** The areas and people a receiver is linked to: by type, then name. */
   private targets(r: ReceiverInfo): { icon: string; name: string }[] {
     const areas = r.areas.map((id) => ({
@@ -419,6 +305,13 @@ export class ComSystemReceivers extends LitElement {
     </div>`;
   }
 
+  /** Open the receiver's device page, where it is edited. */
+  private openDevice(r: ReceiverInfo): void {
+    if (!r.device_id) return;
+    history.pushState(null, "", `/config/devices/device/${r.device_id}`);
+    window.dispatchEvent(new CustomEvent("location-changed"));
+  }
+
   private renderTable(receivers: ReceiverInfo[]) {
     return html`<table>
       <thead>
@@ -427,14 +320,25 @@ export class ComSystemReceivers extends LitElement {
           <th>Name</th>
           <th>Type</th>
           <th>Targets</th>
-          <th aria-label="Actions"></th>
         </tr>
       </thead>
       <tbody>
         ${receivers.map(
           (r) => html`
-            <tr class=${r.available ? "" : "unavailable"}>
-              <td class="switch">
+            <tr
+              class=${[
+                r.available ? "" : "unavailable",
+                r.device_id ? "link" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              tabindex=${r.device_id ? "0" : "-1"}
+              @click=${() => this.openDevice(r)}
+              @keydown=${(ev: KeyboardEvent) => {
+                if (ev.key === "Enter") this.openDevice(r);
+              }}
+            >
+              <td class="switch" @click=${(ev: Event) => ev.stopPropagation()}>
                 <ha-switch
                   .checked=${r.enabled === true}
                   ?disabled=${!r.available || r.enabled === null}
@@ -445,14 +349,6 @@ export class ComSystemReceivers extends LitElement {
               <td>${r.name}</td>
               <td>${r.type}</td>
               <td>${this.renderTargets(r)}</td>
-              <td class="actions">
-                <button class="edit" @click=${() => this.startEdit(r)}>
-                  Edit
-                </button>
-                <button class="remove" @click=${() => this.removeReceiver(r)}>
-                  Remove
-                </button>
-              </td>
             </tr>
           `,
         )}
@@ -485,7 +381,6 @@ export class ComSystemReceivers extends LitElement {
     }
     return html`
       <div>${this.renderDiscoveryAlert()}</div>
-      <div>${this.draft ? this.renderEditor(this.draft) : ""}</div>
       <ha-card>
         <div class="card-header">Receivers</div>
         <div class="card-content">

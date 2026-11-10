@@ -12,6 +12,7 @@ const RECEIVER = {
   available: true,
   entity_id: "switch.office_enabled",
   receiver_entity_id: "notification_receiver.office",
+  device_id: "dev1",
   people: ["person.zed", "person.alice"],
   areas: ["unknown_area", "office"],
 };
@@ -186,36 +187,27 @@ describe("panel", () => {
     });
   });
 
-  it("edits and removes receivers", async () => {
+  it("opens the device page when a row is clicked", async () => {
     const { hass, callWS } = makeHass();
     const panel = await mount("/receivers", hass);
     const view = panel.shadowRoot!.querySelector("com-system-receivers")!;
     await settle(view);
-    const q = <T extends Element>(sel: string) =>
-      view.shadowRoot!.querySelector(sel) as T;
+    expect(view.shadowRoot!.querySelector(".edit")).toBeNull();
+    expect(view.shadowRoot!.querySelector(".remove")).toBeNull();
 
-    q<HTMLButtonElement>(".edit").click();
-    await settle(view);
-    const name = q<HTMLInputElement>("#name");
-    name.value = "Office 2";
-    name.dispatchEvent(new Event("input"));
-    await settle(view);
-    q<HTMLButtonElement>("#save").click();
-    await settle(view);
-    expect(callWS).toHaveBeenCalledWith({
-      type: "com_system/receivers/update",
-      entry_id: "e1",
-      name: "Office 2",
-      people: ["person.zed", "person.alice"],
-    });
+    // Using the switch does not open the page.
+    const listener = vi.fn();
+    window.addEventListener("location-changed", listener);
+    (view.shadowRoot!.querySelector("td.switch") as HTMLElement).click();
+    expect(listener).not.toHaveBeenCalled();
 
-    vi.stubGlobal("confirm", () => true);
-    q<HTMLButtonElement>(".remove").click();
-    await settle(view);
-    expect(callWS).toHaveBeenCalledWith({
-      type: "com_system/receivers/remove",
-      entry_id: "e1",
-    });
+    (view.shadowRoot!.querySelector("tr.link") as HTMLElement).click();
+    expect(location.pathname).toBe("/config/devices/device/dev1");
+    expect(listener).toHaveBeenCalledOnce();
+    window.removeEventListener("location-changed", listener);
+    expect(callWS).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "com_system/receivers/remove" }),
+    );
   });
 
   it("checks a script and offers a rescan", async () => {

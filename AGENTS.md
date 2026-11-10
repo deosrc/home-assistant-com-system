@@ -192,8 +192,7 @@ records the conventions and how things work as built.
   Conditions are not evaluated yet.
 - `websocket_api.py`: the commands behind the panel
   (`com_system/ping`, `dashboard`, `receivers/list`, `receivers/set_enabled`,
-  `receivers/update` (partial: name and people of any receiver),
-  `receivers/remove`, `scripts/check` (`_script_checks`: why a script is or
+  `scripts/check` (`_script_checks`: why a script is or
   is not a receiver, built on `notification_script_problems`; `can_rescan`
   is false when registered, ignored or already pending) and
   `scripts/rescan` (calls the hub detector's `async_detect`),
@@ -234,14 +233,15 @@ records the conventions and how things work as built.
   `receivers-view.ts` uses `ha-card` sections like the test view, an
   `ha-alert` for pending discoveries (count and link, no list), an
   `ha-entity-picker` for the script check (a native select when it is not
-  defined) and the edit form (native inputs); a method
-  named `remove` would clash with `HTMLElement`, and an expression at the
-  very start of a template needs a wrapper `div` like trailing ones. Add
-  views by adding an element, an entry in `VIEWS` and a command. Elements
-  use `static properties` and `declare` fields (no decorators). The build is one
-  ES module and the HMR client is imported only when the mode is
-  `development`. Commands: `npm run lint`, `npm test`, `npm run build` in
-  `frontend/`; `scripts/develop` for hot reload.
+  defined). A receiver row opens its device page (under
+  `/config/devices/device/`, via `history.pushState` and `location-changed`); editing
+  and deleting happen there and in the config flows, not in the panel. An
+  expression at the very start of a template needs a wrapper `div` like
+  trailing ones. Add views by adding an element, an entry in `VIEWS` and a
+  command. Elements use `static properties` and `declare` fields (no
+  decorators). The build is one ES module and the HMR client is imported
+  only when the mode is `development`. Commands: `npm run lint`,
+  `npm test`, `npm run build` in `frontend/`; `scripts/develop` for hot reload.
 - Strings live in `strings.json`; `translations/en.json` is a copy and must
   be kept in step.
 - `hacs.json` records the minimum Home Assistant version; keep it in step
