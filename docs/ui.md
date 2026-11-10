@@ -19,8 +19,11 @@ An overview of the receivers:
 
 ## Receivers
 
-A table of every receiver with its name, type and status (**Enabled**,
-**Disabled**, **Unavailable** or **Unknown**). Use **Enable** or
+A table of every receiver with its name, type, targets and status
+(**Enabled**, **Disabled**, **Unavailable** or **Unknown**). Targets are shown
+as badges, one for each area (with an area icon) and person (with a person
+icon) the receiver is linked to, by name. A receiver's area is
+the area of its device; change it in Home Assistant. Use **Enable** or
 **Disable** to turn a receiver on or off. This operates the receiver's
 enabled switch, so it is the same as using the switch entity or an
 automation, and the list updates when the switch changes.

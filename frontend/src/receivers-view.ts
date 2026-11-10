@@ -30,6 +30,27 @@ export class ComSystemReceivers extends LitElement {
         padding: 8px;
         border-bottom: 1px solid var(--divider-color, #e0e0e0);
       }
+      .badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 10px 2px 6px;
+        border-radius: 16px;
+        font-size: 12px;
+        white-space: nowrap;
+        background: var(--secondary-background-color, #f0f0f0);
+        color: var(--primary-text-color);
+      }
+      .badge ha-icon {
+        --mdc-icon-size: 16px;
+        display: inline-flex;
+        color: var(--secondary-text-color);
+      }
       .card + .card {
         margin-top: 16px;
       }
@@ -78,6 +99,35 @@ export class ComSystemReceivers extends LitElement {
     }
   }
 
+  /** The areas and people a receiver is linked to: by type, then name. */
+  private targets(r: ReceiverInfo): { icon: string; name: string }[] {
+    const areas = r.areas.map((id) => ({
+      icon: "mdi:texture-box",
+      name: this.hass.areas?.[id]?.name ?? id,
+    }));
+    const people = r.people.map((id) => ({
+      icon: "mdi:account",
+      name: this.hass.states[id]?.attributes?.friendly_name ?? id,
+    }));
+    const byName = (a: { name: string }, b: { name: string }) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+    return [...areas.sort(byName), ...people.sort(byName)];
+  }
+
+  private renderTargets(r: ReceiverInfo) {
+    const targets = this.targets(r);
+    if (!targets.length) {
+      return html`<span class="muted">None</span>`;
+    }
+    return html`<div class="badges">
+      ${targets.map(
+        (t) => html`<span class="badge">
+          <ha-icon icon=${t.icon}></ha-icon>${t.name}
+        </span>`,
+      )}
+    </div>`;
+  }
+
   private status(r: ReceiverInfo): string {
     if (!r.available) return "Unavailable";
     if (r.enabled === null) return "Unknown";
@@ -100,6 +150,7 @@ export class ComSystemReceivers extends LitElement {
                 <tr>
                   <th>Name</th>
                   <th>Type</th>
+                  <th>Targets</th>
                   <th>Status</th>
                   <th>Enabled</th>
                 </tr>
@@ -110,6 +161,7 @@ export class ComSystemReceivers extends LitElement {
                     <tr>
                       <td>${r.name}</td>
                       <td>${r.type}</td>
+                      <td>${this.renderTargets(r)}</td>
                       <td>${this.status(r)}</td>
                       <td>
                         <button

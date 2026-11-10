@@ -1,7 +1,11 @@
 /** The part of Home Assistant's `hass` object the panel uses. */
 export interface HomeAssistant {
   callWS<T>(msg: { type: string; [key: string]: unknown }): Promise<T>;
-  states: Record<string, { state: string }>;
+  states: Record<
+    string,
+    { state: string; attributes?: { friendly_name?: string } }
+  >;
+  areas?: Record<string, { name: string }>;
   user?: { is_admin: boolean };
 }
 

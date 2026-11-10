@@ -11,8 +11,8 @@ const RECEIVER = {
   enabled: true,
   available: true,
   entity_id: "switch.office_enabled",
-  people: [],
-  areas: [],
+  people: ["person.zed", "person.alice"],
+  areas: ["unknown_area", "office"],
 };
 
 function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
@@ -39,7 +39,12 @@ function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
   });
   const hass = {
     callWS,
-    states: { "switch.office_enabled": { state: "on" } },
+    states: {
+      "switch.office_enabled": { state: "on" },
+      "person.alice": { state: "home", attributes: { friendly_name: "Alice" } },
+      "person.zed": { state: "home", attributes: { friendly_name: "Zed" } },
+    },
+    areas: { office: { name: "Office" } },
   } as unknown as HomeAssistant;
   return { hass, callWS };
 }
@@ -98,6 +103,23 @@ describe("panel", () => {
     expect(text).toContain("Office");
     expect(text).toContain("Custom");
     expect(text).toContain("Pixel");
+    // Areas first, then people, each sorted by name (the API order is not
+    // the name order); unknown ids fall back to the id.
+    const badges = [...view.shadowRoot!.querySelectorAll(".badge")];
+    expect(badges.map((b) => b.textContent!.trim())).toEqual([
+      "Office",
+      "unknown_area",
+      "Alice",
+      "Zed",
+    ]);
+    expect(
+      badges.map((b) => b.querySelector("ha-icon")!.getAttribute("icon")),
+    ).toEqual([
+      "mdi:texture-box",
+      "mdi:texture-box",
+      "mdi:account",
+      "mdi:account",
+    ]);
 
     view.shadowRoot!.querySelector("button")!.click();
     await settle(view);
