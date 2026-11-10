@@ -12,4 +12,7 @@ if [[ -z "${COM_SYSTEM_PANEL_BUNDLE:-}" ]]; then
   export COM_SYSTEM_PANEL_DEV_URL="http://localhost:5173/src/com-system-panel.ts"
 fi
 
+# The configuration includes scripts.yaml, which is not committed.
+touch config/scripts.yaml
+
 hass --config "${PWD}/config" "$@"

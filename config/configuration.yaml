@@ -1,6 +1,11 @@
 # Dev Home Assistant configuration.
 default_config:
 
+# Load the scripts saved by the UI script editor (config/scripts.yaml, which
+# scripts/develop creates when missing). Without this, saving a script in the
+# UI times out because nothing loads it.
+script: !include scripts.yaml
+
 logger:
   default: info
   logs:
