@@ -60,10 +60,6 @@ export class ComSystemApi {
     });
   }
 
-  createReceiver(edit: ReceiverEdit): Promise<ReceiverInfo> {
-    return this.hass.callWS({ type: "com_system/receivers/create", ...edit });
-  }
-
   updateReceiver(entryId: string, edit: ReceiverEdit): Promise<ReceiverInfo> {
     return this.hass.callWS({
       type: "com_system/receivers/update",

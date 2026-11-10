@@ -18,11 +18,10 @@ CONF_NAME = "name"
 # another integration's device, the identifier of that source device.
 CONF_RECEIVER_TYPE = "receiver_type"
 CONF_SOURCE_ID = "source_id"
+# Script receivers. The id stays "custom" so existing entries keep working.
 RECEIVER_TYPE_CUSTOM = "custom"
-
-# Custom receiver entry data: the action it calls and the data it sends.
-CONF_ACTION = "action"
-CONF_ACTION_DATA = "action_data"
+# The one field a notification script takes.
+SCRIPT_FIELD = "notification"
 
 # Receiver entry options: who and where the receiver relates to.
 CONF_PEOPLE = "people"

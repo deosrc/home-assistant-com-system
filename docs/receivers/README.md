@@ -50,7 +50,7 @@ added as that type is built.
 
 ## Custom receivers
 
-A custom receiver calls a Home Assistant action you choose; see
+A custom receiver is a script that takes a `notification` object; see
 [custom receivers](custom.md).
 
 ## People and areas

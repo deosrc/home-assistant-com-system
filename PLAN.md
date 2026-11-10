@@ -31,8 +31,8 @@ System. There are two kinds:
 1. **Built-in receivers** for existing Home Assistant services and entities
    that can already receive notifications (e.g. `notify.*` services and
    notify entities, mobile app notify targets).
-2. **Custom receivers** which are mapped to Home Assistant actions
-   (services); built, see `AGENTS.md`.
+2. **Custom receivers** which are Home Assistant scripts
+   (scripts); built, see `AGENTS.md`.
 
 Each receiver needs (details **TBD**):
 

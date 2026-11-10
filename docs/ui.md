@@ -31,11 +31,9 @@ switch changes. It is disabled, and the row dimmed, for a receiver that is
 unavailable (not loaded, or its source device is gone) or whose state
 cannot be read.
 
-**Add custom receiver** opens an editor for the name, action, action data
-(JSON) and people; see [custom receivers](receivers/custom.md). Each row has
-**Edit** (name and people for any receiver; action and data for custom ones)
-and **Remove**, which asks first. Errors from validation are shown in the
-editor.
+Each row has **Edit** (name and people) and **Remove**, which asks first.
+Validation errors are shown in the editor. Receivers are added from
+discoveries; see [custom receivers](receivers/custom.md) for scripts.
 
 Below the table, **Pending discoveries** lists the sources waiting to be
 added. Choose **Review in Devices & services** to add or ignore them; see
@@ -75,15 +73,11 @@ admin user.
 - `com_system/dashboard`: the counts shown on the dashboard.
 - `com_system/receivers/list`: each receiver's name, type, enabled state,
   availability, switch entity id, `notification_receiver` entity id
-  (`receiver_entity_id`), people, areas, and for custom receivers the
-  `action` and `action_data`.
+  (`receiver_entity_id`), people, areas.
 - `com_system/receivers/set_enabled`: turns the receiver's enabled switch on
   or off (`entry_id`, `enabled`).
-- `com_system/receivers/get`: one receiver (`entry_id`), as in the list.
-- `com_system/receivers/create`: adds a custom receiver (`name`, `action`,
-  optional `action_data`, `people`) through the config flow and returns it.
-- `com_system/receivers/update`: changes the given fields of a receiver
-  (`name`, `people`; `action` and `action_data` for custom receivers).
+- `com_system/receivers/update`: renames a receiver and sets its people
+  (`entry_id`, optional `name`, `people`).
 - `com_system/receivers/remove`: removes a receiver.
 - `com_system/discoveries/list`: the pending discoveries.
 - `com_system/notify/preview`: the receivers the targets (`person` and

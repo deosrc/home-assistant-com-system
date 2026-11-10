@@ -37,9 +37,6 @@ export interface ReceiverInfo {
   receiver_entity_id: string | null;
   people: string[];
   areas: string[];
-  /** Custom receivers only: the mapped action and its data. */
-  action: string | null;
-  action_data: Record<string, unknown>;
 }
 
 export interface DiscoveryInfo {
@@ -92,7 +89,4 @@ export interface SendResponse {
 export interface ReceiverEdit {
   name: string;
   people: string[];
-  /** Custom receivers only. */
-  action?: string;
-  action_data?: Record<string, unknown>;
 }

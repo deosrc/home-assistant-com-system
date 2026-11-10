@@ -14,8 +14,6 @@ const RECEIVER = {
   receiver_entity_id: "notification_receiver.office",
   people: ["person.zed", "person.alice"],
   areas: ["unknown_area", "office"],
-  action: "notify.office",
-  action_data: {},
 };
 
 function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
@@ -171,47 +169,28 @@ describe("panel", () => {
     });
   });
 
-  it("adds, edits and removes receivers", async () => {
+  it("edits and removes receivers", async () => {
     const { hass, callWS } = makeHass();
     const panel = await mount("/receivers", hass);
     const view = panel.shadowRoot!.querySelector("com-system-receivers")!;
     await settle(view);
     const q = <T extends Element>(sel: string) =>
       view.shadowRoot!.querySelector(sel) as T;
-    const type = async (sel: string, value: string) => {
-      const el = q<HTMLInputElement>(sel);
-      el.value = value;
-      el.dispatchEvent(new Event("input"));
-      await settle(view);
-    };
-
-    q<HTMLButtonElement>("#add").click();
-    await settle(view);
-    await type("#name", "Kitchen");
-    await type("#action", "notify.kitchen");
-    await type("#action-data", '{"message": "{{ message }}"}');
-    q<HTMLButtonElement>("#save").click();
-    await settle(view);
-    expect(callWS).toHaveBeenCalledWith({
-      type: "com_system/receivers/create",
-      name: "Kitchen",
-      people: [],
-      action: "notify.kitchen",
-      action_data: { message: "{{ message }}" },
-    });
 
     q<HTMLButtonElement>(".edit").click();
     await settle(view);
-    await type("#name", "Office 2");
+    const name = q<HTMLInputElement>("#name");
+    name.value = "Office 2";
+    name.dispatchEvent(new Event("input"));
+    await settle(view);
     q<HTMLButtonElement>("#save").click();
     await settle(view);
-    expect(callWS).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: "com_system/receivers/update",
-        entry_id: "e1",
-        name: "Office 2",
-      }),
-    );
+    expect(callWS).toHaveBeenCalledWith({
+      type: "com_system/receivers/update",
+      entry_id: "e1",
+      name: "Office 2",
+      people: ["person.zed", "person.alice"],
+    });
 
     vi.stubGlobal("confirm", () => true);
     q<HTMLButtonElement>(".remove").click();
@@ -220,26 +199,6 @@ describe("panel", () => {
       type: "com_system/receivers/remove",
       entry_id: "e1",
     });
-  });
-
-  it("rejects invalid action data in the editor", async () => {
-    const { hass } = makeHass();
-    const panel = await mount("/receivers", hass);
-    const view = panel.shadowRoot!.querySelector("com-system-receivers")!;
-    await settle(view);
-    view.shadowRoot!.querySelector<HTMLButtonElement>("#add")!.click();
-    await settle(view);
-    const el = view.shadowRoot!.querySelector(
-      "#action-data",
-    ) as HTMLInputElement;
-    el.value = "[1]";
-    el.dispatchEvent(new Event("input"));
-    await settle(view);
-    view.shadowRoot!.querySelector<HTMLButtonElement>("#save")!.click();
-    await settle(view);
-    expect(view.shadowRoot!.querySelector(".error")!.textContent).toContain(
-      "JSON object",
-    );
   });
 
   it("shows an error when a command fails", async () => {

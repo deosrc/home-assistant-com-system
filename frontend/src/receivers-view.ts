@@ -1,33 +1,19 @@
 import { LitElement, css, html } from "lit";
 import { ComSystemApi, errorMessage } from "./api";
 import { sharedStyles } from "./styles";
-import type {
-  DiscoveryInfo,
-  HomeAssistant,
-  ReceiverEdit,
-  ReceiverInfo,
-} from "./types";
+import type { DiscoveryInfo, HomeAssistant, ReceiverInfo } from "./types";
 
-/** The receiver being added (no entry id) or edited. */
+/** The receiver being edited. */
 interface Draft {
-  entryId?: string;
-  custom: boolean;
+  entryId: string;
   name: string;
-  action: string;
-  actionData: string;
   people: string[];
   error?: string;
 }
 
-/** Messages for the error codes the create and update commands return. */
+/** Messages for the error codes the update command returns. */
 const ERRORS: Record<string, string> = {
   name_required: "Enter a name.",
-  name_exists: "A receiver with this name already exists.",
-  invalid_action: "Enter the action as domain.action, e.g. notify.phone.",
-  unknown_action: "This action is not available in Home Assistant.",
-  invalid_action_data: "The action data must be a JSON object.",
-  invalid_template: "The action data contains an invalid template.",
-  no_hub: "Set up the Com System hub first.",
 };
 
 /** Configured receivers with enable/disable, plus pending discoveries. */
@@ -95,18 +81,13 @@ export class ComSystemReceivers extends LitElement {
         display: grid;
         gap: 4px;
       }
-      .editor input,
-      .editor textarea {
+      .editor input {
         font: inherit;
         padding: 8px;
         color: var(--primary-text-color);
         background: var(--card-background-color, #fff);
         border: 1px solid var(--divider-color, #e0e0e0);
         border-radius: 4px;
-      }
-      .editor textarea {
-        font-family: monospace;
-        min-height: 100px;
       }
       .people {
         display: flex;
@@ -171,48 +152,18 @@ export class ComSystemReceivers extends LitElement {
     }
   }
 
-  private startAdd() {
-    this.draft = {
-      custom: true,
-      name: "",
-      action: "",
-      actionData: "{}",
-      people: [],
-    };
-  }
-
   private startEdit(r: ReceiverInfo) {
-    this.draft = {
-      entryId: r.entry_id,
-      custom: r.type_id === "custom",
-      name: r.name,
-      action: r.action ?? "",
-      actionData: JSON.stringify(r.action_data ?? {}, null, 2),
-      people: [...r.people],
-    };
+    this.draft = { entryId: r.entry_id, name: r.name, people: [...r.people] };
   }
 
   private async save() {
     const d = this.draft;
     if (!d) return;
-    const edit: ReceiverEdit = { name: d.name, people: d.people };
-    if (d.custom) {
-      try {
-        const data = JSON.parse(d.actionData.trim() || "{}");
-        if (typeof data !== "object" || data === null || Array.isArray(data)) {
-          throw new Error("not an object");
-        }
-        edit.action_data = data;
-      } catch {
-        this.draft = { ...d, error: ERRORS.invalid_action_data };
-        return;
-      }
-      edit.action = d.action;
-    }
-    const api = new ComSystemApi(this.hass);
     try {
-      if (d.entryId) await api.updateReceiver(d.entryId, edit);
-      else await api.createReceiver(edit);
+      await new ComSystemApi(this.hass).updateReceiver(d.entryId, {
+        name: d.name,
+        people: d.people,
+      });
       this.draft = undefined;
       await this.load();
     } catch (err) {
@@ -238,7 +189,7 @@ export class ComSystemReceivers extends LitElement {
       id.startsWith("person."),
     );
     return html`<div class="card editor">
-      <strong>${d.entryId ? "Edit receiver" : "Add custom receiver"}</strong>
+      <strong>Edit receiver</strong>
       <label
         >Name
         <input
@@ -247,31 +198,6 @@ export class ComSystemReceivers extends LitElement {
           @input=${(e: Event) =>
             update({ name: (e.target as HTMLInputElement).value })}
       /></label>
-      ${
-        d.custom
-          ? html`<label
-                >Action
-                <input
-                  id="action"
-                  placeholder="notify.living_room_speaker"
-                  .value=${d.action}
-                  @input=${(e: Event) =>
-                    update({ action: (e.target as HTMLInputElement).value })}
-              /></label>
-              <label
-                >Action data (JSON; strings may use templates such as {{ message
-                }})
-                <textarea
-                  id="action-data"
-                  .value=${d.actionData}
-                  @input=${(e: Event) =>
-                    update({
-                      actionData: (e.target as HTMLTextAreaElement).value,
-                    })}
-                ></textarea>
-              </label>`
-          : html``
-      }
       <div>
         People
         <div class="people">
@@ -350,9 +276,6 @@ export class ComSystemReceivers extends LitElement {
       <div>${this.draft ? this.renderEditor(this.draft) : html``}</div>
       <div class="card">
         <strong>Receivers</strong>
-        <button id="add" @click=${() => this.startAdd()}>
-          Add custom receiver
-        </button>
         ${
           this.receivers.length
             ? html`<table>

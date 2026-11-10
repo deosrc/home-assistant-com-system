@@ -16,8 +16,6 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
-    CONF_ACTION,
-    CONF_ACTION_DATA,
     CONF_DISCOVERY_TYPE,
     CONF_ENTRY_TYPE,
     CONF_NAME,
@@ -25,30 +23,12 @@ from .const import (
     CONF_RECEIVER_TYPE,
     CONF_SOURCE_ID,
     DOMAIN,
-    ENTRY_TYPE_CUSTOM_RECEIVER,
     ENTRY_TYPE_HUB,
     ENTRY_TYPE_RECEIVER,
     RECEIVER_ENTRY_TYPES,
-    RECEIVER_TYPE_CUSTOM,
-)
-from .custom_receiver import (
-    ERROR_NAME_REQUIRED,
-    custom_receiver_data,
-    validate_custom_receiver,
 )
 from .detection import discovery_unique_id
 from .receiver_type import get_receiver_type
-
-
-def _custom_schema() -> vol.Schema:
-    """The fields of a custom receiver."""
-    return vol.Schema(
-        {
-            vol.Required(CONF_NAME): str,
-            vol.Required(CONF_ACTION): str,
-            vol.Optional(CONF_ACTION_DATA): selector.ObjectSelector(),
-        }
-    )
 
 
 class ComSystemConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -68,9 +48,9 @@ class ComSystemConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Create the hub, or add a custom receiver once the hub exists."""
+        """Create the hub. Receivers are added from discoveries."""
         if self._hub_exists():
-            return await self.async_step_custom_receiver()
+            return self.async_abort(reason="receivers_are_discovered")
 
         if user_input is not None:
             return self.async_create_entry(
@@ -78,41 +58,6 @@ class ComSystemConfigFlow(ConfigFlow, domain=DOMAIN):
                 data={CONF_ENTRY_TYPE: ENTRY_TYPE_HUB},
             )
         return self.async_show_form(step_id="user")
-
-    async def async_step_custom_receiver(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Add a custom receiver: a name and the action it calls."""
-        errors: dict[str, str] = {}
-        if user_input is not None:
-            error = validate_custom_receiver(
-                self.hass,
-                name=user_input[CONF_NAME],
-                action=user_input[CONF_ACTION],
-                action_data=user_input.get(CONF_ACTION_DATA),
-            )
-            if error is None:
-                data = custom_receiver_data(
-                    user_input[CONF_NAME],
-                    user_input[CONF_ACTION],
-                    user_input.get(CONF_ACTION_DATA),
-                )
-                return self.async_create_entry(
-                    title=data[CONF_NAME],
-                    data={
-                        CONF_ENTRY_TYPE: ENTRY_TYPE_CUSTOM_RECEIVER,
-                        CONF_RECEIVER_TYPE: RECEIVER_TYPE_CUSTOM,
-                        **data,
-                    },
-                )
-            errors["base"] = error
-        return self.async_show_form(
-            step_id="custom_receiver",
-            data_schema=self.add_suggested_values_to_schema(
-                _custom_schema(), user_input
-            ),
-            errors=errors,
-        )
 
     async def async_step_integration_discovery(
         self, discovery_info: dict[str, Any]
@@ -160,59 +105,24 @@ class ComSystemConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Edit a receiver: a custom receiver's name, action and data, or the
-        name of a receiver created from a discovery. The hub has nothing to
-        reconfigure.
-        """
+        """Rename a receiver. The hub has nothing to reconfigure."""
         entry = self._get_reconfigure_entry()
-        entry_type = entry.data.get(CONF_ENTRY_TYPE)
-        if entry_type not in RECEIVER_ENTRY_TYPES:
+        if entry.data.get(CONF_ENTRY_TYPE) not in RECEIVER_ENTRY_TYPES:
             return self.async_abort(reason="not_implemented")
-
-        custom = entry_type == ENTRY_TYPE_CUSTOM_RECEIVER
-        errors: dict[str, str] = {}
         if user_input is not None:
-            if custom:
-                error = validate_custom_receiver(
-                    self.hass,
-                    name=user_input[CONF_NAME],
-                    action=user_input[CONF_ACTION],
-                    action_data=user_input.get(CONF_ACTION_DATA),
-                    exclude_entry_id=entry.entry_id,
-                )
-                updates = custom_receiver_data(
-                    user_input[CONF_NAME],
-                    user_input[CONF_ACTION],
-                    user_input.get(CONF_ACTION_DATA),
-                )
-            else:
-                name = user_input[CONF_NAME].strip()
-                error = ERROR_NAME_REQUIRED if not name else None
-                updates = {CONF_NAME: name}
-            if error is None:
-                return self.async_update_reload_and_abort(
-                    entry,
-                    title=updates[CONF_NAME],
-                    data_updates=updates,
-                    reason="reconfigure_successful",
-                )
-            errors["base"] = error
-
-        schema = (
-            _custom_schema() if custom else vol.Schema({vol.Required(CONF_NAME): str})
-        )
-        suggested = user_input or dict(entry.data)
+            name = user_input[CONF_NAME].strip()
+            return self.async_update_reload_and_abort(
+                entry,
+                title=name,
+                data_updates={CONF_NAME: name},
+                reason="reconfigure_successful",
+            )
         return self.async_show_form(
-            step_id="reconfigure_custom" if custom else "reconfigure",
-            data_schema=self.add_suggested_values_to_schema(schema, suggested),
-            errors=errors,
+            step_id="reconfigure",
+            data_schema=self.add_suggested_values_to_schema(
+                vol.Schema({vol.Required(CONF_NAME): str}), dict(entry.data)
+            ),
         )
-
-    async def async_step_reconfigure_custom(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Submit of the custom receiver's reconfigure form."""
-        return await self.async_step_reconfigure(user_input)
 
     @staticmethod
     @callback

@@ -1,63 +1,50 @@
 # Custom receivers
 
-A custom receiver delivers a notification by calling a Home Assistant action
-(service) that you choose. Use one for anything that is not detected
-automatically. The hub must exist first.
+A custom receiver is a Home Assistant script. Com System detects suitable
+scripts and offers each one as a receiver, like any other
+[detected receiver](README.md#automatic-detection). You write the script, so
+it can do anything Home Assistant can.
 
-## Adding a receiver
+## Which scripts are detected
 
-Add one in either place:
-
-- **Settings > Devices & services > Add integration > Com System**, or
-- the **Com System** panel: **Receivers > Add custom receiver**.
-
-Both use the same validation. The fields are:
-
-| Field | Meaning |
-| --- | --- |
-| Name | Unique among receivers (ignoring case). |
-| Action | The action, as `domain.action`, e.g. `notify.speaker`. Must exist. |
-| Action data | The data sent to the action. Optional. |
-| People | The people it relates to (panel; else use **Configure**). |
-
-## Action data and templates
-
-Action data is a mapping of fields to values. Every string in it, at any
-depth, is a template. These variables are available:
-
-| Variable | Value |
-| --- | --- |
-| `title` | The notification title, or none. |
-| `message` | The notification message. |
-| `priority` | The priority, or none. |
-| `image` | The image, or none. |
-| `data` | The notification's `data` block (empty when none). |
-
-For example:
+A script is offered only when it has exactly one field, named
+`notification`, with the **object** selector. Scripts with no fields,
+other fields, or another selector are ignored.
 
 ```yaml
-message: "{{ title }}: {{ message }}"
-data: "{{ data }}"
+script:
+  living_room_speaker:
+    alias: Living room speaker
+    fields:
+      notification:
+        selector:
+          object:
+    sequence:
+      - action: notify.living_room_speaker
+        data:
+          message: "{{ notification.title }}: {{ notification.message }}"
 ```
 
-A custom receiver declares no capabilities, so it never reports
-unsupported-content warnings. Templates are checked for syntax when you
-save, not when they render.
+Detection runs when the hub loads, after scripts are reloaded or added, and
+once an hour. Choose **Add** on the discovery to create the receiver, or
+**Ignore** to never be offered that script again.
+
+## What the script receives
+
+The whole notification is passed in the `notification` field, as a mapping:
+`message` and, when given, `title`. Fields added to the action later are
+passed the same way, so a script should read what it needs and ignore the
+rest. Custom receivers declare no capabilities, so no unsupported-content
+warnings are reported.
 
 ## Editing and removing
 
-- **Reconfigure** (the three dots menu in Devices & services) changes the
-  name, action and action data. Receivers created from a discovery can be
-  renamed.
-- **Configure** (options) sets the people of any receiver.
-- In the panel, **Edit** changes the same fields (action data as JSON) and
-  the people of any receiver, and **Remove** deletes the receiver.
-
-Saving reloads only that receiver.
-
-## When delivery fails
-
-If the action no longer exists, has no valid name, or its data cannot be
-rendered, delivery to that receiver fails with the reason in the
-[response](../services.md). If the action itself raises, that error is the
-reason. Other receivers are not affected.
+- In the panel, **Edit** renames the receiver and sets its people, and
+  **Remove** deletes it. In Devices & services, **Reconfigure** renames it
+  and **Configure** sets the people.
+- Removing a receiver does not delete the script. If the script is still
+  suitable, the receiver is offered again, unless you ignored it.
+- If the script is deleted, the receiver is kept and shown as unavailable.
+  Delivery fails with the reason in the [response](../services.md); other
+  receivers are not affected. If the script returns, the receiver is
+  reloaded at the next detection.
