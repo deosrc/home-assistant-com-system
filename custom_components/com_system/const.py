@@ -6,9 +6,11 @@ DOMAIN = "com_system"
 CONF_ENTRY_TYPE = "entry_type"
 ENTRY_TYPE_HUB = "hub"
 ENTRY_TYPE_CUSTOM_RECEIVER = "custom_receiver"
+# A receiver of a built-in type, created from a discovery.
+ENTRY_TYPE_RECEIVER = "receiver"
 
 # Entry types that are receivers. Each receiver type maps to one of these.
-RECEIVER_ENTRY_TYPES = (ENTRY_TYPE_CUSTOM_RECEIVER,)
+RECEIVER_ENTRY_TYPES = (ENTRY_TYPE_CUSTOM_RECEIVER, ENTRY_TYPE_RECEIVER)
 
 CONF_NAME = "name"
 
@@ -35,3 +37,19 @@ RESULT_DELIVERED = "delivered"
 RESULT_FAILED = "failed"
 RESULT_SKIPPED = "skipped"
 RESULTS = (RESULT_DELIVERED, RESULT_FAILED, RESULT_SKIPPED)
+
+# Receiver type ids of the built-in types.
+RECEIVER_TYPE_MOBILE_APP = "mobile_app"
+RECEIVER_TYPE_ALEXA_MEDIA = "alexa_media"
+RECEIVER_TYPE_PERSISTENT_NOTIFICATION = "persistent_notification"
+RECEIVER_TYPE_PUSHOVER = "pushover"
+RECEIVER_TYPE_WEBOSTV = "webostv"
+RECEIVER_TYPE_MUSIC_ASSISTANT = "music_assistant"
+
+# Keys of the discovery payload the hub passes to the discovery flow.
+CONF_DISCOVERY_TYPE = "receiver_type"
+
+# How often the hub detects again, and how long it waits after a device
+# registry change so a burst of changes causes one detection.
+DETECTION_INTERVAL_SECONDS = 3600
+DETECTION_DEBOUNCE_SECONDS = 5

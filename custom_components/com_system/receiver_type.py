@@ -32,6 +32,9 @@ class ReceiverType:
     # Typed fields and ``data`` keys the type supports. Empty means the type
     # declares none (no unsupported-content warnings).
     capabilities: frozenset[str] = frozenset()
+    # Whether receivers of the type are created from discoveries (built-in
+    # types) and so need a source to detect. Custom receivers are manual.
+    discoverable: bool = False
 
     async def async_deliver(
         self, hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
@@ -60,6 +63,13 @@ class ReceiverType:
     async def async_detect(self, hass: HomeAssistant) -> list[DiscoveryCandidate]:
         """Return receivers that could be offered as discoveries."""
         return []
+
+    def is_source_available(self, hass: HomeAssistant, receiver: Receiver) -> bool:
+        """Return whether the receiver's source device or entry still exists.
+
+        A receiver whose source is gone is kept and shown as unavailable.
+        """
+        return True
 
 
 class CustomReceiverType(ReceiverType):

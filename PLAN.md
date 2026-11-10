@@ -50,7 +50,7 @@ Each receiver needs (details **TBD**):
   created by each receiver's own entry.
 - The **hub** entry is created once by the user. It holds the
   integration-level settings (an options flow; initially the history
-  retention limits) and starts detection. One hub is enforced in the config
+  retention limits). One hub is enforced in the config
   flow; the manifest does not use `single_config_entry`, which would block
   receiver entries. The user flow creates the hub if none exists, and once
   one exists it becomes "add a custom receiver".
@@ -62,38 +62,19 @@ Each receiver needs (details **TBD**):
 - Removing the hub removes the receiver entries it created (core offers no
   confirmation hook, see the spike #6 decisions below); removing a receiver
   entry removes only that receiver.
-- Receivers of the built-in types are **offered as discoveries**. The hub
-  detects notification-capable devices and integrations that are already set
-  up (e.g. a webOS TV, a mobile app device) and raises a discovery flow for
-  each, using a unique ID per source device so none is offered twice. The
-  user confirms the discovery to create the receiver, or **ignores** it
-  permanently. New receivers start enabled.
-- A receiver that is deleted is offered again as a discovery on the next
-  detection unless the user ignored it. To stop a receiver being used
-  without deleting it, disable it with its enabled switch (section 2.4).
-  Disabling the config entry itself removes the receiver's entities, so
-  the documentation tells users to use the switch.
 - When the underlying device or integration is removed, the receiver is
-  **kept as unavailable**, with its conditions and settings, so it recovers
-  if the device returns (after a reload that re-attaches it). Stale
-  receivers are removed manually. Deliveries to an unavailable receiver fail
-  with a clear per-receiver result.
+  kept (built, see `AGENTS.md`). Its entities must show **unavailable**,
+  keeping the receiver's conditions and settings. Deliveries to an
+  unavailable receiver fail with a clear per-receiver result.
+- Disabling a receiver's config entry removes its entities, so the
+  documentation tells users to use the enabled switch (section 2.4); a new
+  receiver's switch starts **on**.
 - Custom receivers are always created manually, through the user flow, and
   edited through reconfigure and options flows.
 
 **Spike #6 decisions** (verified with Home Assistant 2026.10.4; the feature
 that builds on this removes it from the plan):
 
-- **Discovery:** the hub raises an `integration_discovery` flow per source
-  device with `unique_id` set to the source device (for example
-  `<domain>_<identifier>`) and `_abort_if_unique_id_configured()`. Repeated
-  detection does not duplicate a pending flow, a confirm-only `confirm` step
-  creates the entry, and the core Ignore action works with no extra code
-  (it removes the pending flow and stores an ignored entry that stops the
-  device being offered again). Pending flows live in memory only, so
-  "discoveries survive a restart" means the hub **re-detects on every
-  setup**; configured and ignored devices are not offered again, and a
-  deleted receiver is.
 - **Attaching to another integration's device:** a device belongs to a single
   config entry and identifiers are unique per entry, so returning another
   integration's identifiers from `device_info` creates a **second** device
@@ -110,9 +91,8 @@ that builds on this removes it from the plan):
   entities and the receiver entry remain. Availability is computed from
   whether the source device still exists, refreshed on device registry
   update events. When the device returns it is a new device, and our entities
-  re-attach only when the receiver entry is **reloaded**, so the hub's
-  detection must reload (or re-link) receivers whose source device
-  reappears.
+  re-attach only when the receiver entry is **reloaded**; the hub's detection
+  already reloads such receivers (see `AGENTS.md`).
 - **Isolation:** an update listener that reloads only its own entry means
   editing one receiver leaves others untouched. Disabling a receiver's config
   entry does not remove its entities: they stay as `unavailable` (restored)
@@ -240,7 +220,7 @@ Initially supported receiver types, in priority order:
 
 Each type needs a receiver-type definition (names provisional) covering:
 
-- How receivers of that type are discovered and configured.
+- How receivers of that type are configured.
 - Which common and receiver-specific content parameters it supports
   (section 2.3), i.e. its capabilities.
 - How a Com System notification is translated into the underlying Home
@@ -258,41 +238,37 @@ notification creates its own persistent notification (using the Com System
 notification ID), and Com System never replaces or dismisses it. Users
 dismiss notifications in the Home Assistant UI as normal.
 
-**Delivery and discovery per type:**
+**Delivery per type:**
 
-- **Mobile app** – one receiver per registered device. Devices are detected
-  from the mobile app integration's config entries and a discovery is
-  offered for each. Delivery calls that device's `notify.mobile_app_<device>`
-  action with the title, message and data (actions, image, channel and so
-  on).
+- **Mobile app** – one receiver per registered device. Delivery calls that
+  device's `notify.mobile_app_<device>` action with the title, message and data
+  (actions, image, channel and so on).
 - **Alexa Media Player** (non-native integration) – one receiver per Echo
-  device, detected from that integration's config entries and offered only
-  when the integration is installed. Delivery calls the integration's
+  device. Delivery calls the integration's
   `notify.alexa_media_*` action with announce/TTS data. If the integration
   later goes missing, the receiver shows as unavailable and deliveries to it
   fail with a clear per-receiver result. Exact action names and data are
   verified against the integration during implementation.
-- **Persistent notification** – a single receiver (offered as a
-  discovery like the others), used only when named explicitly. Delivery
+- **Persistent notification** – a single receiver, used only when named
+  explicitly. Delivery
   calls `persistent_notification.create` and is create-only (see section
   2.5).
-- **Pushover** – one receiver per Pushover config entry (notify target),
-  offered as a discovery. Delivery calls the Pushover notify action:
+- **Pushover** – one receiver per Pushover config entry (notify target).
+  Delivery calls the Pushover notify action:
   `priority` maps to Pushover priority, `image` to an attachment, and other
   options (e.g. sound, URL) go in `data`. Pushover has no user link, so the
   person is chosen manually by editing the receiver.
-- **webOS TV** – one receiver per webostv config entry, offered as a
-  discovery. Delivery calls the TV's notify action (an on-screen toast:
-  message only, with an optional icon in `data`). TVs are shared devices
-  with no person; the area comes from the device registry.
-- **Music Assistant** – one receiver per Music Assistant player, offered as
-  a discovery. Delivery calls Music Assistant's announcement action rather
-  than a notify action (the message is spoken; options such as an
-  announcement URL or volume go in `data`). How a notification is delivered
-  is an implementation detail of each receiver type's definition, so
-  non-notify actions need no special handling in the receiver model. Players
-  are shared devices with no person; the area comes from the device
+- **webOS TV** – one receiver per webostv config entry. Delivery calls the TV's
+  notify action (an on-screen toast: message only, with an optional icon in
+  `data`). TVs are shared devices with no person; the area comes from the device
   registry.
+- **Music Assistant** – one receiver per Music Assistant player. Delivery calls
+  Music Assistant's announcement action rather than a notify action (the message
+  is spoken; options such as an announcement URL or volume go in `data`). How a
+  notification is delivered is an implementation detail of each receiver type's
+  definition, so non-notify actions need no special handling in the receiver
+  model. Players are shared devices with no person; the area comes from the
+  device registry.
 
 Receiver type definitions are written in code, and each declares its
 capabilities: which typed fields and `data` keys it supports. Custom

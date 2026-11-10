@@ -11,11 +11,14 @@ described in the [repository README](../README.md#development).
 2. Go to **Settings > Devices & services > Add integration** and choose
    **Com System**. The first time, this creates the hub. Only one hub can
    exist.
-3. Choose **Add integration** again to add a custom receiver. Once the hub
+3. Com System then looks for devices it can send notifications to and lists
+   them under **Discovered** on the Devices & services page. Choose
+   **Add** to create a receiver, or **Ignore** to never be offered it again.
+   See [receiver discovery](receivers/README.md#automatic-detection).
+4. Choose **Add integration** again to add a custom receiver. Once the hub
    exists, this flow adds receivers.
 
-Discovery of built-in receivers, reconfiguration and options are stubs for
-now and do nothing yet.
+Reconfiguration and hub options are stubs for now and do nothing yet.
 
 ## Contents
 

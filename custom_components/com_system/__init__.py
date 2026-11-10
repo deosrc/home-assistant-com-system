@@ -14,24 +14,31 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_component import EntityComponent
+from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
 
+from .builtin_types import register_builtin_receiver_types
 from .const import (
     CONF_ENTRY_TYPE,
     DATA_COMPONENT,
     DATA_ENTITIES,
     DATA_REGISTRY,
     DOMAIN,
+    ENTRY_TYPE_HUB,
     NOTIFICATION_RECEIVER_DOMAIN,
     RECEIVER_ENTRY_TYPES,
 )
+from .detection import ReceiverDetector
 from .registry import ReceiverRegistry
+
+type ComSystemConfigEntry = ConfigEntry[ReceiverDetector]
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the integration once, independent of config entries."""
+    register_builtin_receiver_types()
     hass.data[DOMAIN] = {
         DATA_REGISTRY: ReceiverRegistry(hass),
         DATA_ENTITIES: {},
@@ -47,8 +54,19 @@ def _is_receiver(entry: ConfigEntry) -> bool:
     return entry.data.get(CONF_ENTRY_TYPE) in RECEIVER_ENTRY_TYPES
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up the hub or a receiver from a config entry."""
+async def async_setup_entry(hass: HomeAssistant, entry: ComSystemConfigEntry) -> bool:
+    """Set up the hub or a receiver from a config entry.
+
+    The hub starts detection once Home Assistant has started, so the
+    registries are loaded. Pending discoveries are not stored, so this runs
+    on every setup.
+    """
+    if entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_HUB:
+        detector = ReceiverDetector(hass)
+        entry.runtime_data = detector
+        detector.async_start()
+        entry.async_on_unload(detector.async_stop)
+        entry.async_on_unload(async_at_started(hass, detector.async_start_detection))
     if not _is_receiver(entry):
         return True
     # Do not forward to the notification_receiver platform: it is not an
@@ -64,7 +82,7 @@ async def _async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     await hass.config_entries.async_reload(entry.entry_id)
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: ComSystemConfigEntry) -> bool:
     """Unload the hub or a receiver."""
     if not _is_receiver(entry):
         return True
