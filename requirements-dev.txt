@@ -1,0 +1,8 @@
+# Development and test dependencies.
+# Home Assistant is pinned to the minimum supported version. The test plugin
+# pins the same Home Assistant release, so keep the two in step; raise both
+# together when the minimum is raised (and record it in hacs.json).
+homeassistant==2026.10.4
+pytest-homeassistant-custom-component==0.13.375
+debugpy
+ruff

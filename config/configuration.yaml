@@ -1,0 +1,15 @@
+# Dev Home Assistant configuration.
+default_config:
+
+logger:
+  default: info
+  logs:
+    custom_components.com_system: debug
+
+# Debugger: attach with the "Home Assistant: attach" launch config.
+# Home Assistant does not wait for the debugger (wait: false).
+debugpy:
+  start: true
+  wait: false
+  host: 0.0.0.0
+  port: 5678

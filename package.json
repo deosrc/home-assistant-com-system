@@ -1,0 +1,10 @@
+{
+  "name": "home-assistant-com-system",
+  "private": true,
+  "scripts": {
+    "lint:md": "markdownlint-cli2"
+  },
+  "devDependencies": {
+    "markdownlint-cli2": "^0.18.1"
+  }
+}
