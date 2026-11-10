@@ -314,10 +314,16 @@ explicit targets. Whether a receiver can have more than one area is **TBD**.
 
 **Mobile app (first implementation):**
 
-- A mobile app device is normally associated with the Home Assistant user
-  that is logged in to it, and so with the person linked to that user.
-  (To be verified: the user and person link available from the mobile app
-  registration and the person entity.)
+- A mobile app device is linked to a person in this order:
+  1. The Home Assistant user the app is registered with, mapped to the
+     person linked to that user.
+  2. Otherwise, the person whose device trackers include the app's device
+     tracker.
+  3. Otherwise, no person: the receiver is effectively shared until the
+     user sets a person manually.
+
+  (To be verified during implementation: the user and person link available
+  from the mobile app registration, person entities and device trackers.)
 - Some devices are not personal: wall-mounted tablets and shared devices
   also run the mobile app. Notifying a person must not reach those.
 - Each mobile app receiver therefore also exposes a **select entity** to
@@ -533,8 +539,6 @@ Every phase includes updating the matching document(s) in `docs/`
   detected candidates?
 - Frontend build and release process: are built assets committed to the
   repository, or built in CI and attached to releases (HACS support)?
-- How exactly is a mobile app device linked to a person (registration user
-  versus the person's device trackers), and what if there is no person?
 - What is the default for the personal/shared select, and can it be
   inferred (e.g. a tablet logged in as a kiosk user)?
 - Can a receiver have more than one area?
