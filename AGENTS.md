@@ -70,9 +70,9 @@ records the conventions and how things work as built.
   `CustomReceiverType` is the generic type. `async_deliver(hass, receiver,
   notification)` returns a list of warnings (content the type dropped) and
   raises to report a failure; the base class raises `NotImplementedError`,
-  which the dispatcher reports as a failed result. Only the
-  persistent notification type delivers so far; each other type's own
-  feature implements it.
+  which the dispatcher reports as a failed result. The custom
+  type and the persistent notification type deliver so far; each other
+  built-in type's own feature implements it.
 - `builtin_types.py`: the six built-in types (mobile app, Alexa Media
   Player, persistent notification, Pushover, webOS TV, Music Assistant),
   registered in `async_setup`. They have detection; delivery is added by
