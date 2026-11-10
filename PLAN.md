@@ -466,6 +466,9 @@ Notes:
 - Markdown files must pass the default markdownlint rules (including the
   80-character line limit).
 - Documentation in `docs/` is maintained alongside the code (section 6.1).
+- Minimum supported Home Assistant version: the latest stable release at the
+  time of building. No compatibility shims for older versions; the minimum
+  is raised when needed and recorded in `hacs.json`.
 
 ### 6.1 Documentation (`docs/` folder)
 
@@ -556,5 +559,4 @@ Every phase includes updating the matching document(s) in `docs/`
 - Can config subentries be offered automatically for detected receivers
   (discovery), or only created from an "add receiver" flow that lists
   detected candidates?
-- Minimum supported Home Assistant version.
 - Domain name and display name confirmation (`com_system` assumed).
