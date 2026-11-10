@@ -12,10 +12,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 
 from .const import DOMAIN
+from .registry import ReceiverRegistry
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the integration once, independent of config entries."""
+    hass.data[DOMAIN] = {"registry": ReceiverRegistry(hass)}
     return True
 
 

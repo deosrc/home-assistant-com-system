@@ -22,6 +22,14 @@
       "init": {
         "title": "Com System options",
         "description": "There are no options yet."
+      },
+      "receiver": {
+        "title": "Receiver options",
+        "description": "Choose the people and areas this receiver relates to.",
+        "data": {
+          "people": "People",
+          "areas": "Areas"
+        }
       }
     }
   }

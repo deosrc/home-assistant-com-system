@@ -54,7 +54,7 @@ Each receiver needs (details **TBD**):
   flow; the manifest does not use `single_config_entry`, which would block
   receiver entries. The user flow creates the hub if none exists, and once
   one exists it becomes "add a custom receiver".
-- Integration-level parts (receiver registry, history store, the
+- Integration-level parts (history store, the
   `notify.com_system` action, the websocket API and the panel) are set up
   once in the integration's `async_setup`, not per entry, so receiver
   entries can load in any order and without the hub. Settings are read at
@@ -366,8 +366,7 @@ their `data` block as variables for the mapped action, with no
 unsupported-content warnings.
 
 The custom (user-mapped action) receiver from section 2.1 remains the
-fallback for anything not on this list. Further types can be added later,
-so the type definition should be an extension point rather than hard-coded.
+fallback for anything not on this list.
 
 ### 2.6 Notification conditions
 
@@ -576,7 +575,7 @@ custom_components/com_system/
   services.yaml / strings.json / translations/
   websocket_api.py  # commands backing the UI
   frontend/         # panel source and build output (TBD)
-  (receiver registry, target resolver, dispatcher modules - TBD)
+  (target resolver, dispatcher modules - TBD)
 tests/
 ```
 
@@ -584,7 +583,6 @@ Core components (names provisional):
 
 | Component | Responsibility |
 | --- | --- |
-| Receiver registry | Stores and manages configured receivers |
 | Target resolver | Maps people, areas or receivers to a set of receivers |
 | Receiver entities | Enabled switch and read-only `notification_receiver` |
 | Condition evaluator | Runs a receiver's conditions against a notification |
