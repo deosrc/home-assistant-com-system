@@ -54,7 +54,8 @@ records the conventions and how things work as built.
   registered in `async_setup`. They have detection only; delivery is added
   by each type's own feature. `DeviceReceiverType` offers one receiver per
   device of `source_domain` (source id is the device identifier in that
-  domain); `EntryReceiverType` offers one per config entry (source id is its
+  domain, and the receiver's entities attach to that device via
+  `source_device_identifiers`); `EntryReceiverType` offers one per config entry (source id is its
   unique id, else its entry id). To add a built-in type, subclass one, set
   `type_id`, `name`, `source_domain`, and add it to `BUILTIN_RECEIVER_TYPES`.
   The Alexa Media Player and Music Assistant device identifiers are assumed
@@ -75,6 +76,28 @@ records the conventions and how things work as built.
   on each call, so it is always current and needs no hub or load order. It
   is created once in `async_setup` as `hass.data[DOMAIN]["registry"]`.
   Unknown types stay listed (`type_of` returns `None`).
+- Each receiver entry has two entities on one device, set up in
+  `async_setup_entry` (the hub has none): the enabled `switch`
+  (`switch.py`, `RestoreEntity`, on by default, the source of truth for
+  enabled) and the read-only `notification_receiver` entity
+  (`notification_receiver.py`, subclasses `EventEntity`; event types
+  `delivered`, `failed`, `skipped`). Both derive from `ReceiverEntity`
+  (`entity.py`), which builds the device (`(com_system, entry_id)`), or
+  attaches to the source device returned by
+  `ReceiverType.source_device_identifiers`, and registers the entity in
+  `hass.data[DOMAIN]["entities"][entry_id][entity_key]`
+  (`enabled`, `receiver`). Delivery records an attempt with
+  `NotificationReceiverEntity.async_record_attempt(result, notification,
+  warnings)`; the attributes are `title`, `message`, `priority`, `image`,
+  `data`, `warnings` plus static `receiver_type`, `people` and `areas`.
+- The `notification_receiver` domain is provided by this integration:
+  `async_setup` creates an `EntityComponent` in
+  `hass.data[DOMAIN]["notification_receiver_component"]` and the entry calls
+  `component.async_setup_entry(entry)` itself. Do not forward the entry to
+  `notification_receiver` with `async_forward_entry_setups` (it is not an
+  integration, so that fails silently). Home Assistant logs one harmless
+  translation warning for the domain. Editing a receiver reloads only that
+  entry.
 - `config_flow.py`: the user step creates the hub if none exists, otherwise
   it continues to `custom_receiver` (name only). One hub is enforced there.
   The options flow of a receiver edits its people and areas; the hub's
@@ -83,8 +106,8 @@ records the conventions and how things work as built.
   id, aborts if configured and shows a confirm-only `confirm` step that
   creates the receiver (core's Ignore needs no code). Reconfigure is a stub.
 - `__init__.py`: `async_setup` registers the built-in types and creates the
-  registry; setting up the hub starts the detector; receiver entry setup and
-  unload are no-ops.
+  registry and the component; setting up the hub starts the detector;
+  receiver entries set up and unload their entities.
 - Strings live in `strings.json`; `translations/en.json` is a copy and must
   be kept in step.
 - `hacs.json` records the minimum Home Assistant version; keep it in step
@@ -96,6 +119,17 @@ GitHub Actions workflows in `.github/workflows/` run on pull requests and
 pushes to `main`: `lint.yml` (Ruff check and format), `tests.yml` (pytest on
 Python 3.14), `markdownlint.yml`, `hassfest.yml` and `hacs.yml` (HACS
 validation). Hassfest also runs nightly. All must pass.
+
+`sync-issue-labels.yml` is not a check. When a pull request is opened or
+reopened (`pull_request_target`, never checks out PR code), it copies the
+labels of the issues the PR links to (closing keywords or the Development
+sidebar) onto the PR.
+
+`.github/release.yml` configures GitHub's auto-generated release notes. It
+groups PRs by label (`breaking-change`, `enhancement`, `bug`,
+`documentation`, `dependencies`, everything else last) and skips PRs
+labelled `ignore-for-release` and bot authors. The label sync workflow is
+what puts the issue labels on PRs.
 
 HACS validation is temporarily manual-only (`workflow_dispatch`) because the
 HACS action fails on a private repository. Restore its triggers when the

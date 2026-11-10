@@ -1,0 +1,70 @@
+name: Copy issue labels to PR
+
+on:
+  # pull_request_target gives a write token even for PRs from forks.
+  # Safe here because this workflow never checks out or runs PR code.
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  sync-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add linked issues' labels to the PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            // Issues linked to the PR (closing keywords like "Fixes #12" or
+            // linked via the Development sidebar).
+            const result = await github.graphql(
+              `query($owner: String!, $repo: String!, $number: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  pullRequest(number: $number) {
+                    closingIssuesReferences(first: 50) {
+                      nodes {
+                        number
+                        repository { nameWithOwner }
+                        labels(first: 100) { nodes { name } }
+                      }
+                    }
+                  }
+                }
+              }`,
+              { owner, repo, number: prNumber }
+            );
+
+            const issues = result.repository.pullRequest
+              .closingIssuesReferences.nodes
+              .filter(i => i.repository.nameWithOwner === `${owner}/${repo}`);
+
+            if (issues.length === 0) {
+              core.info('No linked issues found; nothing to do.');
+              return;
+            }
+
+            const labels = new Set();
+            for (const issue of issues) {
+              for (const l of issue.labels.nodes) labels.add(l.name);
+            }
+
+            if (labels.size === 0) {
+              core.info('Linked issues have no labels; nothing to do.');
+              return;
+            }
+
+            // addLabels is additive: existing PR labels are kept.
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: prNumber,
+              labels: [...labels],
+            });
+            core.info(`Added labels: ${[...labels].join(', ')}`);

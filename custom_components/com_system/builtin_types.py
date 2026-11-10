@@ -61,6 +61,14 @@ class DeviceReceiverType(ReceiverType):
                         candidates[identifier] = DiscoveryCandidate(identifier, name)
         return list(candidates.values())
 
+    def source_device_identifiers(
+        self, receiver: Receiver
+    ) -> set[tuple[str, str]] | None:
+        """Attach the receiver's entities to the source device."""
+        if receiver.source_id is None:
+            return None
+        return {(self.source_domain, receiver.source_id)}
+
     def is_source_available(self, hass: HomeAssistant, receiver: Receiver) -> bool:
         """Return whether the source device is still registered."""
         if receiver.source_id is None:

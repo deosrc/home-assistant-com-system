@@ -24,6 +24,20 @@ RECEIVER_TYPE_CUSTOM = "custom"
 CONF_PEOPLE = "people"
 CONF_AREAS = "areas"
 
+# The domain of the read-only receiver entity, which com_system provides.
+NOTIFICATION_RECEIVER_DOMAIN = "notification_receiver"
+
+# Keys of ``hass.data[DOMAIN]``.
+DATA_REGISTRY = "registry"
+DATA_COMPONENT = "notification_receiver_component"
+DATA_ENTITIES = "entities"
+
+# Delivery results, used as the event types of the receiver entity.
+RESULT_DELIVERED = "delivered"
+RESULT_FAILED = "failed"
+RESULT_SKIPPED = "skipped"
+RESULTS = (RESULT_DELIVERED, RESULT_FAILED, RESULT_SKIPPED)
+
 # Receiver type ids of the built-in types.
 RECEIVER_TYPE_MOBILE_APP = "mobile_app"
 RECEIVER_TYPE_ALEXA_MEDIA = "alexa_media"

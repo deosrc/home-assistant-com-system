@@ -21,6 +21,7 @@ from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 
 
@@ -210,3 +211,20 @@ async def test_discovery_without_hub_aborts(hass: HomeAssistant) -> None:
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "not_available"
+
+
+async def test_receiver_entities_attach_to_source_device(
+    hass: HomeAssistant,
+) -> None:
+    """A mobile app receiver's entities share the phone's own device."""
+    device = _add_phone(hass, "abc", "Pixel")
+    await _setup_hub(hass)
+    flow = _flows(hass)["mobile_app_abc"]
+    result = await hass.config_entries.flow.async_configure(flow["flow_id"], {})
+    await hass.async_block_till_done()
+
+    entities = er.async_entries_for_config_entry(
+        er.async_get(hass), result["result"].entry_id
+    )
+    assert entities
+    assert {e.device_id for e in entities} == {device.id}
