@@ -54,6 +54,9 @@ Targets determine which receivers are triggered by a notification.
 - **Default** – when no targets are specified, the notification goes to
   **all people and all areas**.
 
+Only **enabled** receivers (section 2.4) are triggered, whichever way they
+were targeted.
+
 Open questions on target resolution are listed in section 8.
 
 ### 2.3 Message parameters
@@ -76,12 +79,55 @@ Receiver-specific content raises a design question: what happens when a
 notification carries content that a resolved receiver does not support?
 See section 8.
 
+### 2.4 Receiver entity and enabled state
+
+Each Notification Receiver exposes an entity in a new
+**`notification_receiver`** domain. A dedicated domain lets entity selectors
+and select inputs be filtered to receivers only.
+
+- The entity mimics a **switch**: state is `on` or `off`, where `on` means
+  the receiver is currently **enabled** and `off` means disabled.
+- The enabled state controls whether the receiver is triggered by
+  `notify.com_system`. Disabled receivers are skipped during delivery.
+- The state should survive restarts (restored on startup).
+- Receivers must be **toggleable from the standard Home Assistant UI**
+  (the entity's more-info dialog, and toggle controls on dashboard cards),
+  not only through the COM System UI or actions.
+- The domain provides actions to change the state:
+  `notification_receiver.turn_on`, `notification_receiver.turn_off` and
+  (as for switches) `notification_receiver.toggle`.
+- Conditions such as do-not-disturb times are **not** built into COM
+  System. They are created with ordinary Home Assistant automations that
+  call these actions (e.g. turn a receiver off at 22:00 and on at 07:00).
+  This keeps the integration simple and avoids duplicating scheduling
+  features.
+
+Standard UI requirement:
+
+- The frontend decides which controls to show from the entity's domain, so
+  an unrecognised `notification_receiver` domain may only get a generic
+  more-info dialog with no toggle. This must be verified early.
+- If the standard UI cannot toggle the entity, an alternative will be
+  decided at that point. Candidates, to be evaluated then:
+  - Expose the enabled state as a real `switch` entity instead (or as well),
+    filtered by integration for selectors.
+  - Keep the `notification_receiver` entity and add a companion `switch`.
+  - Provide the toggle only in the COM System UI plus actions.
+
+Implementation notes:
+
+- Where possible, base the entity on Home Assistant's `ToggleEntity`
+  and the `EntityComponent` pattern, so behaviour matches switches.
+- Whether a custom integration can cleanly register a brand-new entity
+  domain (and its actions) is a risk to validate early. See section 8.
+
 ## 3. The `notify.com_system` action
 
 - Provided by the integration and registered under the `notify` domain.
 - Accepts the target parameters (section 2.2) plus the content parameters
   (section 2.3).
-- Resolves targets to a set of receivers, then delivers to each receiver.
+- Resolves targets to a set of receivers, drops disabled ones, then delivers
+  to each remaining receiver.
 - Exact schema, response/return value and error handling: **TBD**.
 
 ## 4. Architecture (initial outline)
@@ -96,6 +142,7 @@ custom_components/com_system/
   config_flow.py    # config + options flow, receiver management
   const.py
   notify.py         # notify.com_system implementation
+  notification_receiver.py  # entity domain, entity class, on/off actions
   services.yaml / strings.json / translations/
   websocket_api.py  # commands backing the UI
   frontend/         # panel source and build output (TBD)
@@ -109,6 +156,7 @@ Core components (names provisional):
 | --- | --- |
 | Receiver registry | Stores and manages configured receivers |
 | Target resolver | Maps people, areas or receivers to a set of receivers |
+| Receiver entity | `notification_receiver` entity holding enabled state |
 | Dispatcher | Delivers to each resolved receiver, handling failures |
 | Notify action | Entry point; validates input, calls resolver, dispatcher |
 | Config/options flow | UI for creating and editing receivers |
@@ -157,19 +205,23 @@ Notes:
 1. **Scaffold** – repository structure, manifest, HACS metadata, CI, test
    harness, `CLAUDE.md` pointing to this plan.
 2. **Receiver model and storage** – data model, registry, persistence.
-3. **Receiver config flow** – create/edit/remove receivers via the UI
+3. **Receiver entities** – `notification_receiver` domain, switch-like
+   entity with restored state, `turn_on`/`turn_off`/`toggle` actions. Starts
+   with a spike to validate registering a new domain and that the standard
+   Home Assistant UI can toggle it; decide the alternative if not.
+4. **Receiver config flow** – create/edit/remove receivers via the UI
    (built-in and custom action-mapped).
-4. **Target resolution** – people, areas, explicit receivers,
+5. **Target resolution** – people, areas, explicit receivers,
    default-to-all behaviour.
-5. **`notify.com_system` action** – schema, wiring to resolver and
+6. **`notify.com_system` action** – schema, wiring to resolver and
    dispatcher, delivery and error handling.
-6. **Content parameters** – common content first, then receiver-specific
+7. **Content parameters** – common content first, then receiver-specific
    content (e.g. mobile app actions) with per-receiver-type handling.
-7. **History store** – persist recent notifications and delivery results.
-8. **Websocket API** – commands for receivers, history, preview and test.
-9. **UI** – panel shell and dashboard, then recent notifications,
+8. **History store** – persist recent notifications and delivery results.
+9. **Websocket API** – commands for receivers, history, preview and test.
+10. **UI** – panel shell and dashboard, then recent notifications,
    receivers, notification designer and testing tool.
-10. **Documentation and release** – README, examples, HACS release.
+11. **Documentation and release** – README, examples, HACS release.
 
 ## 8. Open questions
 
@@ -187,8 +239,18 @@ Notes:
   the receiver, or derived from the entity, device or area registry?
 - When both people and areas are given, is the result a union or an
   intersection?
-- Are receivers HA entities, config entries, config subentries or stored
-  data only?
+- Can a custom integration register a new `notification_receiver` entity
+  domain (with its own actions) cleanly? Should it live in `com_system` or a
+  separate integration? Fallback: `switch` entities filtered by integration.
+- Does the standard Home Assistant UI (more-info dialog, tile and entity
+  cards) offer a toggle for a `notification_receiver` entity? If not, which
+  alternative is chosen (see section 2.4)?
+- How are receivers stored: config entries, config subentries or stored
+  data, with entities derived from them?
+- If a disabled receiver is named explicitly as a target, is it still
+  skipped? Does the testing tool show disabled receivers as skipped?
+- Should the entity expose attributes (type, associated people and areas,
+  last triggered)?
 - How are delivery failures reported (per receiver, aggregated, or
   fire-and-forget)?
 - Frontend approach: custom panel built with Lit/web components, or other?
