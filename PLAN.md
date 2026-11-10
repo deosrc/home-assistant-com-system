@@ -253,11 +253,50 @@ Notes:
   practices.
 - Markdown files must pass the default markdownlint rules (including the
   80-character line limit).
+- Documentation in `docs/` is maintained alongside the code (section 6.1).
+
+### 6.1 Documentation (`docs/` folder)
+
+The repository maintains a `docs/` folder of user-facing documentation.
+`PLAN.md` stays at the repository root as the design and AI context; `docs/`
+describes the integration as actually implemented.
+
+- Documentation is updated **as each part is implemented**. A phase or issue
+  is not complete until its documentation is written or updated.
+- Each topic has its own document. Proposed structure (names provisional):
+
+```text
+docs/
+  README.md             # index and getting started
+  targets.md            # people, areas, explicit receivers, defaults
+  content.md            # common and receiver-specific content parameters
+  conditions.md         # notification conditions and available variables
+  services.md           # notify.com_system, notification_receiver actions
+  ui.md                 # dashboard, designer, testing tool, history
+  receivers/
+    README.md           # receiver concept, enabled state, entity
+    custom.md           # custom (action-mapped) receivers
+    mobile-app.md
+    alexa-media-player.md
+    pushover.md
+    webostv.md
+    music-assistant.md
+```
+
+- Each receiver document covers setup, supported content and capabilities,
+  and examples. New receiver types add their own document.
+- Documents include worked examples, such as a do-not-disturb automation
+  using the receiver on/off actions.
+- All documentation follows the markdownlint rule in section 6.
 
 ## 7. Proposed delivery phases (draft, to become GitHub issues)
 
-1. **Scaffold** – repository structure, manifest, HACS metadata, CI, test
-   harness, `CLAUDE.md` pointing to this plan.
+Every phase includes updating the matching document(s) in `docs/`
+(section 6.1) as part of its definition of done.
+
+1. **Scaffold** – repository structure, manifest, HACS metadata, CI
+   (including markdownlint), test harness, `docs/` skeleton and index,
+   `CLAUDE.md` pointing to this plan and the documentation rule.
 2. **Receiver model and storage** – data model, registry, persistence.
 3. **Receiver entities** – `notification_receiver` domain, switch-like
    entity with restored state, `turn_on`/`turn_off`/`toggle` actions. Starts
@@ -279,7 +318,8 @@ Notes:
 11. **Websocket API** – commands for receivers, history, preview and test.
 12. **UI** – panel shell and dashboard, then recent notifications,
    receivers, notification designer and testing tool.
-13. **Documentation and release** – README, examples, HACS release.
+13. **Documentation review and release** – review `docs/` for gaps, README,
+    examples, HACS release.
 
 ## 8. Open questions
 
@@ -332,5 +372,9 @@ Notes:
   shared or global across receivers?
 - Can conditions use the receiver's own context (e.g. its associated people
   or areas) as well as the notification details?
+- Are the docs only read in the repository, or also published (e.g. GitHub
+  Pages)? Affects link style and whether a site generator is needed.
+- Should CI fail when code changes without a matching docs change, or is
+  this left to review?
 - Minimum supported Home Assistant version.
 - Domain name and display name confirmation (`com_system` assumed).
