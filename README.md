@@ -36,5 +36,11 @@ in the integration work.
 ### Test and lint
 
 - **Run tests** task, or `python3 -m pytest tests`.
+- **Lint Python**: `ruff check .` and `ruff format --check .`.
 - **Lint markdown** task, or `npm run lint:md`. All Markdown must pass the
   default markdownlint rules, including the 80 character line limit.
+
+### Continuous integration
+
+GitHub Actions run Ruff, the tests, markdownlint, hassfest and HACS
+validation on every pull request and push to `main`.
