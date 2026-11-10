@@ -5,23 +5,24 @@
         "title": "Set up Com System",
         "description": "Create the Com System hub. Receivers are added afterwards."
       },
-      "custom_receiver": {
-        "title": "Add a custom receiver",
-        "description": "Add a receiver that delivers through Home Assistant actions.",
-        "data": {
-          "name": "Name"
-        }
-      },
       "confirm": {
         "title": "Add a receiver",
         "description": "Add {name} ({type}) as a Com System receiver? It starts enabled. Choose Ignore to stop it being offered."
+      },
+      "reconfigure": {
+        "title": "Rename receiver",
+        "data": {
+          "name": "Name"
+        }
       }
     },
     "abort": {
       "not_implemented": "This is not implemented yet.",
       "already_configured": "This receiver is already added.",
       "already_in_progress": "This receiver is already waiting to be added.",
-      "not_available": "This receiver cannot be added because its type is not available or the Com System hub does not exist."
+      "not_available": "This receiver cannot be added because its type is not available or the Com System hub does not exist.",
+      "reconfigure_successful": "The receiver was updated.",
+      "receivers_are_discovered": "Receivers are added from discoveries. Create a script with an object field named notification and it will be offered here."
     },
     "flow_title": "{name} ({type})"
   },

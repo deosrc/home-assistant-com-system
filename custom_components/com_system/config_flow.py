@@ -23,11 +23,9 @@ from .const import (
     CONF_RECEIVER_TYPE,
     CONF_SOURCE_ID,
     DOMAIN,
-    ENTRY_TYPE_CUSTOM_RECEIVER,
     ENTRY_TYPE_HUB,
     ENTRY_TYPE_RECEIVER,
     RECEIVER_ENTRY_TYPES,
-    RECEIVER_TYPE_CUSTOM,
 )
 from .detection import discovery_unique_id
 from .receiver_type import get_receiver_type
@@ -50,9 +48,9 @@ class ComSystemConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Create the hub, or add a custom receiver once the hub exists."""
+        """Create the hub. Receivers are added from discoveries."""
         if self._hub_exists():
-            return await self.async_step_custom_receiver()
+            return self.async_abort(reason="receivers_are_discovered")
 
         if user_input is not None:
             return self.async_create_entry(
@@ -60,24 +58,6 @@ class ComSystemConfigFlow(ConfigFlow, domain=DOMAIN):
                 data={CONF_ENTRY_TYPE: ENTRY_TYPE_HUB},
             )
         return self.async_show_form(step_id="user")
-
-    async def async_step_custom_receiver(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Add a custom receiver (stub: name only)."""
-        if user_input is not None:
-            return self.async_create_entry(
-                title=user_input[CONF_NAME],
-                data={
-                    CONF_ENTRY_TYPE: ENTRY_TYPE_CUSTOM_RECEIVER,
-                    CONF_RECEIVER_TYPE: RECEIVER_TYPE_CUSTOM,
-                    CONF_NAME: user_input[CONF_NAME],
-                },
-            )
-        return self.async_show_form(
-            step_id="custom_receiver",
-            data_schema=vol.Schema({vol.Required(CONF_NAME): str}),
-        )
 
     async def async_step_integration_discovery(
         self, discovery_info: dict[str, Any]
@@ -125,8 +105,24 @@ class ComSystemConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Reconfigure a hub or receiver entry (stub)."""
-        return self.async_abort(reason="not_implemented")
+        """Rename a receiver. The hub has nothing to reconfigure."""
+        entry = self._get_reconfigure_entry()
+        if entry.data.get(CONF_ENTRY_TYPE) not in RECEIVER_ENTRY_TYPES:
+            return self.async_abort(reason="not_implemented")
+        if user_input is not None:
+            name = user_input[CONF_NAME].strip()
+            return self.async_update_reload_and_abort(
+                entry,
+                title=name,
+                data_updates={CONF_NAME: name},
+                reason="reconfigure_successful",
+            )
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=self.add_suggested_values_to_schema(
+                vol.Schema({vol.Required(CONF_NAME): str}), dict(entry.data)
+            ),
+        )
 
     @staticmethod
     @callback

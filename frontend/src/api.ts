@@ -5,6 +5,7 @@ import type {
   NotifyTargets,
   PreviewEntry,
   ReceiverInfo,
+  ScriptCheckResult,
   SendResponse,
 } from "./types";
 
@@ -57,6 +58,17 @@ export class ComSystemApi {
       ...(title ? { title } : {}),
       ...targets,
     });
+  }
+
+  checkScript(entityId: string): Promise<ScriptCheckResult> {
+    return this.hass.callWS({
+      type: "com_system/scripts/check",
+      entity_id: entityId,
+    });
+  }
+
+  rescanScripts(): Promise<void> {
+    return this.hass.callWS({ type: "com_system/scripts/rescan" });
   }
 
   setEnabled(entryId: string, enabled: boolean): Promise<void> {

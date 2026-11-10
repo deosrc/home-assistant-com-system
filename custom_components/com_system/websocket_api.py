@@ -17,8 +17,20 @@ from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.service import async_get_all_descriptions
 
-from .const import DATA_REGISTRY, DOMAIN, NOTIFICATION_RECEIVER_DOMAIN
+from .const import (
+    CONF_ENTRY_TYPE,
+    CONF_RECEIVER_TYPE,
+    CONF_SOURCE_ID,
+    DATA_REGISTRY,
+    DOMAIN,
+    ENTRY_TYPE_HUB,
+    NOTIFICATION_RECEIVER_DOMAIN,
+    RECEIVER_ENTRY_TYPES,
+    RECEIVER_TYPE_CUSTOM,
+)
+from .detection import discovery_unique_id
 from .dispatcher import REASON_DISABLED
 from .notify import (
     ATTR_MESSAGE,
@@ -32,6 +44,7 @@ from .notify import (
     validate_receivers,
 )
 from .receiver import Receiver
+from .receiver_type import notification_script_problems
 
 SWITCH_DOMAIN = "switch"
 ENABLED_KEY = "enabled"
@@ -45,6 +58,8 @@ def async_register_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_receivers_list)
     websocket_api.async_register_command(hass, ws_receivers_set_enabled)
     websocket_api.async_register_command(hass, ws_discoveries_list)
+    websocket_api.async_register_command(hass, ws_scripts_check)
+    websocket_api.async_register_command(hass, ws_scripts_rescan)
     websocket_api.async_register_command(hass, ws_notify_preview)
     websocket_api.async_register_command(hass, ws_notify_test)
 
@@ -77,6 +92,13 @@ def _receiver_info(hass: HomeAssistant, receiver: Receiver) -> dict[str, Any]:
         and (receiver_type is None or receiver_type.is_source_available(hass, receiver))
         and (state is None or state.state != STATE_UNAVAILABLE)
     )
+    entity_registry = er.async_get(hass)
+    receiver_entity_id = entity_registry.async_get_entity_id(
+        NOTIFICATION_RECEIVER_DOMAIN, DOMAIN, f"{receiver.entry_id}_receiver"
+    )
+    receiver_entity = (
+        entity_registry.async_get(receiver_entity_id) if receiver_entity_id else None
+    )
     return {
         "entry_id": receiver.entry_id,
         "name": receiver.name,
@@ -87,9 +109,9 @@ def _receiver_info(hass: HomeAssistant, receiver: Receiver) -> dict[str, Any]:
         "enabled": enabled,
         "available": available,
         "entity_id": entity_id,
-        "receiver_entity_id": er.async_get(hass).async_get_entity_id(
-            NOTIFICATION_RECEIVER_DOMAIN, DOMAIN, f"{receiver.entry_id}_receiver"
-        ),
+        "receiver_entity_id": receiver_entity_id,
+        # The device page is where a receiver is edited.
+        "device_id": receiver_entity.device_id if receiver_entity else None,
         "people": list(registry.people_of(receiver)),
         "areas": list(registry.areas_of(receiver)),
     }
@@ -286,3 +308,115 @@ async def ws_notify_test(
         connection.send_error(msg["id"], "send_failed", str(err))
         return
     connection.send_result(msg["id"], response)
+
+
+def _check(check_id: str, ok: bool, message: str) -> dict[str, Any]:
+    return {"id": check_id, "ok": ok, "message": message}
+
+
+async def _script_checks(hass: HomeAssistant, entity_id: str) -> dict[str, Any]:
+    """Explain whether a script is, or would be, a custom receiver.
+
+    ``can_rescan`` is true when the script would be offered by a rescan: it
+    is a notification script and is neither a receiver, ignored nor already
+    waiting as a discovery.
+    """
+    object_id = entity_id.removeprefix("script.")
+    checks: list[dict[str, Any]] = []
+    description = (
+        (await async_get_all_descriptions(hass)).get("script", {}).get(object_id)
+    )
+    exists = description is not None and hass.services.has_service("script", object_id)
+    checks.append(
+        _check(
+            "exists",
+            exists,
+            "The script exists." if exists else "The script was not found.",
+        )
+    )
+    structural_ok = False
+    if exists:
+        problems = notification_script_problems(description)
+        structural_ok = not problems
+        if structural_ok:
+            checks.append(
+                _check("fields", True, "It has an object field named notification.")
+            )
+        else:
+            checks.extend(_check("fields", False, p) for p in problems)
+
+    registered = ignored = pending = False
+    if structural_ok:
+        unique_id = discovery_unique_id(RECEIVER_TYPE_CUSTOM, object_id)
+        for entry in hass.config_entries.async_entries(DOMAIN):
+            if entry.unique_id == unique_id and entry.source == "ignore":
+                ignored = True
+            elif (
+                entry.data.get(CONF_ENTRY_TYPE) in RECEIVER_ENTRY_TYPES
+                and entry.data.get(CONF_RECEIVER_TYPE, RECEIVER_TYPE_CUSTOM)
+                == RECEIVER_TYPE_CUSTOM
+                and entry.data.get(CONF_SOURCE_ID) == object_id
+            ):
+                registered = True
+        pending = any(
+            flow["context"].get("unique_id") == unique_id
+            for flow in hass.config_entries.flow.async_progress_by_handler(
+                DOMAIN, match_context={"source": SOURCE_INTEGRATION_DISCOVERY}
+            )
+        )
+        if registered:
+            message = "It is already a receiver."
+        elif ignored:
+            message = (
+                "It was ignored. Delete the ignored entry in Devices & "
+                "services to offer it again."
+            )
+        elif pending:
+            message = "It is waiting to be added in Devices & services."
+        else:
+            message = "It is not a receiver yet."
+        checks.append(_check("registered", not (registered or ignored), message))
+    can_rescan = structural_ok and not (registered or ignored or pending)
+    return {"entity_id": entity_id, "checks": checks, "can_rescan": can_rescan}
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {vol.Required("type"): "com_system/scripts/check", vol.Required("entity_id"): str}
+)
+@websocket_api.async_response
+async def ws_scripts_check(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Check why a script is, or is not, detected as a custom receiver."""
+    if not msg["entity_id"].startswith("script."):
+        connection.send_error(msg["id"], "invalid_entity", "Choose a script")
+        return
+    connection.send_result(msg["id"], await _script_checks(hass, msg["entity_id"]))
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command({vol.Required("type"): "com_system/scripts/rescan"})
+@websocket_api.async_response
+async def ws_scripts_rescan(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Run detection now, so a new script is offered without waiting."""
+    hub = next(
+        (
+            entry
+            for entry in hass.config_entries.async_entries(DOMAIN)
+            if entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_HUB
+            and entry.state is ConfigEntryState.LOADED
+        ),
+        None,
+    )
+    if hub is None:
+        connection.send_error(msg["id"], "no_hub", "The Com System hub is not loaded")
+        return
+    await hub.runtime_data.async_detect()
+    connection.send_result(msg["id"])

@@ -127,24 +127,32 @@ def test_register_extra_type_and_reject_duplicate() -> None:
         unregister_receiver_type("extra")
 
 
-async def test_custom_receiver_flow_stores_type_and_options(
-    hass: HomeAssistant,
-) -> None:
-    """The flow stores the type; the options flow saves people."""
+async def test_user_flow_aborts_once_hub_exists(hass: HomeAssistant) -> None:
+    """Receivers are discovered, so the user flow no longer adds them."""
     MockConfigEntry(domain=DOMAIN, data={CONF_ENTRY_TYPE: ENTRY_TYPE_HUB}).add_to_hass(
         hass
     )
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
-    assert result["step_id"] == "custom_receiver"
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_NAME: "Lounge"}
-    )
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["data"][CONF_RECEIVER_TYPE] == RECEIVER_TYPE_CUSTOM
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "receivers_are_discovered"
 
-    entry = result["result"]
+
+async def test_options_flow_saves_people_and_reconfigure_renames(
+    hass: HomeAssistant,
+) -> None:
+    """The options flow saves people; reconfigure renames the receiver."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Lounge",
+        data={
+            CONF_ENTRY_TYPE: ENTRY_TYPE_CUSTOM_RECEIVER,
+            CONF_RECEIVER_TYPE: RECEIVER_TYPE_CUSTOM,
+            CONF_NAME: "Lounge",
+        },
+    )
+    entry.add_to_hass(hass)
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["step_id"] == "receiver"
     result = await hass.config_entries.options.async_configure(
@@ -152,3 +160,11 @@ async def test_custom_receiver_flow_stores_type_and_options(
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options == {CONF_PEOPLE: ["person.x"]}
+
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_NAME: " Den "}
+    )
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.title == "Den"
+    assert entry.data[CONF_NAME] == "Den"

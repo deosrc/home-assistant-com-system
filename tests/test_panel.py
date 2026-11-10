@@ -26,6 +26,8 @@ COMMANDS = [
     {"type": "com_system/receivers/list"},
     {"type": "com_system/receivers/set_enabled", "entry_id": "x", "enabled": False},
     {"type": "com_system/discoveries/list"},
+    {"type": "com_system/scripts/check", "entity_id": "script.x"},
+    {"type": "com_system/scripts/rescan"},
     {"type": "com_system/notify/preview"},
     {"type": "com_system/notify/test", "message": "x"},
 ]
@@ -43,8 +45,14 @@ async def _add_custom(hass: HomeAssistant, name: str) -> MockConfigEntry:
     entry = MockConfigEntry(
         domain=DOMAIN,
         title=name,
-        data={CONF_ENTRY_TYPE: ENTRY_TYPE_CUSTOM_RECEIVER, CONF_NAME: name},
+        data={
+            CONF_ENTRY_TYPE: ENTRY_TYPE_CUSTOM_RECEIVER,
+            CONF_NAME: name,
+            CONF_SOURCE_ID: name.lower(),
+        },
     )
+    # A script receiver is available while its script exists.
+    hass.services.async_register("script", name.lower(), lambda call: None)
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
@@ -124,8 +132,12 @@ async def test_receivers_list_and_enable_disable(
     assert receiver["entry_id"] == entry.entry_id
     assert receiver["name"] == "Office"
     assert receiver["type_id"] == "custom"
-    assert receiver["type"] == "Custom"
+    assert receiver["type"] == "Script"
     assert receiver["enabled"] is True
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, entry.entry_id), entry.entry_id
+    )
+    assert receiver["device_id"] == device.id
     assert receiver["available"] is True
     assert receiver["entity_id"] == "switch.office_enabled"
     assert receiver["receiver_entity_id"] == "notification_receiver.office"
@@ -145,7 +157,7 @@ async def test_receivers_list_and_enable_disable(
     assert msg["result"]["total"] == 1
     assert msg["result"]["enabled"] == 0
     assert msg["result"]["disabled"] == 1
-    assert msg["result"]["by_type"] == {"Custom": 1}
+    assert msg["result"]["by_type"] == {"Script": 1}
 
     await _call(
         client,
@@ -306,14 +318,14 @@ async def test_notify_preview_and_test(hass: HomeAssistant, hass_ws_client) -> N
         {
             "entry_id": on.entry_id,
             "name": "Alpha",
-            "type": "Custom",
+            "type": "Script",
             "outcome": "reached",
             "reason": None,
         },
         {
             "entry_id": off.entry_id,
             "name": "Beta",
-            "type": "Custom",
+            "type": "Script",
             "outcome": "skipped",
             "reason": "Receiver is disabled",
         },
@@ -323,8 +335,8 @@ async def test_notify_preview_and_test(hass: HomeAssistant, hass_ws_client) -> N
         client, {"type": "com_system/notify/test", "message": "hi", **targets}
     )
     assert msg["success"]
-    # The custom type does not deliver yet, so it fails; Beta is skipped.
-    assert msg["result"]["counts"] == {"delivered": 0, "failed": 1, "skipped": 1}
+    # Alpha's script runs; Beta is skipped.
+    assert msg["result"]["counts"] == {"delivered": 1, "failed": 0, "skipped": 1}
 
     msg = await _call(client, {"type": "com_system/notify/test", "message": "hi"})
     assert not msg["success"]

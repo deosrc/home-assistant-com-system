@@ -150,7 +150,7 @@ async def test_failure_does_not_block_others(hass: HomeAssistant, types) -> None
     assert by_name["B broken"]["result"] == "failed"
     assert by_name["B broken"]["reason"] == "boom"
     assert by_name["C custom"]["result"] == "failed"
-    assert "not implemented" in by_name["C custom"]["reason"]
+    assert "is not available" in by_name["C custom"]["reason"]
     assert by_name["D unknown"]["result"] == "failed"
     assert response["counts"] == {"delivered": 1, "failed": 3, "skipped": 0}
 

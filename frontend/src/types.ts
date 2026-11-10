@@ -35,6 +35,8 @@ export interface ReceiverInfo {
   entity_id: string | null;
   /** The read-only `notification_receiver` entity; the action's target. */
   receiver_entity_id: string | null;
+  /** The device page is where a receiver is edited. */
+  device_id: string | null;
   people: string[];
   areas: string[];
 }
@@ -83,4 +85,17 @@ export interface SendResult {
 export interface SendResponse {
   results: SendResult[];
   counts: { delivered: number; failed: number; skipped: number };
+}
+
+export interface ScriptCheck {
+  id: string;
+  ok: boolean;
+  message: string;
+}
+
+export interface ScriptCheckResult {
+  entity_id: string;
+  checks: ScriptCheck[];
+  /** True when a rescan would offer the script as a receiver. */
+  can_rescan: boolean;
 }

@@ -31,9 +31,8 @@ System. There are two kinds:
 1. **Built-in receivers** for existing Home Assistant services and entities
    that can already receive notifications (e.g. `notify.*` services and
    notify entities, mobile app notify targets).
-2. **Custom receivers** which are mapped to Home Assistant actions
-   (services). This is similar to how the existing notifications system maps
-   a notifier to a service call.
+2. **Custom receivers** which are Home Assistant scripts
+   (scripts); built, see `AGENTS.md`.
 
 Each receiver needs (details **TBD**):
 
@@ -69,8 +68,6 @@ Each receiver needs (details **TBD**):
 - Disabling a receiver's config entry removes its entities, so the
   documentation tells users to use the enabled switch (section 2.4); a new
   receiver's switch starts **on**.
-- Custom receivers are always created manually, through the user flow, and
-  edited through reconfigure and options flows.
 
 **Spike #6 decisions** (verified with Home Assistant 2026.10.4; the feature
 that builds on this removes it from the plan):
@@ -241,14 +238,8 @@ UI as normal.
   device registry.
 
 Receiver type definitions are written in code, and each declares its
-capabilities: which typed fields and `data` keys it supports. Custom
-(user-mapped action) receivers use a generic definition that declares no
-capabilities. They receive the common content, `priority`, `image` and
-their `data` block as variables for the mapped action, with no
-unsupported-content warnings.
-
-The custom (user-mapped action) receiver from section 2.1 remains the
-fallback for anything not on this list.
+capabilities: which typed fields and `data` keys it supports. The custom
+receiver (built) remains the fallback for anything not on this list.
 
 ### 2.6 Notification conditions
 
@@ -431,7 +422,7 @@ scope is:
 | View | Purpose |
 | --- | --- |
 | Recent notifications | History of notifications sent and their delivery |
-| Receivers (extend) | Add, edit and remove receivers, with a conditions editor |
+| Receivers (extend) | Conditions editor (add, edit and remove are built) |
 | Notification designer | Compose a notification (targets and content) |
 | Dashboard (extend) | Recent activity |
 | Testing tool (extend) | Conditions in the preview; rich content |
@@ -457,7 +448,7 @@ Notes:
   chosen, e.g. last 200 notifications or 30 days, whichever comes first),
   and the limits are configurable in the integration options.
 - Websocket commands are still needed for history, resolution preview and
-  test sends, and for adding, editing and removing receivers.
+  test sends.
 - The pending discoveries list links to Devices & services to add or
   ignore. Doing that inside the panel is not done.
 - The release flow (`release.yml`, `zip_release` in `hacs.json`) has not run

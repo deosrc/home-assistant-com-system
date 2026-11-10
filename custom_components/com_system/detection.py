@@ -18,6 +18,7 @@ from collections.abc import Callable
 from datetime import timedelta
 
 from homeassistant.config_entries import SOURCE_INTEGRATION_DISCOVERY, ConfigEntry
+from homeassistant.const import EVENT_SERVICE_REGISTERED, EVENT_SERVICE_REMOVED
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.debounce import Debouncer
@@ -67,6 +68,10 @@ class ReceiverDetector:
                 dr.EVENT_DEVICE_REGISTRY_UPDATED, self._registry_updated
             )
         )
+        for event_type in (EVENT_SERVICE_REGISTERED, EVENT_SERVICE_REMOVED):
+            self._unsubscribers.append(
+                self._hass.bus.async_listen(event_type, self._service_changed)
+            )
         self._unsubscribers.append(
             async_track_time_interval(
                 self._hass,
@@ -91,6 +96,12 @@ class ReceiverDetector:
     @callback
     def _registry_updated(self, event: Event) -> None:
         self._debouncer.async_schedule_call()
+
+    @callback
+    def _service_changed(self, event: Event) -> None:
+        """Scripts are services, so detect again when one is (un)registered."""
+        if event.data.get("domain") == "script":
+            self._debouncer.async_schedule_call()
 
     async def _interval(self, now: object) -> None:
         await self.async_detect()

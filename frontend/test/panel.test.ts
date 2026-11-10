@@ -12,6 +12,7 @@ const RECEIVER = {
   available: true,
   entity_id: "switch.office_enabled",
   receiver_entity_id: "notification_receiver.office",
+  device_id: "dev1",
   people: ["person.zed", "person.alice"],
   areas: ["unknown_area", "office"],
 };
@@ -30,6 +31,17 @@ function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
         };
       case "com_system/receivers/list":
         return { receivers: [RECEIVER] };
+      case "com_system/scripts/check":
+        return {
+          entity_id: "script.speaker",
+          checks: [
+            { id: "exists", ok: true, message: "The script exists." },
+            { id: "fields", ok: true, message: "It has one object field." },
+          ],
+          can_rescan: true,
+        };
+      case "com_system/scripts/rescan":
+        return {};
       case "com_system/discoveries/list":
         return {
           discoveries: [{ flow_id: "f1", name: "Pixel", type: "Mobile app" }],
@@ -136,7 +148,13 @@ describe("panel", () => {
     const text = view.shadowRoot!.textContent!;
     expect(text).toContain("Office");
     expect(text).toContain("Custom");
-    expect(text).toContain("Pixel");
+    // Discoveries are an alert with a link, not a list.
+    expect(text).not.toContain("Pixel");
+    const alert = view.shadowRoot!.querySelector("#discoveries")!;
+    expect(alert.textContent).toContain("1 receiver is waiting");
+    expect(alert.querySelector("a")!.getAttribute("href")).toBe(
+      "/config/integrations/integration/com_system",
+    );
     // Areas first, then people, each sorted by name (the API order is not
     // the name order); unknown ids fall back to the id.
     const badges = [...view.shadowRoot!.querySelectorAll(".badge")];
@@ -167,6 +185,55 @@ describe("panel", () => {
       entry_id: "e1",
       enabled: false,
     });
+  });
+
+  it("opens the device page when a row is clicked", async () => {
+    const { hass, callWS } = makeHass();
+    const panel = await mount("/receivers", hass);
+    const view = panel.shadowRoot!.querySelector("com-system-receivers")!;
+    await settle(view);
+    expect(view.shadowRoot!.querySelector(".edit")).toBeNull();
+    expect(view.shadowRoot!.querySelector(".remove")).toBeNull();
+
+    // Using the switch does not open the page.
+    const listener = vi.fn();
+    window.addEventListener("location-changed", listener);
+    (view.shadowRoot!.querySelector("td.switch") as HTMLElement).click();
+    expect(listener).not.toHaveBeenCalled();
+
+    (view.shadowRoot!.querySelector("tr.link") as HTMLElement).click();
+    expect(location.pathname).toBe("/config/devices/device/dev1");
+    expect(listener).toHaveBeenCalledOnce();
+    window.removeEventListener("location-changed", listener);
+    expect(callWS).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "com_system/receivers/remove" }),
+    );
+  });
+
+  it("checks a script and offers a rescan", async () => {
+    const { hass, callWS } = makeHass();
+    hass.states["script.speaker"] = {
+      state: "off",
+      attributes: { friendly_name: "Speaker" },
+    };
+    const panel = await mount("/receivers", hass);
+    const view = panel.shadowRoot!.querySelector("com-system-receivers")!;
+    await settle(view);
+    const select = view.shadowRoot!.querySelector(
+      "#script",
+    ) as HTMLSelectElement;
+    select.value = "script.speaker";
+    select.dispatchEvent(new Event("change"));
+    await settle(view);
+    expect(callWS).toHaveBeenCalledWith({
+      type: "com_system/scripts/check",
+      entity_id: "script.speaker",
+    });
+    expect(view.shadowRoot!.querySelectorAll(".checks li.ok").length).toBe(2);
+    (view.shadowRoot!.querySelector("#rescan") as HTMLButtonElement).click();
+    await settle(view);
+    expect(callWS).toHaveBeenCalledWith({ type: "com_system/scripts/rescan" });
+    expect(view.shadowRoot!.querySelector("#script-message")).not.toBeNull();
   });
 
   it("shows an error when a command fails", async () => {
