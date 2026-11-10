@@ -69,8 +69,10 @@ The `notify.com_system` action parameters fall into two groups:
 
 Content parameters are split into two tiers:
 
-- **Common content** – supported by (almost) every receiver, e.g. message
-  and title. The exact list is **TBD**.
+- **Common content** – supported by every receiver type: **`message`**
+  (required) and **`title`** (optional). Receivers that have no title
+  concept fold it into the message. Everything else, including priority and
+  images, is receiver-specific.
 - **Receiver-specific content** – only meaningful for certain receiver
   types, e.g. actions (buttons) on mobile app notifications. The exact list
   and how it is expressed in the action schema are **TBD**.
@@ -372,7 +374,6 @@ Every phase includes updating the matching document(s) in `docs/`
 
 ## 8. Open questions
 
-- Which content parameters are common, and which are receiver-specific?
 - How are receiver-specific parameters expressed in the action schema: a
   free-form `data` block, per-receiver-type blocks, or typed fields?
 - When a receiver does not support a piece of content, is it ignored,
