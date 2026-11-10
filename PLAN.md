@@ -206,8 +206,10 @@ the other types it is not tied to a person or device: every user sees the
 same notifications. It also has no push behaviour, so it suits a
 record-of-last-resort. It has no person or area association and is used
 **only when named explicitly** as a target, never by person or area targets
-or by the default (everyone) target. Its handling of content (e.g. a
-notification ID so a notification can be replaced or dismissed) is **TBD**.
+or by the default (everyone) target. It is create-only: each COM System
+notification creates its own persistent notification (using the COM System
+notification ID), and COM System never replaces or dismisses it. Users
+dismiss notifications in the Home Assistant UI as normal.
 
 **Delivery and discovery per type:**
 
@@ -224,7 +226,8 @@ notification ID so a notification can be replaced or dismissed) is **TBD**.
   fail with a clear per-receiver result. Exact action names and data are
   verified against the integration during implementation.
 - **Persistent notification** – a single receiver, used only when named
-  explicitly. Delivery calls the `persistent_notification` actions.
+  explicitly. Delivery calls `persistent_notification.create` and is
+  create-only (see section 2.5).
 - **Pushover, webOS TV, Music Assistant** – **TBD**.
 
 Receiver type definitions are written in code, and each declares its
@@ -514,8 +517,5 @@ Every phase includes updating the matching document(s) in `docs/`
   inferred (e.g. a tablet logged in as a kiosk user)?
 - Can a receiver have more than one area?
 - Should the personal/shared setting be generalised to all receiver types?
-- Should persistent notifications be created with a stable ID so repeated
-  notifications replace each other, and can the user dismiss them via COM
-  System?
 - Minimum supported Home Assistant version.
 - Domain name and display name confirmation (`com_system` assumed).
