@@ -22,6 +22,26 @@ Choose **Configure** on a receiver to set the people and areas it relates
 to. Com System uses these to find the receivers for a person or an area.
 Leave both empty if the receiver is not tied to either.
 
+## Receiver entities
+
+Each receiver has a device with two entities.
+
+- **Enabled** (`switch`): on means the receiver is enabled, off means it
+  is disabled. New receivers are enabled, and the state is kept across
+  restarts. Use the normal switch controls and the `switch.turn_on`,
+  `switch.turn_off` and `switch.toggle` actions, for example in an
+  automation that turns a receiver off at night and on in the morning.
+- **Receiver** (`notification_receiver`): read-only. Its state is the time
+  of the last notification attempt, or `unknown` before the first. Its
+  `event_type` attribute is the result (`delivered`, `failed` or
+  `skipped`). Further attributes hold the last notification (`title`,
+  `message`, `priority`, `image`, `data`), any `warnings`, and the
+  receiver's `receiver_type`, `people` and `areas`. It has no actions. To
+  react to a notification, use a state trigger on this entity.
+
+Sending notifications is not implemented yet, so the receiver entity stays
+`unknown` for now.
+
 ## The receiver registry
 
 Com System keeps a registry of all receivers, built from the receiver

@@ -51,12 +51,34 @@ records the conventions and how things work as built.
   on each call, so it is always current and needs no hub or load order. It
   is created once in `async_setup` as `hass.data[DOMAIN]["registry"]`.
   Unknown types stay listed (`type_of` returns `None`).
+- Each receiver entry has two entities on one device, set up in
+  `async_setup_entry` (the hub has none): the enabled `switch`
+  (`switch.py`, `RestoreEntity`, on by default, the source of truth for
+  enabled) and the read-only `notification_receiver` entity
+  (`notification_receiver.py`, subclasses `EventEntity`; event types
+  `delivered`, `failed`, `skipped`). Both derive from `ReceiverEntity`
+  (`entity.py`), which builds the device (`(com_system, entry_id)`), or
+  attaches to the source device returned by
+  `ReceiverType.source_device_identifiers`, and registers the entity in
+  `hass.data[DOMAIN]["entities"][entry_id][entity_key]`
+  (`enabled`, `receiver`). Delivery records an attempt with
+  `NotificationReceiverEntity.async_record_attempt(result, notification,
+  warnings)`; the attributes are `title`, `message`, `priority`, `image`,
+  `data`, `warnings` plus static `receiver_type`, `people` and `areas`.
+- The `notification_receiver` domain is provided by this integration:
+  `async_setup` creates an `EntityComponent` in
+  `hass.data[DOMAIN]["notification_receiver_component"]` and the entry calls
+  `component.async_setup_entry(entry)` itself. Do not forward the entry to
+  `notification_receiver` with `async_forward_entry_setups` (it is not an
+  integration, so that fails silently). Home Assistant logs one harmless
+  translation warning for the domain. Editing a receiver reloads only that
+  entry.
 - `config_flow.py`: the user step creates the hub if none exists, otherwise
   it continues to `custom_receiver` (name only). One hub is enforced there.
   The options flow of a receiver edits its people and areas; the hub's
   options flow is a stub. Integration discovery and reconfigure are stubs.
-- `__init__.py`: `async_setup` creates the registry; entry setup and unload
-  are no-ops.
+- `__init__.py`: `async_setup` creates the registry and the component;
+  receiver entries set up and unload their entities, the hub's are no-ops.
 - Strings live in `strings.json`; `translations/en.json` is a copy and must
   be kept in step.
 - `hacs.json` records the minimum Home Assistant version; keep it in step

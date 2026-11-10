@@ -40,19 +40,21 @@ class ReceiverRegistry:
 
     def by_person(self, person: str) -> list[Receiver]:
         """Return receivers associated with a person."""
-        return [r for r in self.all() if person in self._people(r)]
+        return [r for r in self.all() if person in self.people_of(r)]
 
     def by_area(self, area: str) -> list[Receiver]:
         """Return receivers associated with an area."""
-        return [r for r in self.all() if area in self._areas(r)]
+        return [r for r in self.all() if area in self.areas_of(r)]
 
-    def _people(self, receiver: Receiver) -> tuple[str, ...]:
+    def people_of(self, receiver: Receiver) -> tuple[str, ...]:
+        """Return the people a receiver relates to."""
         receiver_type = self.type_of(receiver)
         if receiver_type is None:
             return receiver.people
         return receiver_type.associated_people(receiver)
 
-    def _areas(self, receiver: Receiver) -> tuple[str, ...]:
+    def areas_of(self, receiver: Receiver) -> tuple[str, ...]:
+        """Return the areas a receiver relates to."""
         receiver_type = self.type_of(receiver)
         if receiver_type is None:
             return receiver.areas
