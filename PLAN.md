@@ -233,7 +233,11 @@ dismiss notifications in the Home Assistant UI as normal.
   `priority` maps to Pushover priority, `image` to an attachment, and other
   options (e.g. sound, URL) go in `data`. Pushover has no user link, so the
   person is chosen manually when the receiver is created.
-- **webOS TV, Music Assistant** – **TBD**.
+- **webOS TV** – one receiver per webostv config entry, offered as a
+  subentry. Delivery calls the TV's notify action (an on-screen toast:
+  message only, with an optional icon in `data`). TVs are shared devices
+  with no person; the area comes from the device registry.
+- **Music Assistant** – **TBD**.
 
 Receiver type definitions are written in code, and each declares its
 capabilities: which typed fields and `data` keys it supports. Custom
@@ -500,8 +504,8 @@ Every phase includes updating the matching document(s) in `docs/`
   detected candidates?
 - Frontend build and release process: are built assets committed to the
   repository, or built in CI and attached to releases (HACS support)?
-- How do webOS TV and Music Assistant each deliver notifications (which
-  actions or entities), and how are their receivers discovered?
+- How does Music Assistant deliver notifications (which actions or
+  entities), and how are its receivers discovered?
 - Music Assistant announcements are not a notify action: how does the
   receiver model accommodate non-notify delivery mechanisms?
 - What variables describe the notification to conditions (title, message,
