@@ -3,6 +3,7 @@
   "name": "Com System",
   "codeowners": ["@deosrc"],
   "config_flow": true,
+  "dependencies": ["frontend", "http", "panel_custom", "websocket_api"],
   "documentation": "https://github.com/deosrc/home-assistant-com-system/blob/main/docs/README.md",
   "integration_type": "service",
   "iot_class": "calculated",

@@ -4,7 +4,6 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.com_system.const import (
-    CONF_AREAS,
     CONF_ENTRY_TYPE,
     CONF_NAME,
     CONF_PEOPLE,
@@ -24,6 +23,8 @@ from custom_components.com_system.receiver_type import (
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers import area_registry as ar
+from homeassistant.helpers import device_registry as dr
 from homeassistant.setup import async_setup_component
 
 
@@ -74,14 +75,23 @@ async def test_legacy_entry_is_custom(hass: HomeAssistant) -> None:
 
 
 async def test_lookup_by_person_and_area(hass: HomeAssistant) -> None:
-    """Receivers are found by their associations."""
-    a = _receiver("A", options={CONF_PEOPLE: ["person.x"], CONF_AREAS: ["kitchen"]})
+    """Receivers are found by person, and by the area of their device."""
+    a = _receiver("A", options={CONF_PEOPLE: ["person.x"]})
     b = _receiver("B", options={CONF_PEOPLE: ["person.y"]})
     a.add_to_hass(hass)
     b.add_to_hass(hass)
     registry = await _registry(hass)
+    await hass.async_block_till_done()
+
+    area = ar.async_get(hass).async_create("Kitchen")
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, a.entry_id), a.entry_id
+    )
+    dr.async_get(hass).async_update_device(device.id, area_id=area.id)
+
     assert [r.entry_id for r in registry.by_person("person.x")] == [a.entry_id]
-    assert [r.entry_id for r in registry.by_area("kitchen")] == [a.entry_id]
+    assert [r.entry_id for r in registry.by_area(area.id)] == [a.entry_id]
+    assert registry.areas_of(registry.get(b.entry_id)) == ()
     assert registry.by_person("person.z") == []
 
 
@@ -120,7 +130,7 @@ def test_register_extra_type_and_reject_duplicate() -> None:
 async def test_custom_receiver_flow_stores_type_and_options(
     hass: HomeAssistant,
 ) -> None:
-    """The flow stores the type; the options flow saves people and areas."""
+    """The flow stores the type; the options flow saves people."""
     MockConfigEntry(domain=DOMAIN, data={CONF_ENTRY_TYPE: ENTRY_TYPE_HUB}).add_to_hass(
         hass
     )
@@ -138,7 +148,7 @@ async def test_custom_receiver_flow_stores_type_and_options(
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["step_id"] == "receiver"
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {CONF_PEOPLE: ["person.x"], CONF_AREAS: ["kitchen"]}
+        result["flow_id"], {CONF_PEOPLE: ["person.x"]}
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert entry.options == {CONF_PEOPLE: ["person.x"], CONF_AREAS: ["kitchen"]}
+    assert entry.options == {CONF_PEOPLE: ["person.x"]}

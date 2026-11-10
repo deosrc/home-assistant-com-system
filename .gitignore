@@ -7,3 +7,6 @@ __pycache__/
 # Dev Home Assistant runtime state (keep configuration.yaml only)
 config/*
 !config/configuration.yaml
+
+# Built panel bundle (CI builds it; releases attach it)
+custom_components/com_system/frontend/dist/

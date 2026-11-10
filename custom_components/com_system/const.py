@@ -22,7 +22,6 @@ RECEIVER_TYPE_CUSTOM = "custom"
 
 # Receiver entry options: who and where the receiver relates to.
 CONF_PEOPLE = "people"
-CONF_AREAS = "areas"
 
 # The domain of the read-only receiver entity, which com_system provides.
 NOTIFICATION_RECEIVER_DOMAIN = "notification_receiver"

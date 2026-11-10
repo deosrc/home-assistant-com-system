@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
-# Starts Home Assistant using the dev config directory (debugpy enabled).
+# Starts Home Assistant using the dev config directory (debugpy enabled),
+# and the Vite dev server for the panel, so panel edits show without a
+# rebuild. Set COM_SYSTEM_PANEL_BUNDLE=1 to serve the built bundle instead
+# (no Vite). Ports 8123 and 5173 must be forwarded.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-exec hass --config "${PWD}/config" "$@"
+if [[ -z "${COM_SYSTEM_PANEL_BUNDLE:-}" ]]; then
+  trap 'kill $(jobs -p) 2>/dev/null' EXIT
+  (cd frontend && exec npm run dev --silent) &
+  export COM_SYSTEM_PANEL_DEV_URL="http://localhost:5173/src/com-system-panel.ts"
+fi
+
+hass --config "${PWD}/config" "$@"

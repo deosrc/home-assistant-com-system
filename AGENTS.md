@@ -30,6 +30,10 @@ records the conventions and how things work as built.
 - Lint Python: `ruff check .` and `ruff format --check .` (format with
   `ruff format .`). Ruff is configured in `pyproject.toml`.
 - Lint Markdown: `npm run lint:md`.
+- Panel (in `frontend/`): `npm run lint`, `npm test`, `npm run build`.
+  Hot reload: `scripts/develop` starts Vite and sets
+  `COM_SYSTEM_PANEL_DEV_URL` (opt out with `COM_SYSTEM_PANEL_BUNDLE=1`);
+  `scripts/develop-frontend` does it on a throwaway config.
 
 ## Architecture as built
 
@@ -41,7 +45,9 @@ records the conventions and how things work as built.
   `const.py`.
 - Receiver entry data: `entry_type`, `receiver_type` (missing means
   `custom`), `name`, optional `source_id`. Options: `people` (`person.*`
-  entity ids) and `areas` (area ids). Entries are the only storage.
+  entity ids). Entries are the only storage. There is no stored area: a
+  receiver's area is its device's (`ReceiverRegistry.areas_of`, entity area
+  first), so it is changed in Home Assistant, not in Com System.
 - `receiver.py`: frozen `Receiver` dataclass built by `Receiver.from_entry`.
 - `receiver_type.py`: `ReceiverType` is the extension point (id, name,
   capabilities, `async_deliver`, association hooks, `async_detect`,
@@ -90,7 +96,7 @@ records the conventions and how things work as built.
   (`enabled`, `receiver`). Delivery records an attempt with
   `NotificationReceiverEntity.async_record_attempt(result, notification,
   warnings)`; the attributes are `title`, `message`, `priority`, `image`,
-  `data`, `warnings` plus static `receiver_type`, `people` and `areas`.
+  `data`, `warnings` plus `receiver_type`, `people` and `areas` (the device's area).
 - The `notification_receiver` domain is provided by this integration:
   `async_setup` creates an `EntityComponent` in
   `hass.data[DOMAIN]["notification_receiver_component"]` and the entry calls
@@ -101,7 +107,7 @@ records the conventions and how things work as built.
   entry.
 - `config_flow.py`: the user step creates the hub if none exists, otherwise
   it continues to `custom_receiver` (name only). One hub is enforced there.
-  The options flow of a receiver edits its people and areas; the hub's
+  The options flow of a receiver edits its people; the hub's
   options flow is a stub. `integration_discovery` aborts with
   `not_available` without a hub or a known type, otherwise sets the unique
   id, aborts if configured and shows a confirm-only `confirm` step that
@@ -109,6 +115,33 @@ records the conventions and how things work as built.
 - `__init__.py`: `async_setup` registers the built-in types and creates the
   registry and the component; setting up the hub starts the detector;
   receiver entries set up and unload their entities.
+- `panel.py`: registers the admin-only sidebar panel with `panel_custom`
+  (`require_admin=True`) from `async_setup`. The bundle is served from
+  `custom_components/com_system/frontend/dist/` at `/com_system_static/`; if
+  it is missing a warning is logged and the panel does not load (tests run
+  without a build). `COM_SYSTEM_PANEL_DEV_URL` loads the panel from the Vite
+  dev server instead. The manifest depends on `frontend`, `http`,
+  `panel_custom` and `websocket_api`, and tests need `home-assistant-frontend`
+  (pinned in `requirements-dev.txt` to what Home Assistant requires).
+- `websocket_api.py`: the commands behind the panel
+  (`com_system/ping`, `dashboard`, `receivers/list`, `receivers/set_enabled`,
+  `discoveries/list`). Every command must have `@websocket_api.require_admin`;
+  `tests/test_panel.py` checks all of them reject a read-only user. They read
+  the registry and config entries (`areas` come from
+  `ReceiverRegistry.areas_of`); enabling or disabling calls the receiver's
+  switch service, so the switch stays the source of truth. Pending
+  discoveries are the `integration_discovery` flows in progress. Add new
+  commands to `async_register_commands` and to `COMMANDS` in the test.
+- `frontend/`: the panel source (Lit 3, TypeScript, Vite 6, Vitest, ESLint).
+  `com-system-panel.ts` is the shell and navigation (routes `dashboard` and
+  `receivers` under `/com-system/`), `api.ts` wraps the websocket commands
+  (`ComSystemApi`), and each view is its own element (`dashboard-view.ts`,
+  `receivers-view.ts`) that refetches when switch states change. Add views
+  by adding an element, an entry in `VIEWS` and a command. Elements use
+  `static properties` and `declare` fields (no decorators). The build is one
+  ES module and the HMR client is imported only when the mode is
+  `development`. Commands: `npm run lint`, `npm test`, `npm run build` in
+  `frontend/`; `scripts/develop` for hot reload.
 - Strings live in `strings.json`; `translations/en.json` is a copy and must
   be kept in step.
 - `hacs.json` records the minimum Home Assistant version; keep it in step
@@ -118,8 +151,14 @@ records the conventions and how things work as built.
 
 GitHub Actions workflows in `.github/workflows/` run on pull requests and
 pushes to `main`: `lint.yml` (Ruff check and format), `tests.yml` (pytest on
-Python 3.14), `markdownlint.yml`, `hassfest.yml` and `hacs.yml` (HACS
+Python 3.14), `frontend.yml` (panel lint, test and build),
+`markdownlint.yml`, `hassfest.yml` and `hacs.yml` (HACS
 validation). Hassfest also runs nightly. All must pass.
+
+`release.yml` is not a check. When a release is published it builds the
+panel and attaches `com_system.zip` (the integration folder with the bundle)
+to it; `hacs.json` has `zip_release` so HACS installs that zip. The release
+flow has not run yet.
 
 `sync-issue-labels.yml` is not a check. When a pull request is opened or
 reopened (`pull_request_target`, never checks out PR code), it copies the

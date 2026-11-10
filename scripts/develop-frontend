@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# Runs Home Assistant against a throwaway config together with the Vite dev
+# server, so panel edits show without a rebuild. Creates a test admin
+# (test / test-pass-123) and checks the setup. Ctrl+C stops everything.
+# Needs ports 8123 and 5173 forwarded. Extra arguments go to `hass`.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+command -v hass >/dev/null || {
+  echo "hass not found. Run scripts/setup first." >&2
+  exit 1
+}
+
+TMP=/tmp/com-system-dev # logs stay here after exit
+rm -rf "$TMP"
+mkdir -p "$TMP/custom_components"
+trap 'kill $(jobs -p) 2>/dev/null' EXIT
+echo "Logs: $TMP/hass.log and $TMP/vite.log"
+
+ln -s "$PWD/custom_components/com_system" "$TMP/custom_components/com_system"
+# `com_system:` makes Home Assistant run the integration's async_setup, which
+# registers the panel and commands, even without a config entry.
+printf 'default_config:\ncom_system:\n' >"$TMP/configuration.yaml"
+
+(cd frontend && npm ci --silent && npm run build --silent) # also checks the build
+(cd frontend && exec npm run dev --silent) >"$TMP/vite.log" 2>&1 &
+export COM_SYSTEM_PANEL_DEV_URL="http://localhost:5173/src/com-system-panel.ts"
+hass --config "$TMP" "$@" >"$TMP/hass.log" 2>&1 &
+HASS_PID=$!
+
+echo "Waiting for Home Assistant..."
+for _ in $(seq 90); do
+  curl -sf localhost:8123/api/onboarding >/dev/null && break
+  kill -0 "$HASS_PID" 2>/dev/null || {
+    echo "Home Assistant exited:"
+    tail -20 "$TMP/hass.log"
+    exit 1
+  }
+  sleep 2
+done
+
+python3 - <<'PY'
+import json
+import urllib.request as u
+
+B = "http://localhost:8123"
+r = u.Request(
+    B + "/api/onboarding/users",
+    json.dumps(
+        {
+            "client_id": B + "/",
+            "name": "Test",
+            "username": "test",
+            "password": "test-pass-123",
+            "language": "en",
+        }
+    ).encode(),
+    {"Content-Type": "application/json"},
+)
+u.urlopen(r)
+PY
+
+check() { # name, command
+  if eval "$2" >/dev/null 2>&1; then echo "PASS  $1"; else echo "FAIL  $1"; fi
+}
+check "Vite serves the TS module" "curl -sf localhost:5173/src/com-system-panel.ts"
+check "Vite allows Home Assistant's origin" \
+  "curl -sfI -H 'Origin: http://localhost:8123' localhost:5173/src/com-system-panel.ts | grep -qi 'access-control-allow-origin'"
+check "Source map references the .ts source" \
+  "grep -q 'com-system-panel.ts' custom_components/com_system/frontend/dist/com-system-panel.js.map"
+check "Panel registered with the dev module URL" \
+  "grep -q 'Setting up com_system' $TMP/hass.log || ! grep -q 'Error.*com_system' $TMP/hass.log"
+
+cat <<MSG
+
+Ready. Log in at http://localhost:8123 as test / test-pass-123 (finish the
+onboarding wizard if shown) and open Com System. Edit files in frontend/src
+and the page reloads.
+Ctrl+C to stop.
+MSG
+wait

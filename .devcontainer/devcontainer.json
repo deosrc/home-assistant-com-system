@@ -5,9 +5,10 @@
     "ghcr.io/devcontainers/features/node:1": { "version": "lts" },
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
-  "forwardPorts": [8123],
+  "forwardPorts": [8123, 5173],
   "portsAttributes": {
     "8123": { "label": "Home Assistant", "onAutoForward": "notify" },
+    "5173": { "label": "Panel dev server (Vite)", "onAutoForward": "silent" },
     "5678": { "label": "debugpy", "onAutoForward": "silent" }
   },
   "postCreateCommand": "bash scripts/setup",

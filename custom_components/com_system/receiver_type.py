@@ -46,10 +46,6 @@ class ReceiverType:
         """Return the people the receiver relates to."""
         return receiver.people
 
-    def associated_areas(self, receiver: Receiver) -> tuple[str, ...]:
-        """Return the areas the receiver relates to."""
-        return receiver.areas
-
     def source_device_identifiers(
         self, receiver: Receiver
     ) -> set[tuple[str, str]] | None:

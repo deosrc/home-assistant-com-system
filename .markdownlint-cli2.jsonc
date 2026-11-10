@@ -1,5 +1,5 @@
 {
   // Default markdownlint rules (including the 80 character line limit).
   "globs": ["**/*.md"],
-  "ignores": ["node_modules/**", "config/**"]
+  "ignores": ["**/node_modules/**", "config/**"]
 }

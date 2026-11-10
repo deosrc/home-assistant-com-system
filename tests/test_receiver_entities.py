@@ -6,7 +6,6 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.com_system.const import (
-    CONF_AREAS,
     CONF_ENTRY_TYPE,
     CONF_NAME,
     CONF_PEOPLE,
@@ -23,6 +22,7 @@ from custom_components.com_system.receiver_type import (
 )
 from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant, State
+from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
@@ -90,12 +90,17 @@ async def test_switch_state_is_restored(hass: HomeAssistant) -> None:
 
 async def test_receiver_entity_records_attempts(hass: HomeAssistant) -> None:
     """The receiver entity shows the last attempt's time, result and content."""
-    entry = _entry(**{CONF_PEOPLE: ["person.alex"], CONF_AREAS: ["office"]})
+    entry = _entry(**{CONF_PEOPLE: ["person.alex"]})
     await _setup(hass, entry)
+    area = ar.async_get(hass).async_create("Office")
+    device_id = er.async_get(hass).async_get(SWITCH).device_id
+    dr.async_get(hass).async_update_device(device_id, area_id=area.id)
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
     state = hass.states.get(RECEIVER)
     assert state.attributes["receiver_type"] == "custom"
     assert state.attributes["people"] == ["person.alex"]
-    assert state.attributes["areas"] == ["office"]
+    assert state.attributes["areas"] == [area.id]
     assert state.attributes["event_types"] == ["delivered", "failed", "skipped"]
 
     entity = hass.data[DOMAIN][DATA_ENTITIES][entry.entry_id]["receiver"]

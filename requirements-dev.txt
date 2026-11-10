@@ -4,5 +4,8 @@
 # together when the minimum is raised (and record it in hacs.json).
 homeassistant==2026.10.4
 pytest-homeassistant-custom-component==0.13.375
+# Needed by the frontend and panel_custom dependencies of the integration.
+# Pin to the version Home Assistant 2026.10.4 requires.
+home-assistant-frontend==20260930.5
 debugpy
 ruff
