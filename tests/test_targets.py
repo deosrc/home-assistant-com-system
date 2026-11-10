@@ -113,17 +113,32 @@ async def test_shared_receiver_not_reached_by_person_or_default(
     )
 
 
-async def test_persistent_notification_only_when_named(hass: HomeAssistant) -> None:
-    """The persistent notification receiver ignores people, areas and default."""
+async def test_persistent_notification_follows_its_mapping(
+    hass: HomeAssistant,
+) -> None:
+    """The persistent notification receiver is reached only as it is mapped."""
     e = await _setup(hass)
     pid = e["persistent"].entry_id
+    # With no person or area it is only reached when named.
     assert pid not in _ids(resolve_targets(hass).receivers)
-    # Even in an area, it is not reached by area.
+    assert pid not in _ids(resolve_targets(hass, all_people=True).receivers)
+    assert pid not in _ids(resolve_targets(hass, people=["person.carol"]).receivers)
+    assert pid in _ids(resolve_targets(hass, receivers=[pid]).receivers)
+
+    # Mapped to a person, people targets reach it like any receiver.
+    hass.config_entries.async_update_entry(
+        e["persistent"], options={CONF_PEOPLE: ["person.carol"]}
+    )
+    await hass.async_block_till_done()
+    assert pid in _ids(resolve_targets(hass, people=["person.carol"]).receivers)
+    assert pid in _ids(resolve_targets(hass, all_people=True).receivers)
+    assert pid in _ids(resolve_targets(hass).receivers)
+    assert pid not in _ids(resolve_targets(hass, people=["person.alice"]).receivers)
+
+    # Given an area, area targets reach it too.
     device = dr.async_get(hass).async_get_device_by_identifier((DOMAIN, pid), pid)
     dr.async_get(hass).async_update_device(device.id, area_id=e["kitchen"])
-    assert pid not in _ids(resolve_targets(hass).receivers)
-    assert pid not in _ids(resolve_targets(hass, areas=[e["kitchen"]]).receivers)
-    assert pid in _ids(resolve_targets(hass, receivers=[pid]).receivers)
+    assert pid in _ids(resolve_targets(hass, areas=[e["kitchen"]]).receivers)
 
 
 async def test_disabled_receivers_are_skipped(hass: HomeAssistant) -> None:

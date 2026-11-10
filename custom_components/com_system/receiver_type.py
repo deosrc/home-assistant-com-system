@@ -35,10 +35,6 @@ class ReceiverType:
     # Whether receivers of the type are created from discoveries (built-in
     # types) and so need a source to detect. Custom receivers are manual.
     discoverable: bool = False
-    # Whether person and area targets (and the default of all people and
-    # areas) can reach receivers of the type. When False, receivers are only
-    # used when named explicitly.
-    targetable_by_association: bool = True
 
     async def async_deliver(
         self, hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]

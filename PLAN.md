@@ -200,12 +200,13 @@ The **persistent notification** receiver posts to the notification area in
 the Home Assistant UI (using the `persistent_notification` actions). Unlike
 the other types it is not tied to a person or device: every user sees the
 same notifications. It also has no push behaviour, so it suits a
-record-of-last-resort. It has no person or area association and is used
-**only when named explicitly** as a target, never by person or area targets
-or by the default (everyone) target. It is create-only: each Com System
-notification creates its own persistent notification (using the Com System
-notification ID), and Com System never replaces or dismisses it. Users
-dismiss notifications in the Home Assistant UI as normal.
+record-of-last-resort. It starts with no person or area association and so
+is used **only when named explicitly** as a target; if the user maps it to a
+person or area it is reached by those targets like any receiver. It is
+create-only: each Com System notification creates its own persistent
+notification (using the Com System notification ID), and Com System never
+replaces or dismisses it. Users dismiss notifications in the Home Assistant
+UI as normal.
 
 **Delivery per type:**
 
@@ -375,8 +376,8 @@ types already have a clear nature (see below).
 **Other receiver types:** the mechanism is TBD for each. For example, Alexa
 devices and TVs are likely to be associated by area rather than by person,
 while Pushover could be associated with a person manually. The persistent
-notification receiver is system-wide, so it has no person or area and is
-only used when named explicitly (section 2.5).
+notification receiver is system-wide, so it starts with no person or area and
+is only used when named explicitly until the user maps it (section 2.5).
 
 ## 3. The `notify.com_system` action
 

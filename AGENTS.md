@@ -129,11 +129,12 @@ records the conventions and how things work as built.
 - `targets.py`: `resolve_targets(hass, people=, areas=, receivers=)` returns
   `ResolvedTargets(receivers, skipped)` (sorted by name). Union of people,
   areas (`ReceiverRegistry.people_of` / `areas_of`) and named receiver entry
-  ids; no targets means every receiver with a person or area. Types with
-  `targetable_by_association = False` (persistent notification) match only
-  when named. Disabled receivers (the enabled switch entity in
-  `hass.data[DOMAIN][DATA_ENTITIES]`, or not loaded) go to `skipped`
-  whichever way they matched. See `docs/targets.md`.
+  ids; no targets means every receiver with a person or area. There is no
+  per-type exclusion: the persistent notification receiver has no person or
+  area until the user sets one, so it matches only when named, but once
+  mapped it is reached like any receiver. Disabled receivers (the enabled
+  switch entity in `hass.data[DOMAIN][DATA_ENTITIES]`, or not loaded) go to
+  `skipped` whichever way they matched. See `docs/targets.md`.
 - `notify.py`: registers `notify.com_system` from `async_setup`
   (`supports_response=OPTIONAL`) with a voluptuous schema (`message`,
   `title`, `person`, `receivers`; title is first, which sets the order in

@@ -30,9 +30,10 @@ areas**: every receiver that is associated with a person or has an area.
   and the default does not include it unless it has an area. Reach it by
   area, or name it.
 - A receiver with no area is never reached by an area target.
-- The **persistent notification** receiver is system-wide. It is used only
-  when named explicitly, even if you give its device an area, and it is not
-  part of the default.
+- The **persistent notification** receiver is system-wide, so it starts
+  with no person and no area and is used only when named explicitly. If you
+  set people on it (or give its device an area), it is reached by those
+  people and areas, and by the default, like any other receiver.
 - Unknown people, areas and receivers match nothing.
 
 ## Disabled receivers

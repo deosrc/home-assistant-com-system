@@ -51,12 +51,12 @@ def resolve_targets(
     receiver that has a person, whoever it is, and ``all_areas`` every
     receiver that has an area. The result is the union of
     the receivers that match any of them. With no targets at all, every
-    receiver associated with any person or area matches. A receiver whose
-    type is not ``targetable_by_association`` (the persistent notification
-    receiver) is only matched when named in ``receivers``. Shared receivers
+    receiver associated with any person or area matches. Shared receivers
     (no person) are never matched by person; a receiver without an area is
-    never matched by area. Disabled receivers are returned as skipped,
-    however they were matched. Unknown ids match nothing.
+    never matched by area, so the persistent notification receiver, which
+    has neither until you give it one, is only reached when named. Disabled
+    receivers are returned as skipped, however they were matched. Unknown ids
+    match nothing.
     """
     registry = hass.data[DOMAIN][DATA_REGISTRY]
     people_set = set(people or ())
@@ -66,16 +66,10 @@ def resolve_targets(
 
     matched: list[Receiver] = []
     for receiver in registry.all():
-        receiver_type = registry.type_of(receiver)
-        by_association = (
-            receiver_type is None or receiver_type.targetable_by_association
-        )
         receiver_people = registry.people_of(receiver)
         receiver_areas = registry.areas_of(receiver)
         if receiver.entry_id in named:
             matched.append(receiver)
-        elif not by_association:
-            continue
         elif default:
             if receiver_people or receiver_areas:
                 matched.append(receiver)

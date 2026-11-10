@@ -68,9 +68,8 @@ receivers:
 A plain target (`entity_id`, `area_id` and so on, without `active_choice`)
 is also accepted and means Select. An `entity_id` that is not a Com System
 receiver matches nothing, but still counts as a target, so it never falls
-back to the default. The persistent notification receiver is reached only
-when it is selected, not through an area, as described in
-[targets](targets.md).
+back to the default. See [targets](targets.md) for which receivers people
+and areas reach, including the persistent notification receiver.
 
 Priority, images and receiver-specific `data` are not supported yet. Input
 that does not fit the fields is rejected before anything is sent.
