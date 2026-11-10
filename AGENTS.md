@@ -136,16 +136,30 @@ records the conventions and how things work as built.
   whichever way they matched. See `docs/targets.md`.
 - `notify.py`: registers `notify.com_system` from `async_setup`
   (`supports_response=OPTIONAL`) with a voluptuous schema (`message`,
-  `title`, `person`, `area_id`, `entity_id`) and its UI description through
+  `title`, `person`, `receivers`; title is first, which sets the order in
+  the form) and its UI description through
   `async_set_service_schema` (the `notify` domain's `services.yaml` is
   core's, so there is no `services.yaml`; name and description are plain
-  strings). `entity_id` takes `notification_receiver` entities, mapped to
-  entry ids through the entity registry (`resolve_call_targets`); ones that
-  are not Com System's stay in the list as the entity id so they match
-  nothing instead of triggering the default. `async_send` resolves,
-  dispatches and returns `{results, counts}`; it raises
-  `ServiceValidationError` only when no enabled receiver matched (none, or
-  all disabled). The websocket test send calls the action through
+  strings). `person` and `receivers` are `choose` selectors whose choice
+  names are the labels the form shows, because the selector has no label
+  field and the notify domain's translations are core's: `person` is
+  `Individuals` (entity selector) or `Everyone`, `receivers` is `Select`
+  (a `target` selector limited to `notification_receiver` entities of this
+  integration) or `All Areas`. The first choice is what the form shows for
+  an unset field, so the panel always sends a value. The value is
+  `{active_choice, <choice>: value}`; `validate_person` and
+  `validate_receivers` normalise it (a plain person or list means
+  individuals, a plain target dict means Select) and `resolve_targets` takes
+  `all_people` and `all_areas`. `_select_targets` turns a Select target into
+  areas (area ids, and the areas of floors, so area rules apply) and named
+  receivers (receiver entities, plus the receiver entities Home Assistant's
+  `async_extract_referenced_entity_ids` finds for devices and labels).
+  Receiver entities are mapped to entry ids through the entity registry;
+  ids that match nothing stay in the list as ids so a selection of only
+  unknown things matches nothing instead of triggering the default.
+  `async_send` resolves, dispatches and returns `{results, counts}`; it
+  raises `ServiceValidationError` only when no enabled receiver matched
+  (none, or all disabled). The websocket test send calls the action through
   `hass.services`, so UI and automations share one path.
 - `dispatcher.py`: `async_dispatch(hass, resolved, notification)` delivers
   to the enabled receivers concurrently (`asyncio.gather`); `_deliver`
@@ -175,9 +189,13 @@ records the conventions and how things work as built.
   previews with `notify/preview` on every target change and sends with
   `notify/test`. The form is Home Assistant's `ha-service-control` with
   `hide-picker hide-description` and `.value = {action: "notify.com_system",
-  data}`; its `value-changed` `detail.value.data` holds `message`, `title`,
-  `person`, `area_id` and `entity_id`, which are the preview and send
-  fields. It reads the fields from `hass.services` (our
+  data}`; its `value-changed` `detail.value.data` holds `title`, `message`,
+  `person` and `receivers` (choose values: when the user flips the choice
+  the other choice's value stays in the object, so read `active_choice`
+  first; the Select value is a target with any of `entity_id`, `area_id`,
+  `device_id`, `floor_id`, `label_id`, all kept and sent), which are the
+  preview and send fields. The panel defaults to Everyone and All Areas.
+  It reads the fields from `hass.services` (our
   `async_set_service_schema` description), is an internal element that HA
   loads lazily, and its loading from a custom panel is unverified in a real
   frontend; the view waits `controlTimeoutMs` for it and otherwise shows a

@@ -290,7 +290,15 @@ async def test_notify_preview_and_test(hass: HomeAssistant, hass_ws_client) -> N
     )
     client = await hass_ws_client(hass)
     targets = {
-        "entity_id": ["notification_receiver.alpha", "notification_receiver.beta"]
+        "receivers": {
+            "active_choice": "Select",
+            "Select": {
+                "entity_id": [
+                    "notification_receiver.alpha",
+                    "notification_receiver.beta",
+                ]
+            },
+        }
     }
 
     msg = await _call(client, {"type": "com_system/notify/preview", **targets})
@@ -321,3 +329,29 @@ async def test_notify_preview_and_test(hass: HomeAssistant, hass_ws_client) -> N
     msg = await _call(client, {"type": "com_system/notify/test", "message": "hi"})
     assert not msg["success"]
     assert msg["error"]["code"] == "send_failed"
+
+
+async def test_notify_preview_people_choice(
+    hass: HomeAssistant, hass_ws_client
+) -> None:
+    """Preview takes the people choice, or a plain list."""
+    await _setup(hass)
+    entry = await _add_custom(hass, "Alpha")
+    hass.config_entries.async_update_entry(entry, options={"people": ["person.a"]})
+    await hass.async_block_till_done()
+    client = await hass_ws_client(hass)
+
+    for person in (
+        {"active_choice": "Everyone", "Everyone": True},
+        {"active_choice": "Individuals", "Individuals": ["person.a"]},
+        ["person.a"],
+    ):
+        msg = await _call(
+            client, {"type": "com_system/notify/preview", "person": person}
+        )
+        assert [r["name"] for r in msg["result"]["receivers"]] == ["Alpha"], person
+
+    msg = await _call(
+        client, {"type": "com_system/notify/preview", "person": {"active_choice": "x"}}
+    )
+    assert not msg["success"]

@@ -158,3 +158,15 @@ async def test_result_is_ordered_by_name(hass: HomeAssistant) -> None:
     await _setup(hass)
     names = [r.name for r in resolve_targets(hass).receivers]
     assert names == sorted(names, key=str.casefold)
+
+
+async def test_all_people(hass: HomeAssistant) -> None:
+    """all_people matches receivers with a person, not areas-only or shared."""
+    e = await _setup(hass)
+    result = resolve_targets(hass, all_people=True)
+    assert _ids(result.receivers) == {e[k].entry_id for k in ("alice", "bob", "both")}
+    # Combined with an area it is a union.
+    result = resolve_targets(hass, all_people=True, areas=[e["kitchen"]])
+    assert _ids(result.receivers) == {
+        e[k].entry_id for k in ("alice", "bob", "both", "echo")
+    }

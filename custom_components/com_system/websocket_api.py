@@ -16,20 +16,20 @@ from homeassistant.config_entries import SOURCE_INTEGRATION_DISCOVERY, ConfigEnt
 from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 
 from .const import DATA_REGISTRY, DOMAIN, NOTIFICATION_RECEIVER_DOMAIN
 from .dispatcher import REASON_DISABLED
 from .notify import (
-    ATTR_AREA_ID,
-    ATTR_ENTITY_ID,
     ATTR_MESSAGE,
     ATTR_PERSON,
+    ATTR_RECEIVERS,
     ATTR_TITLE,
     NOTIFY_DOMAIN,
     SERVICE_NAME,
     resolve_call_targets,
+    validate_person,
+    validate_receivers,
 )
 from .receiver import Receiver
 
@@ -212,9 +212,8 @@ def ws_dashboard(
 
 
 _TARGET_FIELDS = {
-    vol.Optional(ATTR_PERSON): vol.All(cv.ensure_list, [str]),
-    vol.Optional(ATTR_AREA_ID): vol.All(cv.ensure_list, [str]),
-    vol.Optional(ATTR_ENTITY_ID): vol.All(cv.ensure_list, [str]),
+    vol.Optional(ATTR_PERSON): validate_person,
+    vol.Optional(ATTR_RECEIVERS): validate_receivers,
 }
 
 

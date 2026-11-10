@@ -42,11 +42,12 @@ its type.
 The testing tool sends a test notification and shows what happens.
 
 - The form is Home Assistant's own action form, as on **Developer tools >
-  Actions**, without the action picker. Enter a **message** and an optional
-  **title**, and choose the people, areas and receivers to target. With
-  nothing chosen the notification goes to all people and areas, as it does
-  from an automation. If Home Assistant has not loaded that form, a simple
-  form with the same fields is shown instead.
+  Actions**, without the action picker. Enter an optional **title** and a
+  **message**, and choose the targets: **Individuals** (one or more
+  people) or **Everyone**, and **Select** (receivers, areas and so on) or
+  **All Areas**. Everyone and All Areas are the defaults. They are combined
+  as in the [action](services.md#people). If Home Assistant has not loaded
+  that form, a simple form with the same fields is shown instead.
 - **Receivers reached** updates as you change the targets, without sending
   anything. Each matching receiver is `reached`, or `skipped` with the
   reason (it is disabled).
@@ -70,8 +71,8 @@ admin user.
 - `com_system/receivers/set_enabled`: turns the receiver's enabled switch on
   or off (`entry_id`, `enabled`).
 - `com_system/discoveries/list`: the pending discoveries.
-- `com_system/notify/preview`: the receivers the targets (`person`,
-  `area_id`, `entity_id`, as in the action) would reach, each `reached` or
+- `com_system/notify/preview`: the receivers the targets (`person` and
+  `receivers`, as in the action) would reach, each `reached` or
   `skipped` with a reason. Sends nothing.
 - `com_system/notify/test`: sends through the `notify.com_system` action
   (`message`, optional `title`, and the targets) and returns its response.

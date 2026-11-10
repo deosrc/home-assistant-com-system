@@ -5,12 +5,15 @@ people, areas and receivers, in any combination.
 
 ## Kinds of target
 
-- **People**: receivers associated with any of the listed people. A
+- **People**: receivers associated with everyone (any person), or with any
+  of the individuals you list, as chosen in the
+  [action](services.md#people). A
   receiver's people are set on the receiver (see
   [people and areas](receivers/README.md#people-and-areas)).
 - **Areas**: receivers whose device is in any of the listed areas. A
   receiver's area is the area of its device in Home Assistant.
-- **Receivers**: receivers named explicitly.
+- **Receivers**: receivers named explicitly, or every receiver with an area
+  (**All Areas**).
 
 The results are combined as a **union**: a receiver is used if it matches
 any listed person, any listed area, or is named. A receiver that matches in

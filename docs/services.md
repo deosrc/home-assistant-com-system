@@ -8,17 +8,69 @@ send a notification to the receivers that match its [targets](targets.md).
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `message` | yes | The message to send. |
 | `title` | no | A title; folded into the message where there is none. |
-| `person` | no | One or more `person.*` entities. |
-| `area_id` | no | One or more areas. |
-| `entity_id` | no | One or more `notification_receiver` entities. |
+| `message` | yes | The message to send. |
+| `person` | no | Individual people, or everyone (see below). |
+| `receivers` | no | Selected receivers, or all areas (see below). |
 
-`person`, `area_id` and `entity_id` are the targets. They are combined as a
-union, and with none of them the notification goes to all people and all
-areas; see [targets](targets.md). An `entity_id` that is not a Com System
+`person` and `receivers` are the targets. They are combined as a union;
+see [targets](targets.md). In the form, **Everyone** and **All Areas** are
+the defaults, which together reach every receiver that has a person or an
+area. If you leave out both fields in YAML, the notification also goes to
+all people and all areas.
+
+### People
+
+`person` is a choice between **Individuals** and **Everyone**. Individuals
+reaches the receivers of the `person.*` entities you pick, and picking none
+adds no people (use this to target only receivers). Everyone reaches every
+receiver that is associated with any person. In YAML:
+
+```yaml
+person:
+  active_choice: Individuals
+  Individuals:
+    - person.alice
+```
+
+```yaml
+person:
+  active_choice: Everyone
+  Everyone: true
+```
+
+A plain `person.*` entity or list of them is also accepted and means
+individuals.
+
+### Receivers
+
+`receivers` is a choice between **Select** and **All Areas**. All Areas
+reaches every receiver that has an area. Select shows a target selector
+limited to receivers (the `notification_receiver` entities), where you can
+also pick areas, and devices, floors and labels, which reach the receivers
+they contain. In YAML:
+
+```yaml
+receivers:
+  active_choice: Select
+  Select:
+    entity_id:
+      - notification_receiver.alice_s_phone
+    area_id: kitchen
+```
+
+```yaml
+receivers:
+  active_choice: All Areas
+  All Areas: true
+```
+
+A plain target (`entity_id`, `area_id` and so on, without `active_choice`)
+is also accepted and means Select. An `entity_id` that is not a Com System
 receiver matches nothing, but still counts as a target, so it never falls
-back to the default.
+back to the default. The persistent notification receiver is reached only
+when it is selected, not through an area, as described in
+[targets](targets.md).
 
 Priority, images and receiver-specific `data` are not supported yet. Input
 that does not fit the fields is rejected before anything is sent.
@@ -29,8 +81,13 @@ data:
   title: Laundry
   message: The washing has finished
   person:
-    - person.alice
-  area_id: kitchen
+    active_choice: Individuals
+    Individuals:
+      - person.alice
+  receivers:
+    active_choice: Select
+    Select:
+      area_id: kitchen
 ```
 
 ## Delivery

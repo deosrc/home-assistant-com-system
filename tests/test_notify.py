@@ -22,7 +22,10 @@ from custom_components.com_system.receiver_type import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
+from homeassistant.helpers import area_registry as ar
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import floor_registry as fr
 from homeassistant.helpers.service import async_get_all_descriptions
 from homeassistant.setup import async_setup_component
 
@@ -74,6 +77,13 @@ async def _add(hass, name, type_id="test_ok", people=()):
     return entry
 
 
+def _select(*entity_ids: str, **target) -> dict:
+    """A receivers value choosing Select with the given receiver entities."""
+    if entity_ids:
+        target["entity_id"] = list(entity_ids)
+    return {"active_choice": "Select", "Select": target}
+
+
 async def _send(hass: HomeAssistant, **data):
     return await hass.services.async_call(
         "notify", "com_system", data, blocking=True, return_response=True
@@ -85,9 +95,7 @@ async def test_action_registered_with_schema(hass: HomeAssistant) -> None:
     assert await async_setup_component(hass, DOMAIN, {})
     assert hass.services.has_service("notify", "com_system")
     description = (await async_get_all_descriptions(hass))["notify"]["com_system"]
-    assert {"message", "title", "person", "area_id", "entity_id"} <= set(
-        description["fields"]
-    )
+    assert {"title", "message", "person", "receivers"} <= set(description["fields"])
 
 
 async def test_invalid_input_rejected(hass: HomeAssistant) -> None:
@@ -215,7 +223,7 @@ async def test_targets(hass: HomeAssistant, types) -> None:
         hass,
         message="x",
         person=["person.alice"],
-        entity_id=["notification_receiver.shared"],
+        receivers=_select("notification_receiver.shared"),
     )
     assert [r["name"] for r in named["results"]] == ["Alice", "Shared"]
 
@@ -233,7 +241,7 @@ async def test_raises_when_nothing_can_be_attempted(hass: HomeAssistant, types) 
     with pytest.raises(ServiceValidationError, match="disabled"):
         await _send(hass, message="x", person="person.a")
     with pytest.raises(ServiceValidationError, match="No receiver matches"):
-        await _send(hass, message="x", entity_id="notification_receiver.nope")
+        await _send(hass, message="x", receivers=_select("notification_receiver.nope"))
 
 
 async def test_foreign_entity_matches_nothing(hass: HomeAssistant, types) -> None:
@@ -244,9 +252,150 @@ async def test_foreign_entity_matches_nothing(hass: HomeAssistant, types) -> Non
         "notification_receiver", "other", "1", suggested_object_id="other"
     )
     with pytest.raises(ServiceValidationError):
-        await _send(hass, message="x", entity_id="notification_receiver.other")
+        await _send(hass, message="x", receivers=_select("notification_receiver.other"))
 
 
 def test_custom_type_unchanged() -> None:
     """The generic type keeps its id."""
     assert CustomReceiverType.type_id == "custom"
+
+
+async def test_people_choice(hass: HomeAssistant, types) -> None:
+    """Everyone reaches every receiver with a person; individuals only theirs."""
+    assert await async_setup_component(hass, DOMAIN, {})
+    await _add(hass, "Alice", people=["person.alice"])
+    await _add(hass, "Bob", people=["person.bob"])
+    await _add(hass, "Shared")
+
+    everyone = await _send(
+        hass, message="x", person={"active_choice": "Everyone", "Everyone": True}
+    )
+    assert [r["name"] for r in everyone["results"]] == ["Alice", "Bob"]
+
+    individuals = await _send(
+        hass,
+        message="x",
+        person={"active_choice": "Individuals", "Individuals": ["person.bob"]},
+    )
+    assert [r["name"] for r in individuals["results"]] == ["Bob"]
+
+    # A plain list still means individuals.
+    plain = await _send(hass, message="x", person=["person.alice"])
+    assert [r["name"] for r in plain["results"]] == ["Alice"]
+
+    # Everyone is combined with the other targets as a union.
+    union = await _send(
+        hass,
+        message="x",
+        person={"active_choice": "Everyone", "Everyone": True},
+        receivers=_select("notification_receiver.shared"),
+    )
+    assert [r["name"] for r in union["results"]] == ["Alice", "Bob", "Shared"]
+
+    # Individuals with nobody chosen is no person target: here, no targets.
+    with pytest.raises(ServiceValidationError, match="No receiver matches"):
+        await _send(
+            hass,
+            message="x",
+            person={"active_choice": "Individuals", "Individuals": []},
+            receivers=_select("notification_receiver.nope"),
+        )
+
+
+async def test_people_choice_invalid(hass: HomeAssistant) -> None:
+    """An unknown choice or a non-person entity is rejected."""
+    assert await async_setup_component(hass, DOMAIN, {})
+    with pytest.raises(vol.Invalid):
+        await _send(hass, message="x", person={"active_choice": "Nobody"})
+    with pytest.raises(vol.Invalid):
+        await _send(
+            hass,
+            message="x",
+            person={"active_choice": "Individuals", "Individuals": ["light.a"]},
+        )
+
+
+async def test_description_order_and_people_selector(hass: HomeAssistant) -> None:
+    """Title comes first and people are a choose selector."""
+    assert await async_setup_component(hass, DOMAIN, {})
+    fields = (await async_get_all_descriptions(hass))["notify"]["com_system"]["fields"]
+    assert list(fields) == ["title", "message", "person", "receivers"]
+    choices = fields["person"]["selector"]["choose"]["choices"]
+    assert list(choices) == ["Individuals", "Everyone"]
+    assert choices["Individuals"]["selector"]["entity"] == {
+        "domain": "person",
+        "multiple": True,
+    }
+    choices = fields["receivers"]["selector"]["choose"]["choices"]
+    assert list(choices) == ["Select", "All Areas"]
+    assert choices["Select"]["selector"]["target"] == {
+        "entity": {"domain": "notification_receiver", "integration": "com_system"}
+    }
+
+
+async def test_receivers_choice(hass: HomeAssistant, types) -> None:
+    """All Areas reaches receivers with an area; Select the chosen ones."""
+    assert await async_setup_component(hass, DOMAIN, {})
+    kitchen = ar.async_get(hass).async_create("Kitchen").id
+    floor = fr.async_get(hass).async_create("Ground").floor_id
+    ar.async_get(hass).async_update(kitchen, floor_id=floor)
+    alice = await _add(hass, "Alice", people=["person.alice"])
+    echo = await _add(hass, "Echo")
+    shared = await _add(hass, "Shared")
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, echo.entry_id), echo.entry_id
+    )
+    dr.async_get(hass).async_update_device(device.id, area_id=kitchen)
+
+    names = lambda response: [r["name"] for r in response["results"]]  # noqa: E731
+
+    all_areas = await _send(
+        hass,
+        message="x",
+        receivers={"active_choice": "All Areas", "All Areas": True},
+    )
+    assert names(all_areas) == ["Echo"]
+
+    # Select by area, floor and device, and by receiver; all are a union.
+    assert names(
+        await _send(hass, message="x", receivers=_select(area_id=[kitchen]))
+    ) == ["Echo"]
+    assert names(
+        await _send(hass, message="x", receivers=_select(floor_id=[floor]))
+    ) == ["Echo"]
+    assert names(
+        await _send(hass, message="x", receivers=_select(device_id=[device.id]))
+    ) == ["Echo"]
+    assert names(
+        await _send(
+            hass,
+            message="x",
+            receivers=_select("notification_receiver.shared", area_id=[kitchen]),
+        )
+    ) == ["Echo", "Shared"]
+    # A plain target dict means Select.
+    assert names(
+        await _send(
+            hass, message="x", receivers={"entity_id": ["notification_receiver.alice"]}
+        )
+    ) == ["Alice"]
+    assert alice and shared
+
+    # Something selected that matches nothing is still a target.
+    for target in (
+        _select(floor_id=["nope"]),
+        _select(device_id=["nope"]),
+        _select(label_id=["nope"]),
+        _select(area_id=["nope"]),
+    ):
+        with pytest.raises(ServiceValidationError, match="No receiver matches"):
+            await _send(hass, message="x", receivers=target)
+
+
+async def test_receivers_choice_invalid(hass: HomeAssistant) -> None:
+    """An unknown choice or a non-receiver entity is rejected."""
+    assert await async_setup_component(hass, DOMAIN, {})
+    with pytest.raises(vol.Invalid):
+        await _send(hass, message="x", receivers={"active_choice": "Nobody"})
+    with pytest.raises(vol.Invalid):
+        await _send(hass, message="x", receivers=_select("light.kitchen"))

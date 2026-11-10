@@ -210,7 +210,9 @@ describe("panel layout", () => {
     await panel.updateComplete;
     expect(panel.hasAttribute("narrow")).toBe(true);
     expect(panel.shadowRoot!.querySelector("nav.bottom-bar")).not.toBeNull();
-    expect(panel.shadowRoot!.querySelector("h1")!.textContent).toBe("Com System");
+    expect(panel.shadowRoot!.querySelector("h1")!.textContent).toBe(
+      "Com System",
+    );
   });
 });
 
@@ -227,13 +229,28 @@ describe("testing tool", () => {
     const view = panel.shadowRoot!.querySelector("com-system-test")!;
     await settle(view);
     const root = view.shadowRoot!;
-    // The default preview has no targets.
-    expect(callWS).toHaveBeenCalledWith({ type: "com_system/notify/preview" });
+    // Everyone and All Areas are the defaults.
+    const everyone = { active_choice: "Everyone", Everyone: true };
+    const allAreas = { active_choice: "All Areas", "All Areas": true };
+    expect(callWS).toHaveBeenCalledWith({
+      type: "com_system/notify/preview",
+      person: everyone,
+      receivers: allAreas,
+    });
+    // Individuals and Select come first, Everyone and All Areas second.
+    const radios = [
+      ...root.querySelectorAll<HTMLInputElement>("input[type=radio]"),
+    ].map((r) => r.parentElement!.textContent!.trim());
+    expect(radios).toEqual(["Individuals", "Everyone", "Select", "All Areas"]);
+    // The fallback form lists the title first.
+    const labels = [...root.querySelectorAll("label.field span")].map(
+      (e) => e.textContent,
+    );
+    expect(labels).toEqual(["Title (optional)", "Message"]);
     const rows = [...root.querySelectorAll(".preview tbody tr")];
-    expect(rows.map((r) => r.textContent!.replace(/\s+/g, " ").trim())).toEqual([
-      "Office Custom reached",
-      "Den Custom skipped (Receiver is disabled)",
-    ]);
+    expect(rows.map((r) => r.textContent!.replace(/\s+/g, " ").trim())).toEqual(
+      ["Office Custom reached", "Den Custom skipped (Receiver is disabled)"],
+    );
 
     const send = root.querySelector<HTMLButtonElement>(".send")!;
     expect(send.disabled).toBe(true); // no message yet
@@ -243,15 +260,47 @@ describe("testing tool", () => {
     await settle(view);
     expect(send.disabled).toBe(false);
 
-    // Choosing a person re-runs the preview with that target.
-    const person = [...root.querySelectorAll<HTMLInputElement>("input[type=checkbox]")]
-      .find((c) => c.parentElement!.textContent!.includes("Alice"))!;
+    // Individuals lists the people; choosing one re-runs the preview.
+    expect(root.querySelector(".people")!.textContent).not.toContain("Alice");
+    const individuals = [
+      ...root.querySelectorAll<HTMLInputElement>("input[type=radio]"),
+    ].find((r) => r.parentElement!.textContent!.includes("Individuals"))!;
+    individuals.checked = true;
+    individuals.dispatchEvent(new Event("change"));
+    await settle(view);
+    const person = [
+      ...root.querySelectorAll<HTMLInputElement>("input[type=checkbox]"),
+    ].find((c) => c.parentElement!.textContent!.includes("Alice"))!;
     person.checked = true;
     person.dispatchEvent(new Event("change"));
     await settle(view);
     expect(callWS).toHaveBeenCalledWith({
       type: "com_system/notify/preview",
       person: ["person.alice"],
+      receivers: allAreas,
+    });
+
+    // Select lists receivers and areas; choosing a receiver sends it.
+    const select = [
+      ...root.querySelectorAll<HTMLInputElement>("input[type=radio]"),
+    ].find((r) => r.parentElement!.textContent!.includes("Select"))!;
+    select.checked = true;
+    select.dispatchEvent(new Event("change"));
+    await settle(view);
+    const office = [
+      ...root.querySelectorAll<HTMLInputElement>("input[type=checkbox]"),
+    ].find((c) => c.parentElement!.textContent!.includes("Office"))!;
+    office.checked = true;
+    office.dispatchEvent(new Event("change"));
+    await settle(view);
+    const selected = {
+      active_choice: "Select",
+      Select: { entity_id: ["notification_receiver.office"] },
+    };
+    expect(callWS).toHaveBeenCalledWith({
+      type: "com_system/notify/preview",
+      person: ["person.alice"],
+      receivers: selected,
     });
 
     send.click();
@@ -260,6 +309,7 @@ describe("testing tool", () => {
       type: "com_system/notify/test",
       message: "Hello",
       person: ["person.alice"],
+      receivers: selected,
     });
     await settle(view);
     const result = root.querySelector(".results")!.textContent!;
@@ -313,6 +363,11 @@ describe("testing tool with the Home Assistant Actions form", () => {
       expect(root.querySelector("textarea")).toBeNull();
 
       callWS.mockClear();
+      // Other keys of the target selector are kept, empty ones dropped.
+      const selected = {
+        active_choice: "Select",
+        Select: { area_id: ["office"], device_id: ["d1"] },
+      };
       control.dispatchEvent(
         new CustomEvent("value-changed", {
           detail: {
@@ -321,9 +376,20 @@ describe("testing tool with the Home Assistant Actions form", () => {
               data: {
                 message: "Hello",
                 title: "Hi",
-                person: "person.alice",
-                area_id: ["office"],
-                entity_id: [],
+                person: {
+                  active_choice: "Individuals",
+                  Individuals: ["person.alice"],
+                  Everyone: true,
+                },
+                receivers: {
+                  active_choice: "Select",
+                  Select: {
+                    area_id: ["office"],
+                    device_id: ["d1"],
+                    entity_id: [],
+                  },
+                  "All Areas": true,
+                },
               },
             },
           },
@@ -333,16 +399,19 @@ describe("testing tool with the Home Assistant Actions form", () => {
       expect(callWS).toHaveBeenCalledWith({
         type: "com_system/notify/preview",
         person: ["person.alice"],
-        area_id: ["office"],
+        receivers: selected,
       });
       // The form is given back the same selection.
       expect((control as unknown as { value: unknown }).value).toEqual({
         action: "notify.com_system",
         data: {
-          message: "Hello",
           title: "Hi",
-          person: ["person.alice"],
-          area_id: ["office"],
+          message: "Hello",
+          person: {
+            active_choice: "Individuals",
+            Individuals: ["person.alice"],
+          },
+          receivers: selected,
         },
       });
 
@@ -353,7 +422,7 @@ describe("testing tool with the Home Assistant Actions form", () => {
         message: "Hello",
         title: "Hi",
         person: ["person.alice"],
-        area_id: ["office"],
+        receivers: selected,
       });
     }
   });

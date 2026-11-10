@@ -4,15 +4,26 @@ import { sharedStyles } from "./styles";
 import type {
   HomeAssistant,
   NotifyTargets,
+  SelectedTarget,
   PreviewEntry,
   ReceiverInfo,
   SendResponse,
 } from "./types";
 
-type TargetKey = keyof NotifyTargets;
+/** The people field is a choice: everyone, or individual people. */
+const EVERYONE = "Everyone";
+const INDIVIDUALS = "Individuals";
+type PersonChoice = typeof EVERYONE | typeof INDIVIDUALS;
+
+/** The receivers field is a choice: a selection, or all areas. */
+const SELECT = "Select";
+const ALL_AREAS = "All Areas";
+type ReceiversChoice = typeof SELECT | typeof ALL_AREAS;
+
+/** The lists the built-in form edits. */
+type TargetKey = "person" | "area_id" | "entity_id";
 
 const ACTION = "notify.com_system";
-const TARGET_KEYS: TargetKey[] = ["person", "area_id", "entity_id"];
 
 /** Home Assistant's own Actions form; loaded lazily, so it may be absent. */
 const CONTROL = "ha-service-control";
@@ -37,7 +48,12 @@ export class ComSystemTest extends LitElement {
   declare private receivers: ReceiverInfo[];
   declare private message: string;
   declare private subject: string;
-  declare private selected: Record<TargetKey, string[]>;
+  /** The individuals chosen when `personChoice` is Individuals. */
+  declare private people: string[];
+  declare private personChoice: PersonChoice;
+  /** The selection (area_id, entity_id, ...) when `receiversChoice` is Select. */
+  declare private selection: SelectedTarget;
+  declare private receiversChoice: ReceiversChoice;
   declare private preview?: PreviewEntry[];
   declare private response?: SendResponse;
   declare private sending: boolean;
@@ -53,7 +69,10 @@ export class ComSystemTest extends LitElement {
     receivers: { state: true },
     message: { state: true },
     subject: { state: true },
-    selected: { state: true },
+    people: { state: true },
+    personChoice: { state: true },
+    selection: { state: true },
+    receiversChoice: { state: true },
     preview: { state: true },
     response: { state: true },
     sending: { state: true },
@@ -176,7 +195,10 @@ export class ComSystemTest extends LitElement {
     this.receivers = [];
     this.message = "";
     this.subject = "";
-    this.selected = { person: [], area_id: [], entity_id: [] };
+    this.people = [];
+    this.personChoice = EVERYONE;
+    this.selection = {};
+    this.receiversChoice = ALL_AREAS;
     this.sending = false;
   }
 
@@ -205,11 +227,17 @@ export class ComSystemTest extends LitElement {
   /** The action call the form edits: only the fields with a value. */
   private get actionValue() {
     const data: Record<string, unknown> = {};
-    if (this.message) data.message = this.message;
     if (this.subject) data.title = this.subject;
-    for (const key of TARGET_KEYS) {
-      if (this.selected[key].length) data[key] = this.selected[key];
-    }
+    if (this.message) data.message = this.message;
+    // Always present, so the form keeps showing the chosen option.
+    data.person =
+      this.personChoice === EVERYONE
+        ? { active_choice: EVERYONE, [EVERYONE]: true }
+        : { active_choice: INDIVIDUALS, [INDIVIDUALS]: this.people };
+    data.receivers =
+      this.receiversChoice === ALL_AREAS
+        ? { active_choice: ALL_AREAS, [ALL_AREAS]: true }
+        : { active_choice: SELECT, [SELECT]: this.selection };
     return { action: ACTION, data };
   }
 
@@ -218,11 +246,21 @@ export class ComSystemTest extends LitElement {
     const data = (ev.detail.value.data ?? {}) as Record<string, unknown>;
     this.message = data.message === undefined ? "" : String(data.message);
     this.subject = data.title === undefined ? "" : String(data.title);
-    this.selected = {
-      person: ensureList(data.person),
-      area_id: ensureList(data.area_id),
-      entity_id: ensureList(data.entity_id),
-    };
+    const person = (data.person ?? {}) as Record<string, unknown>;
+    this.personChoice =
+      person.active_choice === INDIVIDUALS ? INDIVIDUALS : EVERYONE;
+    this.people = ensureList(person[INDIVIDUALS]);
+    const receivers = (data.receivers ?? {}) as Record<string, unknown>;
+    this.receiversChoice =
+      receivers.active_choice === SELECT ? SELECT : ALL_AREAS;
+    // Keep every key of the target selector (areas, devices, floors, ...).
+    const selection: SelectedTarget = {};
+    for (const [key, value] of Object.entries(
+      (receivers[SELECT] ?? {}) as Record<string, unknown>,
+    )) {
+      if (ensureList(value).length) selection[key] = ensureList(value);
+    }
+    this.selection = selection;
     // The previous send no longer describes the selection.
     this.response = undefined;
     void this.refreshPreview();
@@ -237,11 +275,18 @@ export class ComSystemTest extends LitElement {
     await this.refreshPreview();
   }
 
-  /** Only the fields with a selection are sent, so none means the default. */
+  /** Only the fields with a selection are sent. */
   private get targets(): NotifyTargets {
     const targets: NotifyTargets = {};
-    for (const key of Object.keys(this.selected) as TargetKey[]) {
-      if (this.selected[key].length) targets[key] = this.selected[key];
+    if (this.personChoice === EVERYONE) {
+      targets.person = { active_choice: EVERYONE, [EVERYONE]: true };
+    } else if (this.people.length) {
+      targets.person = this.people;
+    }
+    if (this.receiversChoice === ALL_AREAS) {
+      targets.receivers = { active_choice: ALL_AREAS, [ALL_AREAS]: true };
+    } else if (Object.keys(this.selection).length) {
+      targets.receivers = { active_choice: SELECT, [SELECT]: this.selection };
     }
     return targets;
   }
@@ -257,12 +302,20 @@ export class ComSystemTest extends LitElement {
     }
   }
 
+  private chosen(key: TargetKey): string[] {
+    return key === "person" ? this.people : (this.selection[key] ?? []);
+  }
+
   private toggle(key: TargetKey, id: string, checked: boolean): void {
-    const current = this.selected[key].filter((x) => x !== id);
-    this.selected = {
-      ...this.selected,
-      [key]: checked ? [...current, id] : current,
-    };
+    const current = this.chosen(key).filter((x) => x !== id);
+    const next = checked ? [...current, id] : current;
+    if (key === "person") {
+      this.people = next;
+    } else {
+      const selection = { ...this.selection, [key]: next };
+      if (!next.length) delete selection[key];
+      this.selection = selection;
+    }
     // The previous send no longer describes the selection.
     this.response = undefined;
     void this.refreshPreview();
@@ -305,6 +358,74 @@ export class ComSystemTest extends LitElement {
       .sort(byName);
   }
 
+  private setPersonChoice(choice: PersonChoice): void {
+    this.personChoice = choice;
+    this.response = undefined;
+    void this.refreshPreview();
+  }
+
+  /** People: everyone, or individuals (listed only when chosen). */
+  private renderPeople() {
+    return html`<div class="people">
+      <fieldset>
+        <legend>People</legend>
+        ${[INDIVIDUALS, EVERYONE].map(
+          (choice) =>
+            html`<label
+              ><input
+                type="radio"
+                name="people"
+                .checked=${this.personChoice === choice}
+                @change=${() => this.setPersonChoice(choice as PersonChoice)}
+              />
+              ${choice}</label
+            >`,
+        )}
+      </fieldset>
+      ${
+        this.personChoice === INDIVIDUALS
+          ? this.renderTargets("person", "Individuals")
+          : ""
+      }
+    </div>`;
+  }
+
+  private setReceiversChoice(choice: ReceiversChoice): void {
+    this.receiversChoice = choice;
+    this.response = undefined;
+    void this.refreshPreview();
+  }
+
+  /** Receivers: a selection (listed only when chosen), or all areas. */
+  private renderReceivers() {
+    return html`<div class="receivers">
+      <fieldset>
+        <legend>Receivers</legend>
+        ${[SELECT, ALL_AREAS].map(
+          (choice) =>
+            html`<label
+              ><input
+                type="radio"
+                name="receivers"
+                .checked=${this.receiversChoice === choice}
+                @change=${() =>
+                  this.setReceiversChoice(choice as ReceiversChoice)}
+              />
+              ${choice}</label
+            >`,
+        )}
+      </fieldset>
+      ${
+        this.receiversChoice === SELECT
+          ? html`<div class="select">
+              ${this.renderTargets("entity_id", "Receivers")}
+              ${this.renderTargets("area_id", "Areas")}
+            </div>`
+          : ""
+      }
+    </div>`;
+  }
+
   private renderTargets(key: TargetKey, legend: string) {
     const options = this.options(key);
     return html`<fieldset>
@@ -316,7 +437,7 @@ export class ComSystemTest extends LitElement {
                 html`<label
                   ><input
                     type="checkbox"
-                    .checked=${this.selected[key].includes(o.id)}
+                    .checked=${this.chosen(key).includes(o.id)}
                     @change=${(ev: Event) =>
                       this.toggle(
                         key,
@@ -404,6 +525,14 @@ export class ComSystemTest extends LitElement {
   private renderFallbackForm() {
     return html`
       <label class="field"
+        ><span>Title (optional)</span
+        ><input
+          type="text"
+          .value=${this.subject}
+          @input=${(ev: Event) =>
+            (this.subject = (ev.target as HTMLInputElement).value)}
+      /></label>
+      <label class="field"
         ><span>Message</span
         ><textarea
           rows="2"
@@ -412,18 +541,8 @@ export class ComSystemTest extends LitElement {
             (this.message = (ev.target as HTMLTextAreaElement).value)}
         ></textarea>
       </label>
-      <label class="field"
-        ><span>Title (optional)</span
-        ><input
-          type="text"
-          .value=${this.subject}
-          @input=${(ev: Event) =>
-            (this.subject = (ev.target as HTMLInputElement).value)}
-      /></label>
       <div class="targets">
-        ${this.renderTargets("person", "People")}
-        ${this.renderTargets("area_id", "Areas")}
-        ${this.renderTargets("entity_id", "Receivers")}
+        ${this.renderPeople()} ${this.renderReceivers()}
       </div>
     `;
   }
@@ -457,8 +576,8 @@ export class ComSystemTest extends LitElement {
         <div class="card-header">
           Send a test notification
           <p class="secondary">
-            Calls notify.com_system. With no targets chosen it goes to all
-            people and areas, as it does from an automation.
+            Calls notify.com_system. People and receivers are combined, as they
+            are from an automation.
           </p>
         </div>
         <div class="card-content">

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Any
 
 import voluptuous as vol
@@ -13,9 +14,14 @@ from homeassistant.core import (
     SupportsResponse,
 )
 from homeassistant.exceptions import ServiceValidationError
+from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.service import async_set_service_schema
+from homeassistant.helpers.target import (
+    TargetSelection,
+    async_extract_referenced_entity_ids,
+)
 
 from .const import DOMAIN, NOTIFICATION_RECEIVER_DOMAIN, RESULTS
 from .dispatcher import ReceiverResult, async_dispatch
@@ -27,20 +33,80 @@ SERVICE_NAME = "com_system"
 ATTR_MESSAGE = "message"
 ATTR_TITLE = "title"
 ATTR_PERSON = "person"
+ATTR_RECEIVERS = "receivers"
 ATTR_AREA_ID = "area_id"
 ATTR_ENTITY_ID = "entity_id"
+ATTR_DEVICE_ID = "device_id"
+ATTR_FLOOR_ID = "floor_id"
+ATTR_LABEL_ID = "label_id"
 
-SERVICE_SCHEMA = vol.Schema(
+# The people field is a choose selector: everyone, or individual people. Its
+# value is ``{"active_choice": ..., <choice>: <value>}``. The choice names
+# are the labels the form shows. A plain person or list of people is also
+# accepted and means individuals.
+CHOICE_EVERYONE = "Everyone"
+CHOICE_INDIVIDUALS = "Individuals"
+
+
+def validate_person(value: Any) -> dict[str, Any]:
+    """Validate the people field and return it in the choose form."""
+    if isinstance(value, dict):
+        choice = value.get("active_choice")
+        if choice == CHOICE_EVERYONE:
+            return {"active_choice": CHOICE_EVERYONE, CHOICE_EVERYONE: True}
+        if choice != CHOICE_INDIVIDUALS:
+            raise vol.Invalid(
+                f"active_choice must be {CHOICE_EVERYONE} or {CHOICE_INDIVIDUALS}"
+            )
+        value = value.get(CHOICE_INDIVIDUALS, [])
+    people = vol.All(cv.ensure_list, [cv.entity_domain("person")])(value)
+    return {"active_choice": CHOICE_INDIVIDUALS, CHOICE_INDIVIDUALS: people}
+
+
+# The receivers field is a choose selector: every receiver with an area, or a
+# selection made with a target selector limited to receiver entities.
+CHOICE_SELECT = "Select"
+CHOICE_ALL_AREAS = "All Areas"
+
+_SELECT_SCHEMA = vol.Schema(
     {
-        vol.Required(ATTR_MESSAGE): cv.string,
-        vol.Optional(ATTR_TITLE): cv.string,
-        vol.Optional(ATTR_PERSON): vol.All(
-            cv.ensure_list, [cv.entity_domain("person")]
-        ),
-        vol.Optional(ATTR_AREA_ID): vol.All(cv.ensure_list, [cv.string]),
         vol.Optional(ATTR_ENTITY_ID): vol.All(
             cv.ensure_list, [cv.entity_domain(NOTIFICATION_RECEIVER_DOMAIN)]
         ),
+        **{
+            vol.Optional(key): vol.All(cv.ensure_list, [cv.string])
+            for key in (ATTR_AREA_ID, ATTR_DEVICE_ID, ATTR_FLOOR_ID, ATTR_LABEL_ID)
+        },
+    }
+)
+
+
+def validate_receivers(value: Any) -> dict[str, Any]:
+    """Validate the receivers field and return it in the choose form.
+
+    A plain target (``entity_id``, ``area_id`` and so on) means Select.
+    """
+    if isinstance(value, dict) and "active_choice" in value:
+        choice = value["active_choice"]
+        if choice == CHOICE_ALL_AREAS:
+            return {"active_choice": CHOICE_ALL_AREAS, CHOICE_ALL_AREAS: True}
+        if choice != CHOICE_SELECT:
+            raise vol.Invalid(
+                f"active_choice must be {CHOICE_SELECT} or {CHOICE_ALL_AREAS}"
+            )
+        value = value.get(CHOICE_SELECT) or {}
+    return {
+        "active_choice": CHOICE_SELECT,
+        CHOICE_SELECT: _SELECT_SCHEMA(value),
+    }
+
+
+SERVICE_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_TITLE): cv.string,
+        vol.Required(ATTR_MESSAGE): cv.string,
+        vol.Optional(ATTR_PERSON): validate_person,
+        vol.Optional(ATTR_RECEIVERS): validate_receivers,
     }
 )
 
@@ -51,6 +117,12 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
         "With no targets it goes to all people and all areas."
     ),
     "fields": {
+        ATTR_TITLE: {
+            "name": "Title",
+            "description": "An optional title.",
+            "example": "Laundry",
+            "selector": {"text": None},
+        },
         ATTR_MESSAGE: {
             "name": "Message",
             "description": "The message to send.",
@@ -58,30 +130,53 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
             "example": "The washing has finished",
             "selector": {"text": {"multiline": True}},
         },
-        ATTR_TITLE: {
-            "name": "Title",
-            "description": "An optional title.",
-            "example": "Laundry",
-            "selector": {"text": None},
-        },
         ATTR_PERSON: {
             "name": "People",
-            "description": "Notify receivers associated with these people.",
-            "selector": {"entity": {"domain": "person", "multiple": True}},
-        },
-        ATTR_AREA_ID: {
-            "name": "Areas",
-            "description": "Notify receivers in these areas.",
-            "selector": {"area": {"multiple": True}},
-        },
-        ATTR_ENTITY_ID: {
-            "name": "Receivers",
-            "description": "Notify these receivers by name.",
+            "description": (
+                "Notify receivers associated with individual people, or with everyone."
+            ),
             "selector": {
-                "entity": {
-                    "domain": NOTIFICATION_RECEIVER_DOMAIN,
-                    "integration": DOMAIN,
-                    "multiple": True,
+                "choose": {
+                    "choices": {
+                        CHOICE_INDIVIDUALS: {
+                            "selector": {
+                                "entity": {"domain": "person", "multiple": True}
+                            }
+                        },
+                        CHOICE_EVERYONE: {
+                            "selector": {
+                                "constant": {"value": True, "label": CHOICE_EVERYONE}
+                            }
+                        },
+                    }
+                }
+            },
+        },
+        ATTR_RECEIVERS: {
+            "name": "Receivers",
+            "description": (
+                "Notify the receivers you select (by receiver, area, device, "
+                "floor or label), or every receiver that has an area."
+            ),
+            "selector": {
+                "choose": {
+                    "choices": {
+                        CHOICE_SELECT: {
+                            "selector": {
+                                "target": {
+                                    "entity": {
+                                        "domain": NOTIFICATION_RECEIVER_DOMAIN,
+                                        "integration": DOMAIN,
+                                    }
+                                }
+                            }
+                        },
+                        CHOICE_ALL_AREAS: {
+                            "selector": {
+                                "constant": {"value": True, "label": CHOICE_ALL_AREAS}
+                            }
+                        },
+                    }
                 }
             },
         },
@@ -89,13 +184,15 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
 }
 
 
-def _receiver_entry_ids(hass: HomeAssistant, entity_ids: list[str]) -> list[str]:
+def _receiver_entry_ids(
+    hass: HomeAssistant, entity_ids: Iterable[str], *, keep_unknown: bool = True
+) -> list[str]:
     """Map receiver entity ids to receiver config entry ids.
 
-    Entities that do not exist or are not Com System's match nothing. They
-    are kept (as the entity id, which is never an entry id) so that a target
-    list that names only such entities is still a target list and does not
-    fall back to the default of all people and areas.
+    Entities that do not exist or are not Com System's match nothing. With
+    ``keep_unknown`` they are kept (as the entity id, which is never an entry
+    id) so that a target list naming only such entities is still a target
+    list and does not fall back to the default.
     """
     registry = er.async_get(hass)
     entry_ids = []
@@ -103,24 +200,68 @@ def _receiver_entry_ids(hass: HomeAssistant, entity_ids: list[str]) -> list[str]
         entry = registry.async_get(entity_id)
         if entry is not None and entry.platform == DOMAIN and entry.config_entry_id:
             entry_ids.append(entry.config_entry_id)
-        else:
+        elif keep_unknown:
             entry_ids.append(entity_id)
     return entry_ids
 
 
+def _select_targets(
+    hass: HomeAssistant, target: dict[str, list[str]]
+) -> tuple[list[str], list[str]]:
+    """Turn a selected target into ``(areas, receiver entry ids)``.
+
+    Areas stay areas, so they follow the rules of area targets (the
+    persistent notification receiver is not reached by area). A floor is its
+    areas. Devices and labels are expanded by Home Assistant to entities,
+    and the Com System receiver entities among them are named receivers.
+    Anything that resolves to nothing is kept so it still counts as a target.
+    """
+    areas = list(target.get(ATTR_AREA_ID, []))
+    area_registry = ar.async_get(hass)
+    for floor_id in target.get(ATTR_FLOOR_ID, []):
+        floor_areas = [a.id for a in area_registry.areas.get_areas_for_floor(floor_id)]
+        areas.extend(floor_areas or [floor_id])
+    entry_ids = _receiver_entry_ids(hass, target.get(ATTR_ENTITY_ID, []))
+    indirect = {k: target[k] for k in (ATTR_DEVICE_ID, ATTR_LABEL_ID) if k in target}
+    if indirect:
+        selected = async_extract_referenced_entity_ids(
+            hass, TargetSelection(indirect), primary_entities_only=False
+        )
+        found = _receiver_entry_ids(
+            hass,
+            selected.referenced | selected.indirectly_referenced,
+            keep_unknown=False,
+        )
+        # Keep an indirect target that matched nothing a target.
+        entry_ids.extend(
+            found or [f"{k}:{v}" for k, ids in indirect.items() for v in ids]
+        )
+    return areas, entry_ids
+
+
 def resolve_call_targets(hass: HomeAssistant, data: dict[str, Any]) -> ResolvedTargets:
     """Resolve the target fields of an action call to receivers."""
+    person = validate_person(data[ATTR_PERSON]) if ATTR_PERSON in data else None
+    receivers = (
+        validate_receivers(data[ATTR_RECEIVERS]) if ATTR_RECEIVERS in data else None
+    )
+    areas: list[str] = []
+    entry_ids: list[str] = []
+    if receivers and receivers["active_choice"] == CHOICE_SELECT:
+        areas, entry_ids = _select_targets(hass, receivers[CHOICE_SELECT])
     return resolve_targets(
         hass,
-        people=data.get(ATTR_PERSON),
-        areas=data.get(ATTR_AREA_ID),
-        receivers=_receiver_entry_ids(hass, data.get(ATTR_ENTITY_ID, [])),
+        all_people=bool(person and person["active_choice"] == CHOICE_EVERYONE),
+        people=person.get(CHOICE_INDIVIDUALS) if person else None,
+        areas=areas,
+        all_areas=bool(receivers and receivers["active_choice"] == CHOICE_ALL_AREAS),
+        receivers=entry_ids,
     )
 
 
 def notification_from(data: dict[str, Any]) -> dict[str, Any]:
     """Return the content of an action call: message and optional title."""
-    return {k: data[k] for k in (ATTR_MESSAGE, ATTR_TITLE) if k in data}
+    return {k: data[k] for k in (ATTR_TITLE, ATTR_MESSAGE) if k in data}
 
 
 def response_data(results: list[ReceiverResult]) -> dict[str, Any]:

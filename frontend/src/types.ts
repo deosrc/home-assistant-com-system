@@ -46,11 +46,21 @@ export interface DiscoveryInfo {
 }
 
 /** The target fields shared by the preview and the test send. */
+export type PersonTarget =
+  { active_choice: "Everyone"; Everyone: true } | string[];
+
+/** The values of a target selector; only the keys with a selection. */
+export type SelectedTarget = Record<string, string[]>;
+
+export type ReceiversTarget =
+  | { active_choice: "All Areas"; "All Areas": true }
+  | { active_choice: "Select"; Select: SelectedTarget };
+
 export interface NotifyTargets {
-  person?: string[];
-  area_id?: string[];
-  /** `notification_receiver` entity ids. */
-  entity_id?: string[];
+  /** Everyone, or the listed `person.*` entities. */
+  person?: PersonTarget;
+  /** Every receiver with an area, or a selection of receivers. */
+  receivers?: ReceiversTarget;
 }
 
 export interface PreviewEntry {

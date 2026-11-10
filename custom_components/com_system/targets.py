@@ -39,13 +39,17 @@ def resolve_targets(
     hass: HomeAssistant,
     *,
     people: Collection[str] | None = None,
+    all_people: bool = False,
     areas: Collection[str] | None = None,
+    all_areas: bool = False,
     receivers: Collection[str] | None = None,
 ) -> ResolvedTargets:
     """Resolve targets to receivers.
 
     ``people`` are ``person.*`` entity ids, ``areas`` are area ids and
-    ``receivers`` are receiver config entry ids. The result is the union of
+    ``receivers`` are receiver config entry ids. ``all_people`` matches every
+    receiver that has a person, whoever it is, and ``all_areas`` every
+    receiver that has an area. The result is the union of
     the receivers that match any of them. With no targets at all, every
     receiver associated with any person or area matches. A receiver whose
     type is not ``targetable_by_association`` (the persistent notification
@@ -58,7 +62,7 @@ def resolve_targets(
     people_set = set(people or ())
     area_set = set(areas or ())
     named = set(receivers or ())
-    default = not (people_set or area_set or named)
+    default = not (people_set or all_people or area_set or all_areas or named)
 
     matched: list[Receiver] = []
     for receiver in registry.all():
@@ -75,8 +79,11 @@ def resolve_targets(
         elif default:
             if receiver_people or receiver_areas:
                 matched.append(receiver)
-        elif people_set.intersection(receiver_people) or area_set.intersection(
-            receiver_areas
+        elif (
+            (all_people and receiver_people)
+            or (all_areas and receiver_areas)
+            or people_set.intersection(receiver_people)
+            or area_set.intersection(receiver_areas)
         ):
             matched.append(receiver)
 
