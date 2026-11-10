@@ -237,7 +237,14 @@ dismiss notifications in the Home Assistant UI as normal.
   subentry. Delivery calls the TV's notify action (an on-screen toast:
   message only, with an optional icon in `data`). TVs are shared devices
   with no person; the area comes from the device registry.
-- **Music Assistant** – **TBD**.
+- **Music Assistant** – one receiver per Music Assistant player, offered as
+  a subentry. Delivery calls Music Assistant's announcement action rather
+  than a notify action (the message is spoken; options such as an
+  announcement URL or volume go in `data`). How a notification is delivered
+  is an implementation detail of each receiver type's definition, so
+  non-notify actions need no special handling in the receiver model. Players
+  are shared devices with no person; the area comes from the device
+  registry.
 
 Receiver type definitions are written in code, and each declares its
 capabilities: which typed fields and `data` keys it supports. Custom
@@ -504,10 +511,6 @@ Every phase includes updating the matching document(s) in `docs/`
   detected candidates?
 - Frontend build and release process: are built assets committed to the
   repository, or built in CI and attached to releases (HACS support)?
-- How does Music Assistant deliver notifications (which actions or
-  entities), and how are its receivers discovered?
-- Music Assistant announcements are not a notify action: how does the
-  receiver model accommodate non-notify delivery mechanisms?
 - What variables describe the notification to conditions (title, message,
   data, targets, resolved receiver), and are they stable enough to document?
 - If a condition errors (e.g. a template fails), is the receiver skipped,
