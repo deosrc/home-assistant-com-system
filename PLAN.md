@@ -145,13 +145,39 @@ The custom (user-mapped action) receiver from section 2.1 remains the
 fallback for anything not on this list. Further types can be added later,
 so the type definition should be an extension point rather than hard-coded.
 
+### 2.6 Notification conditions
+
+Each receiver can be configured with **notification conditions**. They
+decide, per notification, whether that receiver is used.
+
+- Conditions use Home Assistant's built-in conditions system (the same
+  format as automation and script conditions, including template, state,
+  time and logical `and`/`or`/`not` conditions).
+- Each condition is evaluated with the **notification details** supplied as
+  variables, so conditions can inspect the notification. The exact variable
+  shape is **TBD** (e.g. a `notification` object holding title, message,
+  receiver-specific data and the requested targets).
+- If the conditions do not pass, the receiver is skipped for that
+  notification only. This is separate from the receiver's enabled state
+  (section 2.4), which blocks all notifications.
+- Example: skip a receiver when the notification message contains some
+  given text, using a template condition on the notification variable.
+- A receiver with no conditions always passes.
+
+Evaluation order for a notification:
+
+1. Resolve targets to receivers (section 2.2).
+2. Drop receivers that are disabled (section 2.4).
+3. Drop receivers whose conditions do not pass.
+4. Deliver to the remaining receivers.
+
 ## 3. The `notify.com_system` action
 
 - Provided by the integration and registered under the `notify` domain.
 - Accepts the target parameters (section 2.2) plus the content parameters
   (section 2.3).
-- Resolves targets to a set of receivers, drops disabled ones, then delivers
-  to each remaining receiver.
+- Resolves targets to a set of receivers, drops disabled ones, drops those
+  whose conditions do not pass, then delivers to each remaining receiver.
 - Exact schema, response/return value and error handling: **TBD**.
 
 ## 4. Architecture (initial outline)
@@ -181,6 +207,7 @@ Core components (names provisional):
 | Receiver registry | Stores and manages configured receivers |
 | Target resolver | Maps people, areas or receivers to a set of receivers |
 | Receiver entity | `notification_receiver` entity holding enabled state |
+| Condition evaluator | Runs a receiver's conditions against a notification |
 | Dispatcher | Delivers to each resolved receiver, handling failures |
 | Notify action | Entry point; validates input, calls resolver, dispatcher |
 | Config/options flow | UI for creating and editing receivers |
@@ -206,7 +233,10 @@ Notes:
 - The designer and testing tool both build on the `notify.com_system`
   action, so they must exercise the same code path as automations.
 - The testing tool should show which receivers a notification would reach
-  (target resolution) and the per-receiver outcome.
+  (target resolution) and the per-receiver outcome, including receivers
+  skipped because they are disabled or a condition did not pass.
+- The receiver editor needs a conditions editor. Home Assistant's condition
+  selector can likely be reused.
 - The designer must account for receiver-specific content (section 2.3),
   e.g. showing mobile app action options only when relevant.
 - Recent notifications requires a history store; retention is **TBD**.
@@ -237,17 +267,19 @@ Notes:
    (built-in and custom action-mapped).
 5. **Target resolution** – people, areas, explicit receivers,
    default-to-all behaviour.
-6. **`notify.com_system` action** – schema, wiring to resolver and
+6. **Notification conditions** – per-receiver conditions evaluated with the
+   notification details, applied after target resolution and enabled state.
+7. **`notify.com_system` action** – schema, wiring to resolver and
    dispatcher, delivery and error handling.
-7. **Content parameters** – common content first, then receiver-specific
+8. **Content parameters** – common content first, then receiver-specific
    content (e.g. mobile app actions) with per-receiver-type handling.
-8. **Receiver types** – extensible type definition, then in priority order:
+9. **Receiver types** – extensible type definition, then in priority order:
    mobile app, Alexa Media Player, Pushover, webOS TV, Music Assistant.
-9. **History store** – persist recent notifications and delivery results.
-10. **Websocket API** – commands for receivers, history, preview and test.
-11. **UI** – panel shell and dashboard, then recent notifications,
+10. **History store** – persist recent notifications and delivery results.
+11. **Websocket API** – commands for receivers, history, preview and test.
+12. **UI** – panel shell and dashboard, then recent notifications,
    receivers, notification designer and testing tool.
-12. **Documentation and release** – README, examples, HACS release.
+13. **Documentation and release** – README, examples, HACS release.
 
 ## 8. Open questions
 
@@ -292,5 +324,13 @@ Notes:
   receiver model accommodate non-notify delivery mechanisms?
 - Should receivers of a type be created automatically from the underlying
   integration's actions/entities, or added manually?
+- What variables describe the notification to conditions (title, message,
+  data, targets, resolved receiver), and are they stable enough to document?
+- If a condition errors (e.g. a template fails), is the receiver skipped,
+  used anyway, or is the error reported? Is it recorded in history?
+- Where are conditions stored and edited: per receiver only, or can some be
+  shared or global across receivers?
+- Can conditions use the receiver's own context (e.g. its associated people
+  or areas) as well as the notification details?
 - Minimum supported Home Assistant version.
 - Domain name and display name confirmation (`com_system` assumed).
