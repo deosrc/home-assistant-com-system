@@ -228,7 +228,12 @@ dismiss notifications in the Home Assistant UI as normal.
 - **Persistent notification** – a single receiver, used only when named
   explicitly. Delivery calls `persistent_notification.create` and is
   create-only (see section 2.5).
-- **Pushover, webOS TV, Music Assistant** – **TBD**.
+- **Pushover** – one receiver per Pushover config entry (notify target),
+  offered as a subentry. Delivery calls the Pushover notify action:
+  `priority` maps to Pushover priority, `image` to an attachment, and other
+  options (e.g. sound, URL) go in `data`. Pushover has no user link, so the
+  person is chosen manually when the receiver is created.
+- **webOS TV, Music Assistant** – **TBD**.
 
 Receiver type definitions are written in code, and each declares its
 capabilities: which typed fields and `data` keys it supports. Custom
@@ -495,8 +500,8 @@ Every phase includes updating the matching document(s) in `docs/`
   detected candidates?
 - Frontend build and release process: are built assets committed to the
   repository, or built in CI and attached to releases (HACS support)?
-- How do Pushover, webOS TV and Music Assistant each deliver notifications
-  (which actions or entities), and how are their receivers discovered?
+- How do webOS TV and Music Assistant each deliver notifications (which
+  actions or entities), and how are their receivers discovered?
 - Music Assistant announcements are not a notify action: how does the
   receiver model accommodate non-notify delivery mechanisms?
 - What variables describe the notification to conditions (title, message,
