@@ -230,7 +230,10 @@ records the conventions and how things work as built.
   `.card-content` and `.card-actions` (button right-aligned, an
   `ha-progress-button raised` when HA has loaded it, else a native button).
   Avoid a `title` property on elements: it clashes with `HTMLElement.title`.
-  `receivers-view.ts` also has the edit form (native inputs); a method
+  `receivers-view.ts` uses `ha-card` sections like the test view, an
+  `ha-alert` for pending discoveries (count and link, no list), an
+  `ha-entity-picker` for the script check (a native select when it is not
+  defined) and the edit form (native inputs); a method
   named `remove` would clash with `HTMLElement`, and an expression at the
   very start of a template needs a wrapper `div` like trailing ones. Add
   views by adding an element, an entry in `VIEWS` and a command. Elements

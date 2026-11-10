@@ -147,7 +147,13 @@ describe("panel", () => {
     const text = view.shadowRoot!.textContent!;
     expect(text).toContain("Office");
     expect(text).toContain("Custom");
-    expect(text).toContain("Pixel");
+    // Discoveries are an alert with a link, not a list.
+    expect(text).not.toContain("Pixel");
+    const alert = view.shadowRoot!.querySelector("#discoveries")!;
+    expect(alert.textContent).toContain("1 receiver is waiting");
+    expect(alert.querySelector("a")!.getAttribute("href")).toBe(
+      "/config/integrations/integration/com_system",
+    );
     // Areas first, then people, each sorted by name (the API order is not
     // the name order); unknown ids fall back to the id.
     const badges = [...view.shadowRoot!.querySelectorAll(".badge")];

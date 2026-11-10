@@ -35,15 +35,17 @@ Each row has **Edit** (name and people) and **Remove**, which asks first.
 Validation errors are shown in the editor. Receivers are added from
 discoveries; see [custom receivers](receivers/custom.md) for scripts.
 
-**Check a script** explains why a script is or is not detected as a
-[custom receiver](receivers/custom.md#checking-a-script) and, when it
-would be offered, has a **Rescan scripts** button.
+**Check a script**, below the table, explains why a script is or is not
+detected as a [custom receiver](receivers/custom.md#checking-a-script). You
+choose the script with Home Assistant's entity picker (a plain list if the
+picker is not available), and when it would be offered there is a **Rescan
+scripts** button.
 
-Below the table, **Pending discoveries** lists the sources waiting to be
-added. Choose **Review in Devices & services** to add or ignore them; see
-[receiver discovery](receivers/README.md#automatic-detection). A receiver
-with a type that is no longer known stays in the list, with the type id as
-its type.
+When sources are waiting to be added, an alert at the top of the view says
+how many, with a link to **Review in Devices & services** to add or ignore
+them; see [receiver discovery](receivers/README.md#automatic-detection). The
+sources are not listed. A receiver with a type that is no longer known stays
+in the list, with the type id as its type.
 
 ## Test
 

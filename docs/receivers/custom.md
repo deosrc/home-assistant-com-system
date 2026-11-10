@@ -42,8 +42,8 @@ panel's Receivers view. Choose the script and Com System reports:
   Devices & services to offer it again), or is waiting to be added.
 
 When the script is fine and not yet known, **Rescan scripts** runs detection
-now instead of waiting for the next one, and the script appears under
-Pending discoveries.
+now instead of waiting for the next one. The script is then waiting to be
+added, as the alert at the top of the view shows.
 
 ## What the script receives
 
