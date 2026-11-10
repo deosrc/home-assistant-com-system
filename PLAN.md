@@ -1,9 +1,10 @@
 # Com System – Home Assistant Custom Integration Plan
 
 > Status: **Draft v0.1** – planning only, no code yet. This file is the
-> source of truth for the design, the basis for the GitHub issues, and the
-> context document for AI-assisted implementation. Sections marked **TBD**
-> are intentionally unresolved.
+> source of truth for the design of work not yet built, the basis for the
+> GitHub issues, and the context document for AI-assisted implementation.
+> Built features are removed from it (see section 7). Sections marked
+> **TBD** are intentionally unresolved.
 
 ## 1. Overview
 
@@ -489,7 +490,9 @@ Notes:
   practices.
 - Markdown files must pass the default markdownlint rules (including the
   80-character line limit).
-- Documentation in `docs/` is maintained alongside the code (section 6.1).
+- Documentation in `docs/` is maintained alongside the code (section 6.1),
+  and `AGENTS.md` records what agents and contributors need to know about
+  features as built.
 - Integration domain: `com_system`. Display name: "Com System".
 - Minimum supported Home Assistant version: the latest stable release at the
   time of building. No compatibility shims for older versions; the minimum
@@ -538,40 +541,33 @@ docs/
   generator is set up initially.
 - All documentation follows the markdownlint rule in section 6.
 
-## 7. Proposed delivery phases (draft, to become GitHub issues)
+## 7. Delivery
 
-Every phase includes updating the matching document(s) in `docs/`
-(section 6.1) as part of its definition of done.
+Delivery is tracked as GitHub issues #1 to #29, grouped into milestones M0 to
+M7. The issues, not this section, are the source of truth for order and
+dependencies. In outline:
 
-1. **Scaffold** – repository structure, manifest, HACS metadata, CI
-   (including markdownlint), test harness, `docs/` skeleton and index,
-   `CLAUDE.md` pointing to this plan and the documentation rule.
-2. **Receiver model and storage** – data model, registry, persistence.
-3. **Receiver entities** – enabled `switch` with restored state, and the
-   read-only `notification_receiver` entity (last attempt time, content
-   attributes). Starts with a spike to validate registering the new domain
-   from `com_system`.
-4. **Receiver config flow** – create/edit/remove receivers via the UI
-   (built-in and custom action-mapped).
-5. **Target resolution** – people, areas, explicit receivers,
-   default-to-all behaviour, using each receiver's person and area
-   associations (section 2.7).
-6. **Notification conditions** – per-receiver conditions evaluated with the
-   notification details, applied after target resolution and enabled state.
-7. **`notify.com_system` action** – schema, wiring to resolver and
-   dispatcher, delivery and error handling.
-8. **Content parameters** – common content first, then receiver-specific
-   content (e.g. mobile app actions) with per-receiver-type handling.
-9. **Receiver types** – extensible type definition, then in priority order:
-   mobile app (including person association and the personal/shared
-   select), Alexa Media Player, persistent notification, Pushover, webOS TV,
-   Music Assistant.
-10. **History store** – persist recent notifications and delivery results.
-11. **Websocket API** – commands for receivers, history, preview and test.
-12. **UI** – panel shell and dashboard, then recent notifications,
-   receivers, notification designer and testing tool.
-13. **Documentation review and release** – review `docs/` for gaps, README,
-    examples, HACS release.
+- **M0 Foundation** – dev environment with devcontainer and debugging,
+  integration skeleton, test harness and CI.
+- **M1 Spikes** – the new `notification_receiver` domain, the
+  `notify.com_system` action, programmatic subentries, the mobile app person
+  link and the frontend panel build.
+- **M2 Core** – receiver model, entities, detection, UI foundation, target
+  resolution, the action with a testing tool, mobile app and custom
+  receivers (basic notifications: message and title).
+- **M3 Receiver types** – persistent notification, Alexa Media Player,
+  Pushover and webOS TV.
+- **M4 History and rich content** – history, content parameters and the
+  designer, mobile app actions and responses.
+- **M5 Conditions** – a spike, then notification conditions.
+- **M6 Catch-all and release** – rolling UI and documentation tickets, then
+  the first release.
+- **M7 After first release** – the Music Assistant receiver.
+
+Documentation and UI are delivered with each feature, not as separate
+phases. When a feature is complete it is **removed from this plan**: it is
+documented in `docs/` and covered in `AGENTS.md`, so this file only describes
+work still to do. When the last item is done, this file can be deleted.
 
 ## 8. Open questions
 
