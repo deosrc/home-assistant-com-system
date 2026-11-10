@@ -545,6 +545,31 @@ Notes:
 - The UI talks to the backend through Home Assistant's websocket API, which
   needs commands for receivers, history, resolution preview and test sends.
 
+Decision from spike #8 (frontend panel build). The spike code is not merged;
+the feature that builds the UI foundation recreates it:
+
+- Layout: source in `frontend/` (Lit 3, TypeScript, Vite 6 library build).
+  Output is one ES module, `custom_components/com_system/frontend/dist/
+  com-system-panel.js`, gitignored and served at `/com_system_static/`.
+- Registration: `panel_custom.async_register_panel` from `async_setup`, with
+  `require_admin=True`; the manifest depends on `frontend`, `http`,
+  `panel_custom` and `websocket_api`. Commands use `@require_admin`;
+  verified in tests that a read-only user is rejected (`unauthorized`).
+- Tests now need `home-assistant-frontend` (pinned to the version Home
+  Assistant 2026.10.4 requires, 20260930.5) in `requirements-dev.txt`.
+- Hot reload: setting `COM_SYSTEM_PANEL_DEV_URL` to the Vite dev server makes
+  the panel load from it instead of the bundle. Home Assistant imports the
+  module directly, so the source imports `/@vite/client` itself in dev mode
+  (stripped from production builds). The devcontainer must forward port 5173
+  as well as 8123. Verified in a browser: the panel renders, ping works, edits
+  show without a manual refresh, and breakpoints hit the `.ts` source.
+  A helper script that starts Home Assistant and Vite against a throwaway
+  config made the checks repeatable and is worth recreating.
+- Verified in a browser: the panel is hidden from non-admin users.
+- Release: `release.yml` builds the bundle and attaches `com_system.zip` to
+  the release; `hacs.json` uses `zip_release`. `frontend.yml` builds on PRs.
+  The zip contents were checked locally; the release flow has not run.
+
 ## 6. Standards and tooling (proposed, to be confirmed)
 
 - HACS-compatible custom integration (`hacs.json`, `manifest.json`).
