@@ -73,6 +73,15 @@ describe("panel", () => {
     expect(view.shadowRoot!.textContent).toContain("Custom: 1");
   });
 
+  it("loads when there are no switch entities", async () => {
+    const { hass } = makeHass();
+    hass.states = {};
+    const panel = await mount("", hass);
+    const view = panel.shadowRoot!.querySelector("com-system-dashboard")!;
+    await settle(view);
+    expect(view.shadowRoot!.textContent).not.toContain("Loading");
+  });
+
   it("marks the active navigation entry", async () => {
     const { hass } = makeHass();
     const panel = await mount("/receivers", hass);

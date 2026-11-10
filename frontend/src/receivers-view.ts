@@ -36,7 +36,7 @@ export class ComSystemReceivers extends LitElement {
     `,
   ];
 
-  private lastSignature = "";
+  private lastSignature?: string;
 
   constructor() {
     super();
@@ -44,7 +44,8 @@ export class ComSystemReceivers extends LitElement {
   }
 
   protected updated(): void {
-    // Refetch when a receiver's state changes, and on first connection.
+    if (!this.hass) return;
+    // Load once hass is set, then refetch when a switch state changes.
     const signature = Object.entries(this.hass.states)
       .filter(([id]) => id.startsWith("switch."))
       .map(([id, s]) => `${id}=${s.state}`)
