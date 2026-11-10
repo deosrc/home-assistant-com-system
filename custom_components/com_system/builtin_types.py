@@ -23,6 +23,12 @@ from .const import (
     RECEIVER_TYPE_PUSHOVER,
     RECEIVER_TYPE_WEBOSTV,
 )
+from .mobile_app import (
+    async_deliver_mobile_app,
+    audience_of,
+    linked_person,
+    mobile_app_people,
+)
 from .receiver import Receiver
 from .receiver_type import (
     DiscoveryCandidate,
@@ -112,6 +118,27 @@ class MobileAppReceiverType(DeviceReceiverType):
     type_id = RECEIVER_TYPE_MOBILE_APP
     name = "Mobile app"
     source_domain = "mobile_app"
+    capabilities = frozenset({"title"})
+
+    async def async_deliver(
+        self, hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
+    ) -> list[str]:
+        """Call the device's ``notify.mobile_app_*`` action."""
+        return await async_deliver_mobile_app(hass, receiver, notification)
+
+    def linked_person(self, hass: HomeAssistant, receiver: Receiver) -> str | None:
+        """Return the person the device's user or tracker links to."""
+        return linked_person(hass, receiver)
+
+    def associated_people(
+        self, hass: HomeAssistant, receiver: Receiver
+    ) -> tuple[str, ...]:
+        """Return no one for a shared device, else the manual or linked person."""
+        return mobile_app_people(hass, receiver)
+
+    def audience(self, hass: HomeAssistant, receiver: Receiver) -> str:
+        """Return ``personal`` or ``shared`` for the receiver."""
+        return audience_of(hass, receiver)
 
 
 class AlexaMediaReceiverType(DeviceReceiverType):

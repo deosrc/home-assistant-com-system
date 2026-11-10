@@ -23,6 +23,8 @@ export interface DashboardData {
   by_type: Record<string, number>;
 }
 
+export type Audience = "personal" | "shared";
+
 export interface ReceiverInfo {
   entry_id: string;
   name: string;
@@ -37,6 +39,8 @@ export interface ReceiverInfo {
   receiver_entity_id: string | null;
   /** The device page is where a receiver is edited. */
   device_id: string | null;
+  /** Mobile app receivers only: personal or shared; null for other types. */
+  audience: Audience | null;
   people: string[];
   areas: string[];
 }

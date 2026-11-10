@@ -34,9 +34,9 @@ detected:
 | webOS TV | webOS TV config entry |
 | Music Assistant | Music Assistant player |
 
-Detection only offers receivers. Sending notifications to each type is
-added as that type is built. So far only
-[Persistent notification](persistent-notification.md) sends.
+Detection offers receivers. Sending is added as each type is built. So far
+[Persistent notification](persistent-notification.md) and
+[mobile app](mobile-app.md) receivers send.
 
 ### Deleting, disabling and removed devices
 
@@ -68,7 +68,8 @@ it, change the area of the device.
 
 ## Receiver entities
 
-Each receiver has a device with two entities.
+Each receiver has a device with two entities. Mobile app receivers have a
+third, [Device use](mobile-app.md#personal-or-shared).
 
 - **Enabled** (`switch`): on means the receiver is enabled, off means it
   is disabled. New receivers are enabled, and the state is kept across
@@ -83,8 +84,7 @@ Each receiver has a device with two entities.
   receiver's `receiver_type`, `people` and `areas` (the device's area). It has
   no actions. To react to a notification, use a state trigger on this entity.
 
-Sending notifications is not implemented yet, so the receiver entity stays
-`unknown` for now.
+The receiver entity stays `unknown` until the receiver is notified.
 
 ## The receiver registry
 

@@ -13,6 +13,7 @@ const RECEIVER = {
   entity_id: "switch.office_enabled",
   receiver_entity_id: "notification_receiver.office",
   device_id: "dev1",
+  audience: null,
   people: ["person.zed", "person.alice"],
   areas: ["unknown_area", "office"],
 };
@@ -234,6 +235,36 @@ describe("panel", () => {
     await settle(view);
     expect(callWS).toHaveBeenCalledWith({ type: "com_system/scripts/rescan" });
     expect(view.shadowRoot!.querySelector("#script-message")).not.toBeNull();
+  });
+
+  it("shows and edits personal/shared for mobile app receivers", async () => {
+    const { hass, callWS } = makeHass();
+    const base = callWS.getMockImplementation()!;
+    callWS.mockImplementation(async (msg: { type: string }) =>
+      msg.type === "com_system/receivers/list"
+        ? {
+            receivers: [
+              RECEIVER,
+              { ...RECEIVER, entry_id: "e2", audience: "personal" },
+            ],
+          }
+        : base(msg),
+    );
+    const panel = await mount("/receivers", hass);
+    const view = panel.shadowRoot!.querySelector("com-system-receivers")!;
+    await settle(view);
+    const selects = view.shadowRoot!.querySelectorAll("select.audience");
+    expect(selects.length).toBe(1);
+    const control = selects[0] as HTMLSelectElement;
+    expect(control.value).toBe("personal");
+    control.value = "shared";
+    control.dispatchEvent(new Event("change"));
+    await settle(view);
+    expect(callWS).toHaveBeenCalledWith({
+      type: "com_system/receivers/set_audience",
+      entry_id: "e2",
+      audience: "shared",
+    });
   });
 
   it("shows an error when a command fails", async () => {

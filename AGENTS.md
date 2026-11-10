@@ -70,13 +70,16 @@ records the conventions and how things work as built.
   `CustomReceiverType` is the generic type. `async_deliver(hass, receiver,
   notification)` returns a list of warnings (content the type dropped) and
   raises to report a failure; the base class raises `NotImplementedError`,
-  which the dispatcher reports as a failed result. The custom
-  type and the persistent notification type deliver so far; each other
-  built-in type's own feature implements it.
+  which the dispatcher reports as a failed result. The custom, persistent
+  notification and mobile app types deliver so far; each other built-in
+  type's own feature implements it.
+  `associated_people(hass, receiver)` takes `hass` so a type can look people
+  up at use time.
 - `builtin_types.py`: the six built-in types (mobile app, Alexa Media
   Player, persistent notification, Pushover, webOS TV, Music Assistant),
   registered in `async_setup`. They have detection; delivery is added by
-  each type's own feature (the persistent notification type has it).
+  each type's own feature (the persistent notification and mobile app types
+  have it).
   `PersistentNotificationReceiverType.async_deliver` calls
   `persistent_notification.create` (blocking) with `message` and, when
   given, `title`, and never sends `notification_id`: HA then generates one,
@@ -98,6 +101,20 @@ records the conventions and how things work as built.
   The Alexa Media Player and Music Assistant device identifiers are assumed
   to be `(domain, <serial or player id>)` and were not checked against the
   integrations.
+- `mobile_app.py` and `MobileAppReceiverType`: delivery calls
+  `notify.mobile_app_<slugify(device_name)>` with `message` and `title`
+  (fails if the action is missing). The source entry is the `mobile_app`
+  config entry whose `data["device_id"]` is the receiver's source id.
+  `linked_person` resolves the person at each call: the `person.*` state
+  whose `user_id` is the entry's `user_id`, else
+  `persons_with_entity` for the tracker (first by entity id). People are
+  none when shared, else the receiver's manual people, else the linked
+  person. `select.py` is the `audience` select (`personal`/`shared`,
+  mobile app receivers only, `RestoreEntity`, the source of truth; the
+  default is personal if a person is linked, else shared). Until it is loaded
+  `audience_of` infers the default. The `receivers/set_audience` websocket
+  command calls its service. The panel's Use column edits it. Platforms are
+  `PLATFORMS` in `__init__.py`.
 - `detection.py`: `ReceiverDetector` is created by the hub entry's setup
   (`entry.runtime_data`). It detects once Home Assistant has started, after
   device registry changes (debounced) and hourly. For each candidate it

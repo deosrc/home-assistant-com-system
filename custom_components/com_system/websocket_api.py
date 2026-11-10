@@ -20,6 +20,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.service import async_get_all_descriptions
 
 from .const import (
+    AUDIENCES,
     CONF_ENTRY_TYPE,
     CONF_RECEIVER_TYPE,
     CONF_SOURCE_ID,
@@ -32,6 +33,7 @@ from .const import (
 )
 from .detection import discovery_unique_id
 from .dispatcher import REASON_DISABLED
+from .mobile_app import AUDIENCE_KEY
 from .notify import (
     ATTR_MESSAGE,
     ATTR_PERSON,
@@ -47,6 +49,7 @@ from .receiver import Receiver
 from .receiver_type import notification_script_problems
 
 SWITCH_DOMAIN = "switch"
+SELECT_DOMAIN = "select"
 ENABLED_KEY = "enabled"
 
 
@@ -57,6 +60,7 @@ def async_register_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_dashboard)
     websocket_api.async_register_command(hass, ws_receivers_list)
     websocket_api.async_register_command(hass, ws_receivers_set_enabled)
+    websocket_api.async_register_command(hass, ws_receivers_set_audience)
     websocket_api.async_register_command(hass, ws_discoveries_list)
     websocket_api.async_register_command(hass, ws_scripts_check)
     websocket_api.async_register_command(hass, ws_scripts_rescan)
@@ -68,6 +72,13 @@ def _switch_entity_id(hass: HomeAssistant, entry_id: str) -> str | None:
     """Return the entity id of a receiver's enabled switch."""
     return er.async_get(hass).async_get_entity_id(
         SWITCH_DOMAIN, DOMAIN, f"{entry_id}_{ENABLED_KEY}"
+    )
+
+
+def _audience_entity_id(hass: HomeAssistant, entry_id: str) -> str | None:
+    """Return the entity id of a mobile app receiver's personal/shared select."""
+    return er.async_get(hass).async_get_entity_id(
+        SELECT_DOMAIN, DOMAIN, f"{entry_id}_{AUDIENCE_KEY}"
     )
 
 
@@ -99,6 +110,13 @@ def _receiver_info(hass: HomeAssistant, receiver: Receiver) -> dict[str, Any]:
     receiver_entity = (
         entity_registry.async_get(receiver_entity_id) if receiver_entity_id else None
     )
+    audience_entity_id = _audience_entity_id(hass, receiver.entry_id)
+    audience_state = hass.states.get(audience_entity_id) if audience_entity_id else None
+    audience = (
+        audience_state.state
+        if audience_state is not None and audience_state.state in AUDIENCES
+        else None
+    )
     return {
         "entry_id": receiver.entry_id,
         "name": receiver.name,
@@ -112,6 +130,8 @@ def _receiver_info(hass: HomeAssistant, receiver: Receiver) -> dict[str, Any]:
         "receiver_entity_id": receiver_entity_id,
         # The device page is where a receiver is edited.
         "device_id": receiver_entity.device_id if receiver_entity else None,
+        "audience": audience,
+        "audience_entity_id": audience_entity_id,
         "people": list(registry.people_of(receiver)),
         "areas": list(registry.areas_of(receiver)),
     }
@@ -181,6 +201,37 @@ async def ws_receivers_set_enabled(
         SWITCH_DOMAIN,
         "turn_on" if msg["enabled"] else "turn_off",
         {"entity_id": entity_id},
+        blocking=True,
+        context=connection.context(msg),
+    )
+    connection.send_result(msg["id"])
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "com_system/receivers/set_audience",
+        vol.Required("entry_id"): str,
+        vol.Required("audience"): vol.In(AUDIENCES),
+    }
+)
+@websocket_api.async_response
+async def ws_receivers_set_audience(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Set a mobile app receiver personal or shared through its select."""
+    entity_id = _audience_entity_id(hass, msg["entry_id"])
+    if not entity_id:
+        connection.send_error(
+            msg["id"], "not_found", "Receiver not found or has no personal/shared"
+        )
+        return
+    await hass.services.async_call(
+        SELECT_DOMAIN,
+        "select_option",
+        {"entity_id": entity_id, "option": msg["audience"]},
         blocking=True,
         context=connection.context(msg),
     )

@@ -25,6 +25,11 @@ COMMANDS = [
     {"type": "com_system/dashboard"},
     {"type": "com_system/receivers/list"},
     {"type": "com_system/receivers/set_enabled", "entry_id": "x", "enabled": False},
+    {
+        "type": "com_system/receivers/set_audience",
+        "entry_id": "x",
+        "audience": "shared",
+    },
     {"type": "com_system/discoveries/list"},
     {"type": "com_system/scripts/check", "entity_id": "script.x"},
     {"type": "com_system/scripts/rescan"},

@@ -50,6 +50,15 @@
       "enabled": {
         "name": "Enabled"
       }
+    },
+    "select": {
+      "audience": {
+        "name": "Device use",
+        "state": {
+          "personal": "Personal",
+          "shared": "Shared"
+        }
+      }
     }
   }
 }
