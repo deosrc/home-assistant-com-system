@@ -186,11 +186,11 @@ device.
   dedicated domain lets entity selectors and select inputs be filtered to
   receivers only. It is the entity named when a receiver is targeted
   explicitly.
-- It is **modelled on Home Assistant's `event` entities**, reusing their
-  behaviour and patterns where possible (for example subclassing or copying
-  the core `EventEntity` logic, to be decided in spike #4). A real
-  `event` entity was considered, but a dedicated domain keeps selector
-  filtering simple.
+- It is **modelled on Home Assistant's `event` entities**. The receiver
+  entity **subclasses the core `EventEntity`** (spike #4 decision), which
+  gives the timestamp state, `event_type` attribute, restore and
+  `event_types` capability for free. A real `event` entity was considered,
+  but a dedicated domain keeps selector filtering simple.
 - Its **state** is the date and time of the last notification attempt for
   that receiver (an ISO 8601 timestamp), or `unknown` before the first.
 - Like an event entity it also has an event type describing the delivery
@@ -213,10 +213,28 @@ keeps the new domain simple.
 Implementation notes:
 
 - The `notification_receiver` domain is provided by `com_system` itself
-  (one integration, not a separate one), using the `EntityComponent`
-  pattern. Home Assistant locates the platform through the config entry's
-  domain, so this should work without a separate integration; spike #4
-  confirms it.
+  (one integration, not a separate one). `async_setup` creates an
+  `EntityComponent[EventEntity]` for the domain (stored in `hass.data`), and
+  a receiver entry's `async_setup_entry` calls
+  `component.async_setup_entry(entry)` directly, so the platform is
+  `com_system/notification_receiver.py`. Do **not** use
+  `hass.config_entries.async_forward_entry_setups(entry,
+  ["notification_receiver"])`: it tries to set up an integration named
+  `notification_receiver`, which does not exist, so it logs `Setup failed for
+  'notification_receiver': Integration not found` and adds no entities
+  (without raising). Unload with `component.async_unload_entry(entry)`.
+- Known costs of the new domain (all harmless): Home Assistant logs one
+  warning, `Failed to load integration for translation: Integration
+  'notification_receiver' not found`, when the platform loads, and domain
+  level translations (device class names and so on) do not exist. Entity
+  level translations under `component.com_system.entity.notification_receiver`
+  still work. `event` domain features keyed on the domain, such as the
+  `event.received` automation trigger and the frontend's event more-info,
+  do not apply; use state triggers on the timestamp state instead.
+- Static attributes (receiver type, person, area) go in
+  `extra_state_attributes`, which is not `@final`; `state`,
+  `state_attributes` and `_trigger_event` are, so per-attempt content goes
+  through the `event_attributes` argument of `_trigger_event`.
 - The two entities, and the personal/shared select for mobile app
   receivers (section 2.7), are grouped on the receiver's device.
 - The switch is the source of truth for enabled state; the receiver entity
@@ -587,10 +605,6 @@ work still to do. When the last item is done, this file can be deleted.
 
 ## 8. Open questions
 
-- Can `com_system` register a read-only `notification_receiver` entity
-  domain cleanly, and how much of the core `EventEntity` can be reused (the
-  spike #4 confirms)? Fallback: real `event` entities filtered by
-  integration.
 - Can a receiver's config entry attach its entities to another
   integration's device? Does editing or disabling one receiver entry affect
   the others? Do discovery flows raised from the hub de-duplicate, support
