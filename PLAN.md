@@ -74,8 +74,13 @@ Content parameters are split into two tiers:
   concept fold it into the message. Everything else, including priority and
   images, is receiver-specific.
 - **Receiver-specific content** – only meaningful for certain receiver
-  types, e.g. actions (buttons) on mobile app notifications. The exact list
-  and how it is expressed in the action schema are **TBD**.
+  types, e.g. actions (buttons) on mobile app notifications. It is passed in
+  a single free-form **`data`** object, as in core notify services. Each
+  receiver type documents the keys it understands and ignores or passes
+  through the rest. Because the block is shared, keys that mean different
+  things to different types can clash; type definitions should avoid this
+  where they can. The exact keys per type are **TBD** and documented in
+  each receiver's document.
 
 Receiver-specific content raises a design question: what happens when a
 notification carries content that a resolved receiver does not support?
@@ -374,8 +379,6 @@ Every phase includes updating the matching document(s) in `docs/`
 
 ## 8. Open questions
 
-- How are receiver-specific parameters expressed in the action schema: a
-  free-form `data` block, per-receiver-type blocks, or typed fields?
 - When a receiver does not support a piece of content, is it ignored,
   downgraded (e.g. actions folded into the message text) or treated as an
   error?
