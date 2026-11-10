@@ -141,6 +141,9 @@ and select inputs be filtered to receivers only.
 - The enabled state controls whether the receiver is triggered by
   `notify.com_system`. Disabled receivers are skipped during delivery.
 - The state should survive restarts (restored on startup).
+- Attributes: receiver type, associated person and area, last triggered
+  (time of the last notification delivered to it) and last result (success,
+  failed or skipped, plus any warning). Exact attribute names are **TBD**.
 - Receivers must be **toggleable from the standard Home Assistant UI**
   (the entity's more-info dialog, and toggle controls on dashboard cards),
   not only through the COM System UI or actions.
@@ -451,8 +454,6 @@ Every phase includes updating the matching document(s) in `docs/`
 - Can config subentries be offered automatically for detected receivers
   (discovery), or only created from an "add receiver" flow that lists
   detected candidates?
-- Should the entity expose attributes (type, associated people and areas,
-  last triggered)?
 - How are delivery failures reported (per receiver, aggregated, or
   fire-and-forget)?
 - Frontend approach: custom panel built with Lit/web components, or other?
