@@ -364,7 +364,10 @@ Notes:
   selector can likely be reused.
 - The designer must account for receiver-specific content (section 2.3),
   e.g. showing mobile app action options only when relevant.
-- Recent notifications requires a history store; retention is **TBD**.
+- Recent notifications requires a history store. History is kept in Home
+  Assistant's JSON storage (`Store`), capped by count and age (default to be
+  chosen, e.g. last 200 notifications or 30 days, whichever comes first),
+  and the limits are configurable in the integration options.
 - The UI talks to the backend through Home Assistant's websocket API, which
   needs commands for receivers, history, resolution preview and test sends.
 
@@ -466,8 +469,6 @@ Every phase includes updating the matching document(s) in `docs/`
   detected candidates?
 - Frontend build and release process: are built assets committed to the
   repository, or built in CI and attached to releases (HACS support)?
-- How much history is kept, where is it stored (HA storage or database),
-  and is it configurable?
 - Should the UI be admin-only, or visible to all users?
 - How does each supported type deliver notifications: which actions or
   entities does it use, and how are its receivers discovered?
