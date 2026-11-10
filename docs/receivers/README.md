@@ -56,9 +56,13 @@ receiver to Home Assistant actions is not implemented yet.
 
 ## People and areas
 
-Choose **Configure** on a receiver to set the people and areas it relates
-to. Com System uses these to find the receivers for a person or an area.
-Leave both empty if the receiver is not tied to either.
+Choose **Configure** on a receiver to set the people it relates to. Com
+System uses this to find the receivers for a person. Leave it empty if the
+receiver is not tied to anyone.
+
+A receiver's area is not set here. It is the area of the receiver's device
+in Home Assistant (or of its entity, if that has its own area). To change
+it, change the area of the device.
 
 ## Receiver entities
 
@@ -74,8 +78,8 @@ Each receiver has a device with two entities.
   `event_type` attribute is the result (`delivered`, `failed` or
   `skipped`). Further attributes hold the last notification (`title`,
   `message`, `priority`, `image`, `data`), any `warnings`, and the
-  receiver's `receiver_type`, `people` and `areas`. It has no actions. To
-  react to a notification, use a state trigger on this entity.
+  receiver's `receiver_type`, `people` and `areas` (the device's area). It has
+  no actions. To react to a notification, use a state trigger on this entity.
 
 Sending notifications is not implemented yet, so the receiver entity stays
 `unknown` for now.

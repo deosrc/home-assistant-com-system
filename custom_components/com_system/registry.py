@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 
 from .const import CONF_ENTRY_TYPE, DOMAIN, RECEIVER_ENTRY_TYPES
 from .receiver import Receiver
@@ -54,8 +56,20 @@ class ReceiverRegistry:
         return receiver_type.associated_people(receiver)
 
     def areas_of(self, receiver: Receiver) -> tuple[str, ...]:
-        """Return the areas a receiver relates to."""
-        receiver_type = self.type_of(receiver)
-        if receiver_type is None:
-            return receiver.areas
-        return receiver_type.associated_areas(receiver)
+        """Return the area of a receiver (none, or one).
+
+        The area is not stored: it is the area of the receiver's device, or
+        of its entity when that has its own. All the receiver's entities are
+        on one device, so the first entity with a device decides.
+        """
+        entity_registry = er.async_get(self._hass)
+        device_registry = dr.async_get(self._hass)
+        for entity in er.async_entries_for_config_entry(
+            entity_registry, receiver.entry_id
+        ):
+            if entity.device_id is None:
+                continue
+            device = device_registry.async_get(entity.device_id)
+            area_id = entity.area_id or (device.area_id if device else None)
+            return (area_id,) if area_id else ()
+        return ()

@@ -45,7 +45,9 @@ records the conventions and how things work as built.
   `const.py`.
 - Receiver entry data: `entry_type`, `receiver_type` (missing means
   `custom`), `name`, optional `source_id`. Options: `people` (`person.*`
-  entity ids) and `areas` (area ids). Entries are the only storage.
+  entity ids). Entries are the only storage. There is no stored area: a
+  receiver's area is its device's (`ReceiverRegistry.areas_of`, entity area
+  first), so it is changed in Home Assistant, not in Com System.
 - `receiver.py`: frozen `Receiver` dataclass built by `Receiver.from_entry`.
 - `receiver_type.py`: `ReceiverType` is the extension point (id, name,
   capabilities, `async_deliver`, association hooks, `async_detect`,
@@ -94,7 +96,7 @@ records the conventions and how things work as built.
   (`enabled`, `receiver`). Delivery records an attempt with
   `NotificationReceiverEntity.async_record_attempt(result, notification,
   warnings)`; the attributes are `title`, `message`, `priority`, `image`,
-  `data`, `warnings` plus static `receiver_type`, `people` and `areas`.
+  `data`, `warnings` plus `receiver_type`, `people` and `areas` (the device's area).
 - The `notification_receiver` domain is provided by this integration:
   `async_setup` creates an `EntityComponent` in
   `hass.data[DOMAIN]["notification_receiver_component"]` and the entry calls
@@ -105,7 +107,7 @@ records the conventions and how things work as built.
   entry.
 - `config_flow.py`: the user step creates the hub if none exists, otherwise
   it continues to `custom_receiver` (name only). One hub is enforced there.
-  The options flow of a receiver edits its people and areas; the hub's
+  The options flow of a receiver edits its people; the hub's
   options flow is a stub. `integration_discovery` aborts with
   `not_available` without a hub or a known type, otherwise sets the unique
   id, aborts if configured and shows a confirm-only `confirm` step that
@@ -125,7 +127,8 @@ records the conventions and how things work as built.
   (`com_system/ping`, `dashboard`, `receivers/list`, `receivers/set_enabled`,
   `discoveries/list`). Every command must have `@websocket_api.require_admin`;
   `tests/test_panel.py` checks all of them reject a read-only user. They read
-  the registry and config entries; enabling or disabling calls the receiver's
+  the registry and config entries (`areas` come from
+  `ReceiverRegistry.areas_of`); enabling or disabling calls the receiver's
   switch service, so the switch stays the source of truth. Pending
   discoveries are the `integration_discovery` flows in progress. Add new
   commands to `async_register_commands` and to `COMMANDS` in the test.

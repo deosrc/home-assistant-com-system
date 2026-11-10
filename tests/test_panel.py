@@ -15,7 +15,9 @@ from custom_components.com_system.const import (
     RECEIVER_TYPE_MOBILE_APP,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 
 COMMANDS = [
@@ -151,6 +153,23 @@ async def test_receivers_list_and_enable_disable(
         },
     )
     assert hass.states.get("switch.office_enabled").state == "on"
+
+
+async def test_receiver_area_comes_from_its_device(
+    hass: HomeAssistant, hass_ws_client
+) -> None:
+    """The receiver's area is the area of its device."""
+    await _setup(hass)
+    entry = await _add_custom(hass, "Office")
+    area = ar.async_get(hass).async_create("Study")
+    registry = er.async_get(hass)
+    device_id = registry.async_get("switch.office_enabled").device_id
+    dr.async_get(hass).async_update_device(device_id, area_id=area.id)
+
+    msg = await _call(await hass_ws_client(hass), {"type": "com_system/receivers/list"})
+    [receiver] = msg["result"]["receivers"]
+    assert receiver["entry_id"] == entry.entry_id
+    assert receiver["areas"] == [area.id]
 
 
 async def test_set_enabled_unknown_receiver(

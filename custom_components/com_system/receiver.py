@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 from homeassistant.config_entries import ConfigEntry
 
 from .const import (
-    CONF_AREAS,
     CONF_NAME,
     CONF_PEOPLE,
     CONF_RECEIVER_TYPE,
@@ -25,7 +24,6 @@ class Receiver:
     name: str
     source_id: str | None = None
     people: tuple[str, ...] = field(default_factory=tuple)
-    areas: tuple[str, ...] = field(default_factory=tuple)
 
     @classmethod
     def from_entry(cls, entry: ConfigEntry) -> Receiver:
@@ -40,5 +38,4 @@ class Receiver:
             name=entry.data.get(CONF_NAME, entry.title),
             source_id=entry.data.get(CONF_SOURCE_ID),
             people=tuple(entry.options.get(CONF_PEOPLE, ())),
-            areas=tuple(entry.options.get(CONF_AREAS, ())),
         )
