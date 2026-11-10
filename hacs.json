@@ -1,4 +1,6 @@
 {
   "name": "Com System",
-  "homeassistant": "2026.10.4"
+  "homeassistant": "2026.10.4",
+  "zip_release": true,
+  "filename": "com_system.zip"
 }

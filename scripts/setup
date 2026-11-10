@@ -6,6 +6,8 @@ cd "$(dirname "$0")/.."
 python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements-dev.txt
 npm install
+npm --prefix frontend install
+npm --prefix frontend run build
 
 # Mount the integration into the dev config directory.
 mkdir -p custom_components/com_system config/custom_components

@@ -24,6 +24,7 @@ Reconfiguration and hub options are stubs for now and do nothing yet.
 
 - [Receivers](receivers/README.md): the receiver concept and custom
   receivers.
+- [User interface](ui.md): the sidebar panel and its websocket commands.
 
-More documents (targets, content, conditions, actions and the UI) are added
-as those features are built.
+More documents (targets, content, conditions and actions) are added as those
+features are built.

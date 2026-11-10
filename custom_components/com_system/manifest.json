@@ -7,6 +7,7 @@
   "integration_type": "service",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/deosrc/home-assistant-com-system/issues",
+  "dependencies": ["frontend", "http", "panel_custom", "websocket_api"],
   "requirements": [],
   "version": "0.1.0"
 }

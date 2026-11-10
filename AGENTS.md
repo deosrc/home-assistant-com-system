@@ -30,6 +30,8 @@ records the conventions and how things work as built.
 - Lint Python: `ruff check .` and `ruff format --check .` (format with
   `ruff format .`). Ruff is configured in `pyproject.toml`.
 - Lint Markdown: `npm run lint:md`.
+- Panel (in `frontend/`): `npm run lint`, `npm test`, `npm run build`.
+  Hot reload: `scripts/develop-frontend`.
 
 ## Architecture as built
 
@@ -109,6 +111,32 @@ records the conventions and how things work as built.
 - `__init__.py`: `async_setup` registers the built-in types and creates the
   registry and the component; setting up the hub starts the detector;
   receiver entries set up and unload their entities.
+- `panel.py`: registers the admin-only sidebar panel with `panel_custom`
+  (`require_admin=True`) from `async_setup`. The bundle is served from
+  `custom_components/com_system/frontend/dist/` at `/com_system_static/`; if
+  it is missing a warning is logged and the panel does not load (tests run
+  without a build). `COM_SYSTEM_PANEL_DEV_URL` loads the panel from the Vite
+  dev server instead. The manifest depends on `frontend`, `http`,
+  `panel_custom` and `websocket_api`, and tests need `home-assistant-frontend`
+  (pinned in `requirements-dev.txt` to what Home Assistant requires).
+- `websocket_api.py`: the commands behind the panel
+  (`com_system/ping`, `dashboard`, `receivers/list`, `receivers/set_enabled`,
+  `discoveries/list`). Every command must have `@websocket_api.require_admin`;
+  `tests/test_panel.py` checks all of them reject a read-only user. They read
+  the registry and config entries; enabling or disabling calls the receiver's
+  switch service, so the switch stays the source of truth. Pending
+  discoveries are the `integration_discovery` flows in progress. Add new
+  commands to `async_register_commands` and to `COMMANDS` in the test.
+- `frontend/`: the panel source (Lit 3, TypeScript, Vite 6, Vitest, ESLint).
+  `com-system-panel.ts` is the shell and navigation (routes `dashboard` and
+  `receivers` under `/com-system/`), `api.ts` wraps the websocket commands
+  (`ComSystemApi`), and each view is its own element (`dashboard-view.ts`,
+  `receivers-view.ts`) that refetches when switch states change. Add views
+  by adding an element, an entry in `VIEWS` and a command. Elements use
+  `static properties` and `declare` fields (no decorators). The build is one
+  ES module and the HMR client is imported only when the mode is
+  `development`. Commands: `npm run lint`, `npm test`, `npm run build` in
+  `frontend/`; `scripts/develop-frontend` for hot reload.
 - Strings live in `strings.json`; `translations/en.json` is a copy and must
   be kept in step.
 - `hacs.json` records the minimum Home Assistant version; keep it in step
@@ -118,8 +146,14 @@ records the conventions and how things work as built.
 
 GitHub Actions workflows in `.github/workflows/` run on pull requests and
 pushes to `main`: `lint.yml` (Ruff check and format), `tests.yml` (pytest on
-Python 3.14), `markdownlint.yml`, `hassfest.yml` and `hacs.yml` (HACS
+Python 3.14), `frontend.yml` (panel lint, test and build),
+`markdownlint.yml`, `hassfest.yml` and `hacs.yml` (HACS
 validation). Hassfest also runs nightly. All must pass.
+
+`release.yml` is not a check. When a release is published it builds the
+panel and attaches `com_system.zip` (the integration folder with the bundle)
+to it; `hacs.json` has `zip_release` so HACS installs that zip. The release
+flow has not run yet.
 
 `sync-issue-labels.yml` is not a check. When a pull request is opened or
 reopened (`pull_request_target`, never checks out PR code), it copies the

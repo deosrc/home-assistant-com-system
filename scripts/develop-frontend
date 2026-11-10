@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Starts Home Assistant and the Vite dev server for the panel, against a
+# throwaway config directory, so panel edits show without a rebuild.
+# Needs ports 8123 and 5173 forwarded. Stops both on exit.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+CONFIG="$(mktemp -d)"
+trap 'kill 0; rm -rf "$CONFIG"' EXIT
+
+mkdir -p "$CONFIG/custom_components"
+ln -s "${PWD}/custom_components/com_system" "$CONFIG/custom_components/com_system"
+printf 'default_config:\n' >"$CONFIG/configuration.yaml"
+
+(cd frontend && npm run dev) &
+COM_SYSTEM_PANEL_DEV_URL="http://localhost:5173/src/com-system-panel.ts" \
+  hass --config "$CONFIG" "$@" &
+wait

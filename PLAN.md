@@ -507,28 +507,24 @@ are given.
 
 ## 5. User interface
 
-The integration provides its own UI inside Home Assistant (for example a
-sidebar panel). Details of each view are **TBD**; the intended scope is:
+The panel foundation (shell, websocket base, dashboard, receivers list with
+enable/disable, pending discoveries) is built; see [docs/ui.md](docs/ui.md)
+and [AGENTS.md](AGENTS.md). The remaining views are **TBD**; the intended
+scope is:
 
 | View | Purpose |
 | --- | --- |
-| Dashboard | Overview of the system's state and recent activity |
 | Recent notifications | History of notifications sent and their delivery |
-| Receivers | View, add, edit and remove configured receivers |
+| Receivers (extend) | Add, edit and remove receivers, with a conditions editor |
 | Notification designer | Compose a notification (targets and content) |
 | Testing tool | Send a test notification and see how it resolves |
+| Dashboard (extend) | Recent activity |
 
 Notes:
 
-- The UI is a custom sidebar panel written as Lit web components in
-  TypeScript, built with a bundler (e.g. Vite), following the Home Assistant
-  frontend's own stack and reusing its components where possible.
-- The panel is **admin-only**, and the websocket commands behind it require
-  an admin user. It exposes notification contents, receivers and conditions
-  and can send notifications, so it is not offered to non-admins.
-- Only the frontend source is committed. CI builds the panel and the
-  compiled bundle is attached to releases, which HACS installs from.
-  Local development needs a build step (documented for contributors).
+- The panel is admin-only and the websocket commands behind it require an
+  admin user. It will expose notification contents and conditions and send
+  notifications, so this must stay.
 - The designer and testing tool both build on the `notify.com_system`
   action, so they must exercise the same code path as automations.
 - Warnings about unsupported content are shown in recent notifications and
@@ -544,33 +540,12 @@ Notes:
   Assistant's JSON storage (`Store`), capped by count and age (default to be
   chosen, e.g. last 200 notifications or 30 days, whichever comes first),
   and the limits are configurable in the integration options.
-- The UI talks to the backend through Home Assistant's websocket API, which
-  needs commands for receivers, history, resolution preview and test sends.
-
-Decision from spike #8 (frontend panel build). The spike code is not merged;
-the feature that builds the UI foundation recreates it:
-
-- Layout: source in `frontend/` (Lit 3, TypeScript, Vite 6 library build).
-  Output is one ES module, `custom_components/com_system/frontend/dist/
-  com-system-panel.js`, gitignored and served at `/com_system_static/`.
-- Registration: `panel_custom.async_register_panel` from `async_setup`, with
-  `require_admin=True`; the manifest depends on `frontend`, `http`,
-  `panel_custom` and `websocket_api`. Commands use `@require_admin`;
-  verified in tests that a read-only user is rejected (`unauthorized`).
-- Tests now need `home-assistant-frontend` (pinned to the version Home
-  Assistant 2026.10.4 requires, 20260930.5) in `requirements-dev.txt`.
-- Hot reload: setting `COM_SYSTEM_PANEL_DEV_URL` to the Vite dev server makes
-  the panel load from it instead of the bundle. Home Assistant imports the
-  module directly, so the source imports `/@vite/client` itself in dev mode
-  (stripped from production builds). The devcontainer must forward port 5173
-  as well as 8123. Verified in a browser: the panel renders, ping works, edits
-  show without a manual refresh, and breakpoints hit the `.ts` source.
-  A helper script that starts Home Assistant and Vite against a throwaway
-  config made the checks repeatable and is worth recreating.
-- Verified in a browser: the panel is hidden from non-admin users.
-- Release: `release.yml` builds the bundle and attaches `com_system.zip` to
-  the release; `hacs.json` uses `zip_release`. `frontend.yml` builds on PRs.
-  The zip contents were checked locally; the release flow has not run.
+- Websocket commands are still needed for history, resolution preview and
+  test sends, and for adding, editing and removing receivers.
+- The pending discoveries list links to Devices & services to add or
+  ignore. Doing that inside the panel is not done.
+- The release flow (`release.yml`, `zip_release` in `hacs.json`) has not run
+  yet; the zip contents were checked locally in the spike only.
 
 ## 6. Standards and tooling (proposed, to be confirmed)
 
