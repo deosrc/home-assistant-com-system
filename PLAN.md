@@ -57,6 +57,10 @@ Each receiver needs (details **TBD**):
   them. Detection always ensures a receiver exists for every detected
   device, so a deleted auto-created receiver is **recreated** on the next
   detection; to stop a receiver being used, disable it instead.
+- When the underlying device or integration is removed, the receiver is
+  **kept as unavailable**, with its conditions and settings, so it recovers
+  if the device returns. Stale receivers are removed manually. Deliveries to
+  an unavailable receiver fail with a clear per-receiver result.
 - Custom receivers are always created manually, through the subentry flow.
 
 ### 2.2 Targets
@@ -575,5 +579,3 @@ Every phase includes updating the matching document(s) in `docs/`
   domain cleanly, and how much of the core `EventEntity` can be reused (the
   phase 3 spike confirms)? Fallback: real `event` entities filtered by
   integration.
-- When the underlying device or integration is removed, is the receiver
-  removed automatically or kept as unavailable?
