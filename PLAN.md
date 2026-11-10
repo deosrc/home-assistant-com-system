@@ -193,18 +193,6 @@ Each type needs a receiver-type definition (names provisional) covering:
   Assistant action call.
 - How its receivers are associated with people and areas (section 2.7).
 
-The **persistent notification** receiver posts to the notification area in
-the Home Assistant UI (using the `persistent_notification` actions). Unlike
-the other types it is not tied to a person or device: every user sees the
-same notifications. It also has no push behaviour, so it suits a
-record-of-last-resort. It starts with no person or area association and so
-is used **only when named explicitly** as a target; if the user maps it to a
-person or area it is reached by those targets like any receiver. It is
-create-only: each Com System notification creates its own persistent
-notification (using the Com System notification ID), and Com System never
-replaces or dismisses it. Users dismiss notifications in the Home Assistant
-UI as normal.
-
 **Delivery per type:**
 
 - **Mobile app** – one receiver per registered device. Delivery calls that
@@ -216,10 +204,6 @@ UI as normal.
   later goes missing, the receiver shows as unavailable and deliveries to it
   fail with a clear per-receiver result. Exact action names and data are
   verified against the integration during implementation.
-- **Persistent notification** – a single receiver, used only when named
-  explicitly. Delivery
-  calls `persistent_notification.create` and is create-only (see section
-  2.5).
 - **Pushover** – one receiver per Pushover config entry (notify target).
   Delivery calls the Pushover notify action:
   `priority` maps to Pushover priority, `image` to an attachment, and other
@@ -366,9 +350,7 @@ types already have a clear nature (see below).
 
 **Other receiver types:** the mechanism is TBD for each. For example, Alexa
 devices and TVs are likely to be associated by area rather than by person,
-while Pushover could be associated with a person manually. The persistent
-notification receiver is system-wide, so it starts with no person or area and
-is only used when named explicitly until the user maps it (section 2.5).
+while Pushover could be associated with a person manually.
 
 ## 3. The `notify.com_system` action
 

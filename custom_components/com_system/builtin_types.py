@@ -8,6 +8,9 @@ and finds nothing when the integration is not installed.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from typing import Any
+
 from homeassistant.config_entries import SOURCE_IGNORE, ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
@@ -130,6 +133,23 @@ class PersistentNotificationReceiverType(ReceiverType):
     async def async_detect(self, hass: HomeAssistant) -> list[DiscoveryCandidate]:
         """Always offer the one receiver."""
         return [DiscoveryCandidate(self.SOURCE_ID, self.name)]
+
+    async def async_deliver(
+        self, hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
+    ) -> list[str]:
+        """Create a persistent notification.
+
+        Create-only: no ``notification_id`` is sent, so Home Assistant makes a
+        new notification each time and Com System never replaces or dismisses
+        one. Only the message and title are supported.
+        """
+        data: dict[str, Any] = {"message": notification["message"]}
+        if notification.get("title"):
+            data["title"] = notification["title"]
+        await hass.services.async_call(
+            "persistent_notification", "create", data, blocking=True
+        )
+        return []
 
 
 class PushoverReceiverType(EntryReceiverType):

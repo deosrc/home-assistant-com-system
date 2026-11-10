@@ -35,7 +35,8 @@ detected:
 | Music Assistant | Music Assistant player |
 
 Detection only offers receivers. Sending notifications to each type is
-added as that type is built.
+added as that type is built. So far only
+[Persistent notification](persistent-notification.md) sends.
 
 ### Deleting, disabling and removed devices
 
