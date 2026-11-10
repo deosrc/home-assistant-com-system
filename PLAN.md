@@ -335,7 +335,9 @@ explicit targets. Whether a receiver can have more than one area is **TBD**.
     in) or by naming it explicitly.
 - Being a normal entity, the setting can be changed from the standard Home
   Assistant UI and by automations.
-- The default value, and whether it is guessed from the device, is **TBD**.
+- The default is inferred from the person link: a newly detected device
+  with a linked person starts as **personal**, and one with no linked person
+  starts as **shared**. The user can change it at any time.
 
 **Other receiver types:** the mechanism is TBD for each. For example, Alexa
 devices and TVs are likely to be associated by area rather than by person,
@@ -539,8 +541,6 @@ Every phase includes updating the matching document(s) in `docs/`
   detected candidates?
 - Frontend build and release process: are built assets committed to the
   repository, or built in CI and attached to releases (HACS support)?
-- What is the default for the personal/shared select, and can it be
-  inferred (e.g. a tablet logged in as a kiosk user)?
 - Can a receiver have more than one area?
 - Should the personal/shared setting be generalised to all receiver types?
 - Minimum supported Home Assistant version.
