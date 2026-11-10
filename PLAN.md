@@ -48,13 +48,14 @@ Each receiver needs (details **TBD**):
   subentry** of it. Receiver entities are derived from the subentries.
   Config subentries require a recent minimum Home Assistant version (to be
   verified; see section 8).
-- Receivers are not created automatically. Where possible, Com System
+- Receivers of the built-in types are **created automatically**. Com System
   detects notification-capable devices and integrations that are already
-  set up (e.g. a webOS TV, a mobile app device) and **offers to create a
-  subentry** for each, which the user confirms. Whether Home Assistant's
-  subentry flows can support such offers is **TBD**; the fallback is a
-  "add receiver" flow that lists detected candidates.
-- Custom receivers are always created manually.
+  set up (e.g. a webOS TV, a mobile app device) and creates a subentry for
+  each, without a confirmation step. (Home Assistant has no native
+  "discovered" card for subentries, but subentries can be added in code.)
+  Auto-created receivers start enabled, and the user can then edit, disable
+  or delete them.
+- Custom receivers are always created manually, through the subentry flow.
 
 ### 2.2 Targets
 
@@ -236,11 +237,11 @@ dismiss notifications in the Home Assistant UI as normal.
 
 - **Mobile app** – one receiver per registered device. Devices are detected
   from the mobile app integration's config entries and a subentry is
-  offered for each. Delivery calls that device's `notify.mobile_app_<device>`
+  created for each. Delivery calls that device's `notify.mobile_app_<device>`
   action with the title, message and data (actions, image, channel and so
   on).
 - **Alexa Media Player** (non-native integration) – one receiver per Echo
-  device, detected from that integration's config entries and offered only
+  device, detected from that integration's config entries and created only
   when the integration is installed. Delivery calls the integration's
   `notify.alexa_media_*` action with announce/TTS data. If the integration
   later goes missing, the receiver shows as unavailable and deliveries to it
@@ -250,15 +251,15 @@ dismiss notifications in the Home Assistant UI as normal.
   explicitly. Delivery calls `persistent_notification.create` and is
   create-only (see section 2.5).
 - **Pushover** – one receiver per Pushover config entry (notify target),
-  offered as a subentry. Delivery calls the Pushover notify action:
+  created as a subentry. Delivery calls the Pushover notify action:
   `priority` maps to Pushover priority, `image` to an attachment, and other
   options (e.g. sound, URL) go in `data`. Pushover has no user link, so the
-  person is chosen manually when the receiver is created.
-- **webOS TV** – one receiver per webostv config entry, offered as a
+  person is chosen manually by editing the receiver.
+- **webOS TV** – one receiver per webostv config entry, created as a
   subentry. Delivery calls the TV's notify action (an on-screen toast:
   message only, with an optional icon in `data`). TVs are shared devices
   with no person; the area comes from the device registry.
-- **Music Assistant** – one receiver per Music Assistant player, offered as
+- **Music Assistant** – one receiver per Music Assistant player, created as
   a subentry. Delivery calls Music Assistant's announcement action rather
   than a notify action (the message is spoken; options such as an
   announcement URL or volume go in `data`). How a notification is delivered
@@ -572,6 +573,7 @@ Every phase includes updating the matching document(s) in `docs/`
   domain cleanly, and how much of the core `EventEntity` can be reused (the
   phase 3 spike confirms)? Fallback: real `event` entities filtered by
   integration.
-- Can config subentries be offered automatically for detected receivers
-  (discovery), or only created from an "add receiver" flow that lists
-  detected candidates?
+- If a user deletes an auto-created receiver, is it recreated on the next
+  detection? (An ignore list would be needed to prevent this.)
+- When the underlying device or integration is removed, is the receiver
+  removed automatically or kept as unavailable?
