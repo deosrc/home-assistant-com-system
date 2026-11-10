@@ -125,8 +125,6 @@ class PersistentNotificationReceiverType(ReceiverType):
     type_id = RECEIVER_TYPE_PERSISTENT_NOTIFICATION
     name = "Persistent notification"
     discoverable = True
-    # System-wide: only used when named explicitly.
-    targetable_by_association = False
     SOURCE_ID = "persistent_notification"
 
     async def async_detect(self, hass: HomeAssistant) -> list[DiscoveryCandidate]:

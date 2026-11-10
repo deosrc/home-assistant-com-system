@@ -35,15 +35,18 @@ class ReceiverType:
     # Whether receivers of the type are created from discoveries (built-in
     # types) and so need a source to detect. Custom receivers are manual.
     discoverable: bool = False
-    # Whether person and area targets (and the default of all people and
-    # areas) can reach receivers of the type. When False, receivers are only
-    # used when named explicitly.
-    targetable_by_association: bool = True
 
     async def async_deliver(
         self, hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
-    ) -> None:
-        """Deliver a notification (implemented with the dispatcher)."""
+    ) -> list[str]:
+        """Deliver a notification to a receiver of this type.
+
+        ``notification`` has ``message`` and, when given, ``title``. Return
+        warnings for content the type dropped (empty when none). Raise to
+        report a failure; the dispatcher records it and carries on with the
+        other receivers. The default raises ``NotImplementedError``, which
+        the dispatcher reports as a failure.
+        """
         raise NotImplementedError
 
     def associated_people(self, receiver: Receiver) -> tuple[str, ...]:

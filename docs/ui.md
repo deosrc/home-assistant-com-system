@@ -37,6 +37,29 @@ added. Choose **Review in Devices & services** to add or ignore them; see
 with a type that is no longer known stays in the list, with the type id as
 its type.
 
+## Test
+
+The testing tool sends a test notification and shows what happens.
+
+- The form is Home Assistant's own action form, as on **Developer tools >
+  Actions**, without the action picker. Enter an optional **title** and a
+  **message**, and choose the targets: **Individuals** (one or more
+  people) or **Everyone**, and **Select** (receivers, areas and so on) or
+  **All Areas**. Everyone and All Areas are what it starts with; untick a
+  field (or choose None in the simple form) to leave that group out, so it
+  is not targeted. The groups are combined as in the
+  [action](services.md#people). If Home Assistant has not loaded
+  that form, a simple form with the same fields is shown instead.
+- **Receivers reached** updates as you change the targets, without sending
+  anything. Each matching receiver is `reached`, or `skipped` with the
+  reason (it is disabled).
+- **Send test** calls the [`notify.com_system` action](services.md), so it
+  behaves exactly as an automation does, and may send real notifications.
+  It is enabled once there is a message and at least one receiver would be
+  reached. The result shows each receiver's outcome (delivered, failed or
+  skipped) with the reason and any warnings, and the counts.
+- If nothing could be attempted, the error from the action is shown.
+
 ## Websocket commands
 
 The panel talks to Home Assistant through these commands. All require an
@@ -45,10 +68,17 @@ admin user.
 - `com_system/ping`: returns `{"pong": true}`.
 - `com_system/dashboard`: the counts shown on the dashboard.
 - `com_system/receivers/list`: each receiver's name, type, enabled state,
-  availability, entity id, people and areas.
+  availability, switch entity id, `notification_receiver` entity id
+  (`receiver_entity_id`), people and areas.
 - `com_system/receivers/set_enabled`: turns the receiver's enabled switch on
   or off (`entry_id`, `enabled`).
 - `com_system/discoveries/list`: the pending discoveries.
+- `com_system/notify/preview`: the receivers the targets (`person` and
+  `receivers`, as in the action) would reach, each `reached` or
+  `skipped` with a reason. Sends nothing.
+- `com_system/notify/test`: sends through the `notify.com_system` action
+  (`message`, optional `title`, and the targets) and returns its response.
+  A failure to send is the error `send_failed`.
 
 ## Installing the panel
 

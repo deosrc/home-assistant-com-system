@@ -2,7 +2,10 @@ import type {
   DashboardData,
   DiscoveryInfo,
   HomeAssistant,
+  NotifyTargets,
+  PreviewEntry,
   ReceiverInfo,
+  SendResponse,
 } from "./types";
 
 /**
@@ -32,6 +35,28 @@ export class ComSystemApi {
       type: "com_system/discoveries/list",
     });
     return result.discoveries;
+  }
+
+  async previewNotify(targets: NotifyTargets): Promise<PreviewEntry[]> {
+    const result = await this.hass.callWS<{ receivers: PreviewEntry[] }>({
+      type: "com_system/notify/preview",
+      ...targets,
+    });
+    return result.receivers;
+  }
+
+  /** Sends through the `notify.com_system` action itself. */
+  sendTest(
+    message: string,
+    title: string | undefined,
+    targets: NotifyTargets,
+  ): Promise<SendResponse> {
+    return this.hass.callWS({
+      type: "com_system/notify/test",
+      message,
+      ...(title ? { title } : {}),
+      ...targets,
+    });
   }
 
   setEnabled(entryId: string, enabled: boolean): Promise<void> {

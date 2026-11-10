@@ -1,0 +1,4 @@
+# Intentionally empty. The only action, notify.com_system, belongs to the
+# notify domain, whose services.yaml is Home Assistant's own, so its fields
+# are described in code (see notify.py). Hassfest requires this file because
+# the integration registers a service.

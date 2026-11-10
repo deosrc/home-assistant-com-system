@@ -16,6 +16,7 @@ from custom_components.com_system.targets import resolve_targets
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 
 
@@ -70,14 +71,28 @@ def _ids(receivers) -> set[str]:
     return {r.entry_id for r in receivers}
 
 
-async def test_default_is_all_people_and_areas(hass: HomeAssistant) -> None:
-    """With no targets, receivers with a person or area; not shared, not persistent."""
-    e = await _setup(hass)
+async def test_no_targets_targets_nothing(hass: HomeAssistant) -> None:
+    """A group that is not given is not targeted, so no targets match nothing."""
+    await _setup(hass)
     result = resolve_targets(hass)
-    assert _ids(result.receivers) == {
-        e[k].entry_id for k in ("alice", "bob", "echo", "both")
-    }
+    assert result.receivers == ()
     assert result.skipped == ()
+
+
+async def test_groups_are_independent(hass: HomeAssistant) -> None:
+    """People are not targeted unless given, except through a targeted area."""
+    e = await _setup(hass)
+    # Only areas: receivers with a person but no area are not reached.
+    result = resolve_targets(hass, areas=[e["kitchen"], e["lounge"]])
+    assert _ids(result.receivers) == {e["echo"].entry_id, e["both"].entry_id}
+    # Only all people: receivers with only an area are not reached.
+    assert _ids(resolve_targets(hass, all_people=True).receivers) == {
+        e[k].entry_id for k in ("alice", "bob", "both")
+    }
+    # All areas: only receivers with an area.
+    assert _ids(resolve_targets(hass, all_areas=True).receivers) == {
+        e[k].entry_id for k in ("echo", "both")
+    }
 
 
 async def test_union_of_people_areas_and_receivers(hass: HomeAssistant) -> None:
@@ -102,28 +117,44 @@ async def test_person_and_area_match_once(hass: HomeAssistant) -> None:
     assert _ids(result.receivers) == {e["bob"].entry_id, e["both"].entry_id}
 
 
-async def test_shared_receiver_not_reached_by_person_or_default(
+async def test_shared_receiver_only_reached_by_name(
     hass: HomeAssistant,
 ) -> None:
     """A receiver with no person or area is only reached by name."""
     e = await _setup(hass)
-    assert e["shared"].entry_id not in _ids(resolve_targets(hass).receivers)
+    shared = e["shared"].entry_id
+    assert shared not in _ids(resolve_targets(hass, all_people=True).receivers)
+    assert shared not in _ids(resolve_targets(hass, all_areas=True).receivers)
     assert e["shared"].entry_id not in _ids(
         resolve_targets(hass, people=["person.alice"]).receivers
     )
 
 
-async def test_persistent_notification_only_when_named(hass: HomeAssistant) -> None:
-    """The persistent notification receiver ignores people, areas and default."""
+async def test_persistent_notification_follows_its_mapping(
+    hass: HomeAssistant,
+) -> None:
+    """The persistent notification receiver is reached only as it is mapped."""
     e = await _setup(hass)
     pid = e["persistent"].entry_id
-    assert pid not in _ids(resolve_targets(hass).receivers)
-    # Even in an area, it is not reached by area.
+    # With no person or area it is only reached when named.
+    assert pid not in _ids(resolve_targets(hass, all_people=True).receivers)
+    assert pid not in _ids(resolve_targets(hass, all_areas=True).receivers)
+    assert pid not in _ids(resolve_targets(hass, people=["person.carol"]).receivers)
+    assert pid in _ids(resolve_targets(hass, receivers=[pid]).receivers)
+
+    # Mapped to a person, people targets reach it like any receiver.
+    hass.config_entries.async_update_entry(
+        e["persistent"], options={CONF_PEOPLE: ["person.carol"]}
+    )
+    await hass.async_block_till_done()
+    assert pid in _ids(resolve_targets(hass, people=["person.carol"]).receivers)
+    assert pid in _ids(resolve_targets(hass, all_people=True).receivers)
+    assert pid not in _ids(resolve_targets(hass, people=["person.alice"]).receivers)
+
+    # Given an area, area targets reach it too.
     device = dr.async_get(hass).async_get_device_by_identifier((DOMAIN, pid), pid)
     dr.async_get(hass).async_update_device(device.id, area_id=e["kitchen"])
-    assert pid not in _ids(resolve_targets(hass).receivers)
-    assert pid not in _ids(resolve_targets(hass, areas=[e["kitchen"]]).receivers)
-    assert pid in _ids(resolve_targets(hass, receivers=[pid]).receivers)
+    assert pid in _ids(resolve_targets(hass, areas=[e["kitchen"]]).receivers)
 
 
 async def test_disabled_receivers_are_skipped(hass: HomeAssistant) -> None:
@@ -136,7 +167,7 @@ async def test_disabled_receivers_are_skipped(hass: HomeAssistant) -> None:
         blocking=True,
     )
     for result in (
-        resolve_targets(hass),
+        resolve_targets(hass, all_people=True),
         resolve_targets(hass, people=["person.alice"]),
         resolve_targets(hass, receivers=[e["alice"].entry_id]),
     ):
@@ -156,5 +187,28 @@ async def test_unknown_targets_match_nothing(hass: HomeAssistant) -> None:
 async def test_result_is_ordered_by_name(hass: HomeAssistant) -> None:
     """Receivers come back ordered by name."""
     await _setup(hass)
-    names = [r.name for r in resolve_targets(hass).receivers]
+    names = [r.name for r in resolve_targets(hass, all_people=True).receivers]
     assert names == sorted(names, key=str.casefold)
+
+
+async def test_all_people(hass: HomeAssistant) -> None:
+    """all_people matches receivers with a person, not areas-only or shared."""
+    e = await _setup(hass)
+    result = resolve_targets(hass, all_people=True)
+    assert _ids(result.receivers) == {e[k].entry_id for k in ("alice", "bob", "both")}
+    # Combined with an area it is a union.
+    result = resolve_targets(hass, all_people=True, areas=[e["kitchen"]])
+    assert _ids(result.receivers) == {
+        e[k].entry_id for k in ("alice", "bob", "both", "echo")
+    }
+
+
+async def test_area_is_the_receiver_entitys(hass: HomeAssistant) -> None:
+    """Only the notification_receiver entity's area counts, not the switch's."""
+    e = await _setup(hass)
+    shared = e["shared"].entry_id
+    er.async_get(hass).async_update_entity(
+        "switch.shared_tablet_enabled", area_id=e["kitchen"]
+    )
+    assert shared not in _ids(resolve_targets(hass, areas=[e["kitchen"]]).receivers)
+    assert shared not in _ids(resolve_targets(hass, all_areas=True).receivers)

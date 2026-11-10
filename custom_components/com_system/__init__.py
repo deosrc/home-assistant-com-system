@@ -29,6 +29,7 @@ from .const import (
     RECEIVER_ENTRY_TYPES,
 )
 from .detection import ReceiverDetector
+from .notify import async_register_notify_action
 from .panel import async_register_panel
 from .registry import ReceiverRegistry
 from .websocket_api import async_register_commands
@@ -49,6 +50,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             _LOGGER, NOTIFICATION_RECEIVER_DOMAIN, hass
         ),
     }
+    async_register_notify_action(hass)
     async_register_commands(hass)
     await async_register_panel(hass)
     return True

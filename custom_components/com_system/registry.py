@@ -6,7 +6,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
-from .const import CONF_ENTRY_TYPE, DOMAIN, RECEIVER_ENTRY_TYPES
+from .const import (
+    CONF_ENTRY_TYPE,
+    DOMAIN,
+    NOTIFICATION_RECEIVER_DOMAIN,
+    RECEIVER_ENTRY_TYPES,
+)
 from .receiver import Receiver
 from .receiver_type import ReceiverType, get_receiver_type
 
@@ -58,18 +63,19 @@ class ReceiverRegistry:
     def areas_of(self, receiver: Receiver) -> tuple[str, ...]:
         """Return the area of a receiver (none, or one).
 
-        The area is not stored: it is the area of the receiver's device, or
-        of its entity when that has its own. All the receiver's entities are
-        on one device, so the first entity with a device decides.
+        The area is not stored: it is the area of the receiver's
+        ``notification_receiver`` entity, which is what Home Assistant uses
+        when that entity is targeted by area. That entity has no name of its
+        own, so it cannot have an area of its own and takes its device's.
+        The enabled switch is not consulted.
         """
         entity_registry = er.async_get(self._hass)
-        device_registry = dr.async_get(self._hass)
-        for entity in er.async_entries_for_config_entry(
-            entity_registry, receiver.entry_id
-        ):
-            if entity.device_id is None:
-                continue
-            device = device_registry.async_get(entity.device_id)
-            area_id = entity.area_id or (device.area_id if device else None)
-            return (area_id,) if area_id else ()
-        return ()
+        entity_id = entity_registry.async_get_entity_id(
+            NOTIFICATION_RECEIVER_DOMAIN, DOMAIN, f"{receiver.entry_id}_receiver"
+        )
+        entity = entity_registry.async_get(entity_id) if entity_id else None
+        if entity is None or entity.device_id is None:
+            return ()
+        device = dr.async_get(self._hass).async_get(entity.device_id)
+        area_id = entity.area_id or (device.area_id if device else None)
+        return (area_id,) if area_id else ()

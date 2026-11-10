@@ -33,6 +33,8 @@ export interface ReceiverInfo {
   enabled: boolean | null;
   available: boolean;
   entity_id: string | null;
+  /** The read-only `notification_receiver` entity; the action's target. */
+  receiver_entity_id: string | null;
   people: string[];
   areas: string[];
 }
@@ -41,4 +43,44 @@ export interface DiscoveryInfo {
   flow_id: string;
   name: string;
   type: string;
+}
+
+/** The target fields shared by the preview and the test send. */
+export type PersonTarget =
+  { active_choice: "Everyone"; Everyone: true } | string[];
+
+/** The values of a target selector; only the keys with a selection. */
+export type SelectedTarget = Record<string, string[]>;
+
+export type ReceiversTarget =
+  | { active_choice: "All Areas"; "All Areas": true }
+  | { active_choice: "Select"; Select: SelectedTarget };
+
+export interface NotifyTargets {
+  /** Everyone, or the listed `person.*` entities. */
+  person?: PersonTarget;
+  /** Every receiver with an area, or a selection of receivers. */
+  receivers?: ReceiversTarget;
+}
+
+export interface PreviewEntry {
+  entry_id: string;
+  name: string;
+  type: string;
+  outcome: "reached" | "skipped";
+  reason: string | null;
+}
+
+export interface SendResult {
+  entry_id: string;
+  name: string;
+  type: string;
+  result: "delivered" | "failed" | "skipped";
+  reason: string | null;
+  warnings: string[];
+}
+
+export interface SendResponse {
+  results: SendResult[];
+  counts: { delivered: number; failed: number; skipped: number };
 }

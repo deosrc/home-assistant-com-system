@@ -39,44 +39,36 @@ def resolve_targets(
     hass: HomeAssistant,
     *,
     people: Collection[str] | None = None,
+    all_people: bool = False,
     areas: Collection[str] | None = None,
+    all_areas: bool = False,
     receivers: Collection[str] | None = None,
 ) -> ResolvedTargets:
     """Resolve targets to receivers.
 
     ``people`` are ``person.*`` entity ids, ``areas`` are area ids and
-    ``receivers`` are receiver config entry ids. The result is the union of
-    the receivers that match any of them. With no targets at all, every
-    receiver associated with any person or area matches. A receiver whose
-    type is not ``targetable_by_association`` (the persistent notification
-    receiver) is only matched when named in ``receivers``. Shared receivers
-    (no person) are never matched by person; a receiver without an area is
-    never matched by area. Disabled receivers are returned as skipped,
+    ``receivers`` are receiver config entry ids. ``all_people`` matches every
+    receiver that has a person, whoever it is, and ``all_areas`` every
+    receiver that has an area. The result is the union of the receivers that
+    match any of them. A group that is not given is not targeted, so with no
+    targets at all nothing matches. A receiver with no person and no area is
+    only matched when named. Disabled receivers are returned as skipped,
     however they were matched. Unknown ids match nothing.
     """
     registry = hass.data[DOMAIN][DATA_REGISTRY]
     people_set = set(people or ())
     area_set = set(areas or ())
     named = set(receivers or ())
-    default = not (people_set or area_set or named)
 
     matched: list[Receiver] = []
     for receiver in registry.all():
-        receiver_type = registry.type_of(receiver)
-        by_association = (
-            receiver_type is None or receiver_type.targetable_by_association
-        )
         receiver_people = registry.people_of(receiver)
         receiver_areas = registry.areas_of(receiver)
-        if receiver.entry_id in named:
-            matched.append(receiver)
-        elif not by_association:
-            continue
-        elif default:
-            if receiver_people or receiver_areas:
-                matched.append(receiver)
-        elif people_set.intersection(receiver_people) or area_set.intersection(
-            receiver_areas
+        if receiver.entry_id in named or (
+            (all_people and receiver_people)
+            or (all_areas and receiver_areas)
+            or people_set.intersection(receiver_people)
+            or area_set.intersection(receiver_areas)
         ):
             matched.append(receiver)
 
