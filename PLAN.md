@@ -101,11 +101,16 @@ Content parameters are split into two tiers:
     types, or common in notification content) are explicit, validated
     top-level fields in the action schema. Receivers that do not support a
     typed field handle it as described under unsupported content below.
-    Initially the typed
-    fields are **`priority`** (a normalised urgency level that each receiver
-    type maps to its own mechanism) and **`image`** (an image URL or media
-    reference). Others such as actions and sounds start in `data` and can be
-    promoted to typed fields later if they prove widely used.
+    Initially the typed fields are **`priority`** (a normalised urgency
+    level that each receiver type maps to its own mechanism) and **`image`**
+    (an image URL or media reference).
+    - `priority` accepts `low`, `normal` (the default), `high` and
+      `critical`. How each receiver type maps them is documented per type.
+    - `image` accepts an http(s) URL, a local `/local/...` path or a media
+      source ID. Camera entities are deferred.
+
+    Others such as actions and sounds start in `data` and can be promoted
+    to typed fields later if they prove widely used.
   - **Free-form `data`** – anything COM System does not support explicitly
     goes in a `data` object keyed by receiver type, e.g.
     `data: {mobile_app: {...}, pushover: {...}}`. Each receiver reads only
@@ -517,9 +522,6 @@ Every phase includes updating the matching document(s) in `docs/`
 
 ## 8. Open questions
 
-- What are the allowed `priority` values and how does each receiver type
-  map them? What forms of `image` are accepted (URL, local media, camera
-  entity)?
 - Can `com_system` register a new `notification_receiver` entity domain
   (with its own actions) cleanly? To be settled by the phase 3 spike.
   Fallback: `switch` entities filtered by integration.
