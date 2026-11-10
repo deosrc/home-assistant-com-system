@@ -280,6 +280,11 @@ decide, per notification, whether that receiver is used.
 - Example: skip a receiver when the notification message contains some
   given text, using a template condition on the notification variable.
 - A receiver with no conditions always passes.
+- If a condition errors (e.g. a template fails to render), it is treated as
+  not passed: the receiver is skipped, the error is logged, and the result
+  is recorded as skipped (condition error) in history, the entity's last
+  result and the testing tool. This fails safe for rules such as
+  do-not-disturb.
 
 Evaluation order for a notification:
 
@@ -516,8 +521,6 @@ Every phase includes updating the matching document(s) in `docs/`
   detected candidates?
 - Frontend build and release process: are built assets committed to the
   repository, or built in CI and attached to releases (HACS support)?
-- If a condition errors (e.g. a template fails), is the receiver skipped,
-  used anyway, or is the error reported? Is it recorded in history?
 - Where are conditions stored and edited: per receiver only, or can some be
   shared or global across receivers?
 - Are the docs only read in the repository, or also published (e.g. GitHub
