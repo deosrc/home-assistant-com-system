@@ -92,6 +92,16 @@ Content parameters are split into two tiers:
     types. (Keying by type is an assumption from "mixed per-type blocks and
     typed fields"; to be confirmed.)
 
+**Action responses:** each COM System notification is given an ID. When a
+user responds to a notification action (e.g. presses a button on a mobile
+app notification), COM System fires a `com_system_action` event (name
+provisional) containing the notification ID, the receiver and the chosen
+action, so automations can trigger on it. The response is also stored
+against the notification in history, so the UI can show which receiver or
+person responded. How each receiver type's native response event is mapped
+to this event is documented per type. Responses from a type that has no
+native response mechanism are not possible.
+
 **Unsupported content:** when a notification carries content that a
 resolved receiver does not support (e.g. mobile app actions sent to a
 persistent notification), the notification is still delivered with the
@@ -405,8 +415,6 @@ Every phase includes updating the matching document(s) in `docs/`
 - What are the allowed `priority` values and how does each receiver type
   map them? What forms of `image` are accepted (URL, local media, camera
   entity)?
-- How are responses to notification actions (e.g. a button press on a mobile
-  notification) surfaced, given one notification may reach many receivers?
 - How is a receiver associated with a person or area? Explicit mapping on
   the receiver, or derived from the entity, device or area registry?
 - When both people and areas are given, is the result a union or an
