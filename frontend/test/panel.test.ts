@@ -119,3 +119,18 @@ describe("panel", () => {
     );
   });
 });
+
+describe("panel layout", () => {
+  it("puts the tabs in a bottom bar when narrow", async () => {
+    const { hass } = makeHass();
+    const panel = await mount("", hass);
+    expect(panel.shadowRoot!.querySelector("nav.bottom-bar")).toBeNull();
+    // Wide screens have the tabs in the toolbar instead of a title.
+    expect(panel.shadowRoot!.querySelector("h1")).toBeNull();
+    panel.narrow = true;
+    await panel.updateComplete;
+    expect(panel.hasAttribute("narrow")).toBe(true);
+    expect(panel.shadowRoot!.querySelector("nav.bottom-bar")).not.toBeNull();
+    expect(panel.shadowRoot!.querySelector("h1")!.textContent).toBe("Com System");
+  });
+});

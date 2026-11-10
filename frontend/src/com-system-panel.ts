@@ -1,4 +1,4 @@
-import { LitElement, css, html } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import "./dashboard-view";
 import "./receivers-view";
 import { sharedStyles } from "./styles";
@@ -25,7 +25,7 @@ export class ComSystemPanel extends LitElement {
 
   static properties = {
     hass: { attribute: false },
-    narrow: { type: Boolean },
+    narrow: { type: Boolean, reflect: true },
     route: { attribute: false },
     panel: { attribute: false },
   };
@@ -39,45 +39,91 @@ export class ComSystemPanel extends LitElement {
         background: var(--primary-background-color);
         color: var(--primary-text-color);
       }
-      /* Matches the toolbar of Home Assistant's own pages. */
-      header {
+      /* Copies the toolbar and tabs of Home Assistant's own pages
+         (hass-tabs-subpage and ha-tab). */
+      :host([narrow]) {
+        padding-bottom: var(--header-height, 56px);
+      }
+      .toolbar {
+        box-sizing: border-box;
+        height: var(--header-height, 56px);
+        font-size: 20px;
+        font-weight: 400;
+        background-color: var(--sidebar-background-color);
+        border-bottom: 1px solid var(--divider-color);
+      }
+      .toolbar-content {
         display: flex;
         align-items: center;
         box-sizing: border-box;
-        height: var(--header-height, 56px);
+        height: 100%;
         padding: 8px 12px;
-        font-size: 20px;
-        font-weight: 400;
-        background-color: var(--app-header-background-color, var(--primary-color));
-        color: var(--app-header-text-color, #fff);
-        border-bottom: var(--app-header-border-bottom, none);
+      }
+      :host([narrow]) .toolbar-content {
+        padding: 4px;
+      }
+      ha-menu-button {
+        flex-shrink: 0;
+        color: var(--sidebar-icon-color);
+        margin-inline-end: 24px;
       }
       h1 {
-        margin: 0 24px 0 0;
+        flex: 1;
+        min-width: 0;
+        margin: 0;
         font-size: inherit;
         font-weight: inherit;
+        line-height: 1.5;
+        color: var(--sidebar-text-color);
         white-space: nowrap;
       }
       nav {
         display: flex;
-        align-self: stretch;
+        flex: 1;
+        justify-content: center;
+        overflow: hidden;
+        font-size: 14px;
+      }
+      nav.bottom-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        z-index: 2;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0 16px;
+        justify-content: space-around;
+        font-size: 12px;
+        background-color: var(--sidebar-background-color);
+        border-top: 1px solid var(--divider-color);
       }
       nav a {
+        box-sizing: border-box;
         display: flex;
         align-items: center;
-        padding: 0 24px;
-        color: inherit;
+        justify-content: center;
+        height: var(--header-height, 56px);
+        padding: 0 32px;
+        max-width: 45%;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
         text-decoration: none;
-        font-size: 14px;
-        font-weight: 500;
-        letter-spacing: 0.0892857em;
-        text-transform: uppercase;
-        border-bottom: 2px solid transparent;
-        opacity: 0.8;
+        color: var(--sidebar-text-color);
+        outline: none;
+      }
+      nav.bottom-bar a {
+        width: 25%;
+        padding: 0 4px;
       }
       nav a.active {
-        opacity: 1;
-        border-bottom-color: currentColor;
+        color: var(--primary-color);
+      }
+      nav:not(.bottom-bar) a.active {
+        border-bottom: 2px solid var(--primary-color);
+      }
+      nav a:focus-visible {
+        background-color: rgba(127, 127, 127, 0.08);
       }
       main {
         padding: 16px;
@@ -104,24 +150,29 @@ export class ComSystemPanel extends LitElement {
   protected render() {
     const active = this.activePath;
     const prefix = this.route?.prefix ?? "/com-system";
+    const tabs = html`
+      <nav class=${this.narrow ? "bottom-bar" : ""}>
+        ${VIEWS.map(
+          (v) => html`<a
+            class=${v.path === active ? "active" : ""}
+            href="${prefix}/${v.path}"
+            @click=${(ev: Event) => this.navigate(ev, v.path)}
+            >${v.label}</a
+          >`,
+        )}
+      </nav>
+    `;
     return html`
-      <header>
-        <ha-menu-button
-          .hass=${this.hass}
-          .narrow=${this.narrow}
-        ></ha-menu-button>
-        <h1>Com System</h1>
-        <nav>
-          ${VIEWS.map(
-            (v) => html`<a
-              class=${v.path === active ? "active" : ""}
-              href="${prefix}/${v.path}"
-              @click=${(ev: Event) => this.navigate(ev, v.path)}
-              >${v.label}</a
-            >`,
-          )}
-        </nav>
-      </header>
+      <div class="toolbar">
+        <div class="toolbar-content">
+          <ha-menu-button
+            .hass=${this.hass}
+            .narrow=${this.narrow}
+          ></ha-menu-button>
+          ${this.narrow ? html`<h1>Com System</h1>` : nothing}
+          ${tabs}
+        </div>
+      </div>
       <main>
         ${active === "receivers"
           ? html`<com-system-receivers .hass=${this.hass}></com-system-receivers>`
