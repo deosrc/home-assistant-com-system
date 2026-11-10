@@ -96,6 +96,12 @@ reopened (`pull_request_target`, never checks out PR code), it copies the
 labels of the issues the PR links to (closing keywords or the Development
 sidebar) onto the PR.
 
+`.github/release.yml` configures GitHub's auto-generated release notes. It
+groups PRs by label (`breaking-change`, `enhancement`, `bug`,
+`documentation`, `dependencies`, everything else last) and skips PRs
+labelled `ignore-for-release` and bot authors. The label sync workflow is
+what puts the issue labels on PRs.
+
 HACS validation is temporarily manual-only (`workflow_dispatch`) because the
 HACS action fails on a private repository. Restore its triggers when the
 repository is made public.
