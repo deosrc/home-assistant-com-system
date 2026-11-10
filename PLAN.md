@@ -54,6 +54,10 @@ Targets determine which receivers are triggered by a notification.
 - **Default** – when no targets are specified, the notification goes to
   **all people and all areas**.
 
+When several kinds of target are given, the results are combined as a
+**union**: a receiver is used if it matches any listed person, any listed
+area, or is named explicitly.
+
 Only **enabled** receivers (section 2.4) are triggered, whichever way they
 were targeted.
 
@@ -420,8 +424,6 @@ Every phase includes updating the matching document(s) in `docs/`
 - What are the allowed `priority` values and how does each receiver type
   map them? What forms of `image` are accepted (URL, local media, camera
   entity)?
-- When both people and areas are given, is the result a union or an
-  intersection?
 - Can a custom integration register a new `notification_receiver` entity
   domain (with its own actions) cleanly? Should it live in `com_system` or a
   separate integration? Fallback: `switch` entities filtered by integration.
