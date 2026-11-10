@@ -46,8 +46,9 @@ records the conventions and how things work as built.
 - Receiver entry data: `entry_type`, `receiver_type` (missing means
   `custom`), `name`, optional `source_id`. Options: `people` (`person.*`
   entity ids). Entries are the only storage. There is no stored area: a
-  receiver's area is its device's (`ReceiverRegistry.areas_of`, entity area
-  first), so it is changed in Home Assistant, not in Com System.
+  receiver's area is the area of its `notification_receiver` entity, which is
+  its device's (`ReceiverRegistry.areas_of`; the switch's area is ignored),
+  so it is changed in Home Assistant, not in Com System.
 - `receiver.py`: frozen `Receiver` dataclass built by `Receiver.from_entry`.
 - `receiver_type.py`: `ReceiverType` is the extension point (id, name,
   capabilities, `async_deliver`, association hooks, `async_detect`,

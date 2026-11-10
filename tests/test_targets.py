@@ -16,6 +16,7 @@ from custom_components.com_system.targets import resolve_targets
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 
 
@@ -185,3 +186,14 @@ async def test_all_people(hass: HomeAssistant) -> None:
     assert _ids(result.receivers) == {
         e[k].entry_id for k in ("alice", "bob", "both", "echo")
     }
+
+
+async def test_area_is_the_receiver_entitys(hass: HomeAssistant) -> None:
+    """Only the notification_receiver entity's area counts, not the switch's."""
+    e = await _setup(hass)
+    shared = e["shared"].entry_id
+    er.async_get(hass).async_update_entity(
+        "switch.shared_tablet_enabled", area_id=e["kitchen"]
+    )
+    assert shared not in _ids(resolve_targets(hass, areas=[e["kitchen"]]).receivers)
+    assert shared not in _ids(resolve_targets(hass, all_areas=True).receivers)
