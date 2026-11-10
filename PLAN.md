@@ -353,6 +353,9 @@ Notes:
 - The UI is a custom sidebar panel written as Lit web components in
   TypeScript, built with a bundler (e.g. Vite), following the Home Assistant
   frontend's own stack and reusing its components where possible.
+- The panel is **admin-only**, and the websocket commands behind it require
+  an admin user. It exposes notification contents, receivers and conditions
+  and can send notifications, so it is not offered to non-admins.
 - The designer and testing tool both build on the `notify.com_system`
   action, so they must exercise the same code path as automations.
 - Warnings about unsupported content are shown in recent notifications and
@@ -469,7 +472,6 @@ Every phase includes updating the matching document(s) in `docs/`
   detected candidates?
 - Frontend build and release process: are built assets committed to the
   repository, or built in CI and attached to releases (HACS support)?
-- Should the UI be admin-only, or visible to all users?
 - How does each supported type deliver notifications: which actions or
   entities does it use, and how are its receivers discovered?
 - Alexa Media Player is a non-native integration: how do we handle it being
