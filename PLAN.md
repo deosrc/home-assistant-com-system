@@ -470,6 +470,11 @@ docs/
   and examples. New receiver types add their own document.
 - Documents include worked examples, such as a do-not-disturb automation
   using the receiver on/off actions.
+- The docs are read in the repository for now, but are written with
+  GitHub Pages in mind: relative links between documents, one top-level
+  heading per file, no reliance on GitHub-only rendering features, and a
+  structure that a static site generator could publish unchanged. No site
+  generator is set up initially.
 - All documentation follows the markdownlint rule in section 6.
 
 ## 7. Proposed delivery phases (draft, to become GitHub issues)
@@ -523,8 +528,6 @@ Every phase includes updating the matching document(s) in `docs/`
   detected candidates?
 - Frontend build and release process: are built assets committed to the
   repository, or built in CI and attached to releases (HACS support)?
-- Are the docs only read in the repository, or also published (e.g. GitHub
-  Pages)? Affects link style and whether a site generator is needed.
 - Should CI fail when code changes without a matching docs change, or is
   this left to review?
 - How exactly is a mobile app device linked to a person (registration user
