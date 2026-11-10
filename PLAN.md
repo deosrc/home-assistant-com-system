@@ -40,7 +40,7 @@ Each receiver needs (details **TBD**):
 - The mechanism used to deliver to it (an existing service/entity, or a
   user-defined action mapping).
 - Association data used for target resolution: which **people** and/or
-  **areas** it relates to.
+  **areas** it relates to (section 2.7).
 
 ### 2.2 Targets
 
@@ -140,6 +140,7 @@ Each type needs a receiver-type definition (names provisional) covering:
   (section 2.3), i.e. its capabilities.
 - How a COM System notification is translated into the underlying Home
   Assistant action call.
+- How its receivers are associated with people and areas (section 2.7).
 
 The custom (user-mapped action) receiver from section 2.1 remains the
 fallback for anything not on this list. Further types can be added later,
@@ -170,6 +171,39 @@ Evaluation order for a notification:
 2. Drop receivers that are disabled (section 2.4).
 3. Drop receivers whose conditions do not pass.
 4. Deliver to the remaining receivers.
+
+### 2.7 Associating receivers with people and areas
+
+Targeting by person or area needs a way to decide which receivers belong to
+whom. Each receiver type provides an association mechanism (part of the
+receiver type definition, section 2.5), and users can override or extend it
+manually on any receiver. The final rules are **TBD**.
+
+**Mobile app (first implementation):**
+
+- A mobile app device is normally associated with the Home Assistant user
+  that is logged in to it, and so with the person linked to that user.
+  (To be verified: the user and person link available from the mobile app
+  registration and the person entity.)
+- Some devices are not personal: wall-mounted tablets and shared devices
+  also run the mobile app. Notifying a person must not reach those.
+- Each mobile app receiver therefore also exposes a **select entity** to
+  define the device as **personal** or **shared**:
+  - **Personal** – associated with its logged-in user's person and
+    triggered when that person is targeted.
+  - **Shared** – not associated with any person, so never triggered by a
+    person target. It can still be triggered by area (e.g. the room it is
+    in) or by naming it explicitly.
+- Being a normal entity, the setting can be changed from the standard Home
+  Assistant UI and by automations.
+- The default value, and whether it is guessed from the device, is **TBD**.
+
+**Other receiver types:** the mechanism is TBD for each. For example, Alexa
+devices and TVs are likely to be associated by area rather than by person,
+while Pushover could be associated with a person manually.
+
+**Areas:** a receiver can usually take its area from the underlying device
+or entity in the Home Assistant area registry, with a manual override.
 
 ## 3. The `notify.com_system` action
 
@@ -305,7 +339,8 @@ Every phase includes updating the matching document(s) in `docs/`
 4. **Receiver config flow** – create/edit/remove receivers via the UI
    (built-in and custom action-mapped).
 5. **Target resolution** – people, areas, explicit receivers,
-   default-to-all behaviour.
+   default-to-all behaviour, using each receiver's person and area
+   associations (section 2.7).
 6. **Notification conditions** – per-receiver conditions evaluated with the
    notification details, applied after target resolution and enabled state.
 7. **`notify.com_system` action** – schema, wiring to resolver and
@@ -313,7 +348,8 @@ Every phase includes updating the matching document(s) in `docs/`
 8. **Content parameters** – common content first, then receiver-specific
    content (e.g. mobile app actions) with per-receiver-type handling.
 9. **Receiver types** – extensible type definition, then in priority order:
-   mobile app, Alexa Media Player, Pushover, webOS TV, Music Assistant.
+   mobile app (including person association and the personal/shared
+   select), Alexa Media Player, Pushover, webOS TV, Music Assistant.
 10. **History store** – persist recent notifications and delivery results.
 11. **Websocket API** – commands for receivers, history, preview and test.
 12. **UI** – panel shell and dashboard, then recent notifications,
@@ -376,5 +412,12 @@ Every phase includes updating the matching document(s) in `docs/`
   Pages)? Affects link style and whether a site generator is needed.
 - Should CI fail when code changes without a matching docs change, or is
   this left to review?
+- How exactly is a mobile app device linked to a person (registration user
+  versus the person's device trackers), and what if there is no person?
+- What is the default for the personal/shared select, and can it be
+  inferred (e.g. a tablet logged in as a kiosk user)?
+- Can a receiver be associated with several people (shared by a couple)?
+  Are manual associations stored on the receiver or elsewhere?
+- Should the personal/shared setting be generalised to all receiver types?
 - Minimum supported Home Assistant version.
 - Domain name and display name confirmation (`com_system` assumed).
