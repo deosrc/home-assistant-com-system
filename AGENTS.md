@@ -1,6 +1,15 @@
 # Agent and contributor notes
 
-Read [PLAN.md](PLAN.md) for the design of work not yet built.
+Read [PLAN.md](PLAN.md) for the design of work not yet built. This file
+records the conventions and how things work as built.
+
+## Rules
+
+- Ship documentation (`docs/`, and the README where relevant) and UI with
+  each feature, not as a later step.
+- Update this file when behavior or architecture changes.
+- When a feature is complete, remove it from `PLAN.md`.
+- Markdown must pass `npm run lint:md` (default rules, 80 columns).
 
 ## Dev environment
 
@@ -10,5 +19,27 @@ Read [PLAN.md](PLAN.md) for the design of work not yet built.
 - The integration lives in `custom_components/com_system/` and is symlinked
   into `config/custom_components/` by `scripts/setup`.
 - `config/configuration.yaml` is the only committed file under `config/`.
-- Markdown must pass `npm run lint:md` (default rules, 80 columns).
-- Update the README, `docs/` and this file when behavior changes.
+
+## Commands
+
+- Start Home Assistant: `scripts/develop` (or the **Start Home Assistant**
+  task). Debug with the **Home Assistant: attach** launch config.
+- Test: `python3 -m pytest tests`.
+- Lint Python: `ruff check .`
+- Lint Markdown: `npm run lint:md`.
+
+## Architecture as built
+
+- Domain `com_system`. The manifest does not use `single_config_entry`
+  because receivers are separate config entries.
+- One hub entry (`entry_type: hub`) and one entry per receiver
+  (`entry_type: custom_receiver` so far); see `const.py`.
+- `config_flow.py`: the user step creates the hub if none exists, otherwise
+  it continues to `custom_receiver` (name only). One hub is enforced there.
+  Integration discovery, reconfigure and the options flow are stubs.
+- `__init__.py`: `async_setup` is where integration-level parts will go;
+  entry setup and unload are no-ops.
+- Strings live in `strings.json`; `translations/en.json` is a copy and must
+  be kept in step.
+- `hacs.json` records the minimum Home Assistant version; keep it in step
+  with `requirements-dev.txt`.
