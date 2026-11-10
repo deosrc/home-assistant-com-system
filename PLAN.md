@@ -163,13 +163,19 @@ device.
   dedicated domain lets entity selectors and select inputs be filtered to
   receivers only. It is the entity named when a receiver is targeted
   explicitly.
+- It is **modelled on Home Assistant's `event` entities**, reusing their
+  behaviour and patterns where possible (for example subclassing or copying
+  the core `EventEntity` logic, to be decided in the phase 3 spike). A real
+  `event` entity was considered, but a dedicated domain keeps selector
+  filtering simple.
 - Its **state** is the date and time of the last notification attempt for
   that receiver (an ISO 8601 timestamp), or `unknown` before the first.
+- Like an event entity it also has an event type describing the delivery
+  result (delivered, failed or skipped).
 - Its **attributes** hold the content of that last notification (title,
-  message, priority, image and data), the delivery result (success, failed
-  or skipped, plus any warning), and the receiver's type and associated
-  person and area. Exact attribute names are **TBD**, as is whether skipped
-  notifications count as attempts.
+  message, priority, image and data), any warnings, and the receiver's type
+  and associated person and area. Exact attribute names are **TBD**, as is
+  whether skipped notifications count as attempts.
 - It provides **no actions**. Having no services in the new domain means
   Home Assistant has no service descriptions to look up for it (it can only
   load them from an integration of the same name, and none exists).
@@ -563,8 +569,9 @@ Every phase includes updating the matching document(s) in `docs/`
 ## 8. Open questions
 
 - Can `com_system` register a read-only `notification_receiver` entity
-  domain cleanly (the phase 3 spike confirms)? Fallback: `sensor` entities
-  filtered by integration.
+  domain cleanly, and how much of the core `EventEntity` can be reused (the
+  phase 3 spike confirms)? Fallback: real `event` entities filtered by
+  integration.
 - Can config subentries be offered automatically for detected receivers
   (discovery), or only created from an "add receiver" flow that lists
   detected candidates?
