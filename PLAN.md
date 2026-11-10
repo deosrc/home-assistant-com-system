@@ -214,8 +214,14 @@ and areas are **TBD** (see section 2.7).
   offered for each. Delivery calls that device's `notify.mobile_app_<device>`
   action with the title, message and data (actions, image, channel and so
   on).
-- **Alexa Media Player, persistent notification, Pushover, webOS TV, Music
-  Assistant** – **TBD**.
+- **Alexa Media Player** (non-native integration) – one receiver per Echo
+  device, detected from that integration's config entries and offered only
+  when the integration is installed. Delivery calls the integration's
+  `notify.alexa_media_*` action with announce/TTS data. If the integration
+  later goes missing, the receiver shows as unavailable and deliveries to it
+  fail with a clear per-receiver result. Exact action names and data are
+  verified against the integration during implementation.
+- **Persistent notification, Pushover, webOS TV, Music Assistant** – **TBD**.
 
 Receiver type definitions are written in code, and each declares its
 capabilities: which typed fields and `data` keys it supports. Custom
@@ -482,11 +488,9 @@ Every phase includes updating the matching document(s) in `docs/`
   detected candidates?
 - Frontend build and release process: are built assets committed to the
   repository, or built in CI and attached to releases (HACS support)?
-- How do Alexa Media Player, persistent notification, Pushover, webOS TV
-  and Music Assistant each deliver notifications (which actions or
+- How do persistent notification, Pushover, webOS TV and Music Assistant
+  each deliver notifications (which actions or
   entities), and how are their receivers discovered?
-- Alexa Media Player is a non-native integration: how do we handle it being
-  absent, and its differing action names across versions?
 - Music Assistant announcements are not a notify action: how does the
   receiver model accommodate non-notify delivery mechanisms?
 - What variables describe the notification to conditions (title, message,
