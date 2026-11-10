@@ -304,13 +304,13 @@ Evaluation order for a notification:
 
 Targeting by person or area needs a way to decide which receivers belong to
 whom. Each receiver type provides an association mechanism (part of the
-receiver type definition, section 2.5), and users can override or extend it
-manually on any receiver. Manual associations are stored as part of the
-receiver's own configuration.
+receiver type definition, section 2.5). Person associations can be
+overridden manually on any receiver and are stored as part of the receiver's
+own configuration. Areas are not set manually (see below).
 
 A receiver is associated with **at most one person**. A device used by
 several people is treated as shared (see below) and reached through areas or
-explicit targets. Whether a receiver can have more than one area is **TBD**.
+explicit targets. A receiver has **at most one area**.
 
 **Mobile app (first implementation):**
 
@@ -345,8 +345,13 @@ while Pushover could be associated with a person manually. The persistent
 notification receiver is system-wide, so it has no person or area and is
 only used when named explicitly (section 2.5).
 
-**Areas:** a receiver can usually take its area from the underlying device
-or entity in the Home Assistant area registry, with a manual override.
+**Areas:** a receiver's area is the area assigned to its device in the Home
+Assistant device registry, and is dictated by that. There is no manual area
+override in COM System: to change a receiver's area, change the area of the
+device in Home Assistant. A receiver whose device has no area (or that has
+no device, such as a custom receiver) has no area and cannot be reached by
+area targets. (How a receiver relates to a registry device for types with no
+natural device, such as Pushover, is **TBD**.)
 
 ## 3. The `notify.com_system` action
 
@@ -541,7 +546,9 @@ Every phase includes updating the matching document(s) in `docs/`
   detected candidates?
 - Frontend build and release process: are built assets committed to the
   repository, or built in CI and attached to releases (HACS support)?
-- Can a receiver have more than one area?
+- Which registry device does a receiver take its area from when its type
+  has no natural device (Pushover, custom receivers)? Or do they simply have
+  no area?
 - Should the personal/shared setting be generalised to all receiver types?
 - Minimum supported Home Assistant version.
 - Domain name and display name confirmation (`com_system` assumed).
