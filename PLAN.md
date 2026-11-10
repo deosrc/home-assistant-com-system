@@ -59,8 +59,9 @@ Each receiver needs (details **TBD**):
   once in the integration's `async_setup`, not per entry, so receiver
   entries can load in any order and without the hub. Settings are read at
   use time, so changing them does not reload receivers.
-- Removing the hub removes the receiver entries it created (after the user
-  confirms); removing a receiver entry removes only that receiver.
+- Removing the hub removes the receiver entries it created (core offers no
+  confirmation hook, see the spike #6 decisions below); removing a receiver
+  entry removes only that receiver.
 - Receivers of the built-in types are **offered as discoveries**. The hub
   detects notification-capable devices and integrations that are already set
   up (e.g. a webOS TV, a mobile app device) and raises a discovery flow for
@@ -74,10 +75,58 @@ Each receiver needs (details **TBD**):
   the documentation tells users to use the switch.
 - When the underlying device or integration is removed, the receiver is
   **kept as unavailable**, with its conditions and settings, so it recovers
-  if the device returns. Stale receivers are removed manually. Deliveries to
-  an unavailable receiver fail with a clear per-receiver result.
+  if the device returns (after a reload that re-attaches it). Stale
+  receivers are removed manually. Deliveries to an unavailable receiver fail
+  with a clear per-receiver result.
 - Custom receivers are always created manually, through the user flow, and
   edited through reconfigure and options flows.
+
+**Spike #6 decisions** (verified with Home Assistant 2026.10.4; the feature
+that builds on this removes it from the plan):
+
+- **Discovery:** the hub raises an `integration_discovery` flow per source
+  device with `unique_id` set to the source device (for example
+  `<domain>_<identifier>`) and `_abort_if_unique_id_configured()`. Repeated
+  detection does not duplicate a pending flow, a confirm-only `confirm` step
+  creates the entry, and the core Ignore action works with no extra code
+  (it removes the pending flow and stores an ignored entry that stops the
+  device being offered again). Pending flows live in memory only, so
+  "discoveries survive a restart" means the hub **re-detects on every
+  setup**; configured and ignored devices are not offered again, and a
+  deleted receiver is.
+- **Attaching to another integration's device:** a device belongs to a single
+  config entry and identifiers are unique per entry, so returning another
+  integration's identifiers from `device_info` creates a **second** device
+  (no area, no sharing). Instead, the receiver's entities set
+  `self.device_entry` to the existing device (found with
+  `async_get_devices(identifiers=...)`, using the source identifier stored in
+  the receiver entry's data) and return no `device_info`. The entity
+  registry then points at that device, so its area applies. Pre-creating the
+  entity registry entry with a `device_id` does **not** work: the entity
+  platform resets it to `None`. For types with no device, `device_info` with
+  `(com_system, entry_id)` registers the receiver's own device.
+- **Source removed:** removing the source integration deletes its device (our
+  entry is not an owner) and the entity registry clears our `device_id`; the
+  entities and the receiver entry remain. Availability is computed from
+  whether the source device still exists, refreshed on device registry
+  update events. When the device returns it is a new device, and our entities
+  re-attach only when the receiver entry is **reloaded**, so the hub's
+  detection must reload (or re-link) receivers whose source device
+  reappears.
+- **Switch state** is restored on restart with `RestoreEntity`.
+- **Isolation:** an update listener that reloads only its own entry means
+  editing one receiver leaves others untouched. Disabling a receiver's config
+  entry does not remove its entities: they stay as `unavailable` (restored)
+  with `disabled_by` set to the config entry, and other receivers are
+  unaffected. This does not change the advice to use the enabled switch.
+- **Hub removal cascade:** `async_remove_entry` on the hub can remove the
+  receiver entries (schedule `config_entries.async_remove` as tasks) and
+  their entities go with them. Core gives an integration **no hook to ask
+  for confirmation** on removing an entry, so "after the user confirms" is
+  not possible with the standard delete dialog; the documentation and the
+  hub's title must warn that removing the hub removes all receivers.
+- **Setup order:** `async_setup` runs once however entries load, so receiver
+  entries load with or without the hub and in any order.
 
 ### 2.2 Targets
 
@@ -636,9 +685,4 @@ work still to do. When the last item is done, this file can be deleted.
 
 ## 8. Open questions
 
-- Can a receiver's config entry attach its entities to another
-  integration's device? Does editing or disabling one receiver entry affect
-  the others? Do discovery flows raised from the hub de-duplicate, support
-  Ignore and survive restarts, and does the hub's removal cascade work as
-  designed (spike #6 confirms)?
 - Which Integrations-page titles keep 10 to 30 receiver entries readable?
