@@ -1,4 +1,4 @@
-# COM System – Home Assistant Custom Integration Plan
+# Com System – Home Assistant Custom Integration Plan
 
 > Status: **Draft v0.1** – planning only, no code yet. This file is the
 > source of truth for the design, the basis for the GitHub issues, and the
@@ -7,14 +7,14 @@
 
 ## 1. Overview
 
-COM System is a **notification distribution system** for Home Assistant,
+Com System is a **notification distribution system** for Home Assistant,
 built as a custom integration. It uses a **publish/subscribe** model:
 
 - **Notification Receivers** are the subscribers. Each one represents
   something that can receive a notification.
 - A notification is **published** by calling the `notify.com_system` action
   provided by this integration.
-- COM System decides which receivers the notification applies to (based on
+- Com System decides which receivers the notification applies to (based on
   the target parameters) and delivers it to them.
 
 The integration does not replace existing notification mechanisms. It sits in
@@ -44,11 +44,11 @@ Each receiver needs (details **TBD**):
 
 **Storage and discovery:**
 
-- COM System has a single config entry, and each receiver is a **config
+- Com System has a single config entry, and each receiver is a **config
   subentry** of it. Receiver entities are derived from the subentries.
   Config subentries require a recent minimum Home Assistant version (to be
   verified; see section 8).
-- Receivers are not created automatically. Where possible, COM System
+- Receivers are not created automatically. Where possible, Com System
   detects notification-capable devices and integrations that are already
   set up (e.g. a webOS TV, a mobile app device) and **offers to create a
   subentry** for each, which the user confirms. Whether Home Assistant's
@@ -111,16 +111,16 @@ Content parameters are split into two tiers:
 
     Others such as actions and sounds start in `data` and can be promoted
     to typed fields later if they prove widely used.
-  - **Free-form `data`** – anything COM System does not support explicitly
+  - **Free-form `data`** – anything Com System does not support explicitly
     goes in a `data` object keyed by receiver type, e.g.
     `data: {mobile_app: {...}, pushover: {...}}`. Each receiver reads only
     its own block, so one notification can carry settings for several
     types. (Keying by type is an assumption from "mixed per-type blocks and
     typed fields"; to be confirmed.)
 
-**Action responses:** each COM System notification is given an ID. When a
+**Action responses:** each Com System notification is given an ID. When a
 user responds to a notification action (e.g. presses a button on a mobile
-app notification), COM System fires a `com_system_action` event (name
+app notification), Com System fires a `com_system_action` event (name
 provisional) containing the notification ID, the receiver and the chosen
 action, so automations can trigger on it. The response is also stored
 against the notification in history, so the UI can show which receiver or
@@ -133,7 +133,7 @@ resolved receiver does not support (e.g. mobile app actions sent to a
 persistent notification), the notification is still delivered with the
 content the receiver does support. The unsupported content is dropped and a
 **warning is logged**. Warnings are recorded with the notification's
-delivery result so they can be shown in the COM System UI (recent
+delivery result so they can be shown in the Com System UI (recent
 notifications and the testing tool). Delivery is not treated as a failure.
 
 ### 2.4 Receiver entity and enabled state
@@ -152,7 +152,7 @@ and select inputs be filtered to receivers only.
   failed or skipped, plus any warning). Exact attribute names are **TBD**.
 - Receivers must be **toggleable from the standard Home Assistant UI**
   (the entity's more-info dialog, and toggle controls on dashboard cards),
-  not only through the COM System UI or actions.
+  not only through the Com System UI or actions.
 - The domain provides actions to change the state:
   `notification_receiver.turn_on`, `notification_receiver.turn_off` and
   (as for switches) `notification_receiver.toggle`.
@@ -172,7 +172,7 @@ Standard UI requirement:
   - Expose the enabled state as a real `switch` entity instead (or as well),
     filtered by integration for selectors.
   - Keep the `notification_receiver` entity and add a companion `switch`.
-  - Provide the toggle only in the COM System UI plus actions.
+  - Provide the toggle only in the Com System UI plus actions.
 
 Implementation notes:
 
@@ -201,7 +201,7 @@ Each type needs a receiver-type definition (names provisional) covering:
 - How receivers of that type are discovered and configured.
 - Which common and receiver-specific content parameters it supports
   (section 2.3), i.e. its capabilities.
-- How a COM System notification is translated into the underlying Home
+- How a Com System notification is translated into the underlying Home
   Assistant action call.
 - How its receivers are associated with people and areas (section 2.7).
 
@@ -211,9 +211,9 @@ the other types it is not tied to a person or device: every user sees the
 same notifications. It also has no push behaviour, so it suits a
 record-of-last-resort. It has no person or area association and is used
 **only when named explicitly** as a target, never by person or area targets
-or by the default (everyone) target. It is create-only: each COM System
-notification creates its own persistent notification (using the COM System
-notification ID), and COM System never replaces or dismisses it. Users
+or by the default (everyone) target. It is create-only: each Com System
+notification creates its own persistent notification (using the Com System
+notification ID), and Com System never replaces or dismisses it. Users
 dismiss notifications in the Home Assistant UI as normal.
 
 **Delivery and discovery per type:**
@@ -350,7 +350,7 @@ only used when named explicitly (section 2.5).
 
 **Areas:** a receiver's area is the area assigned to its device in the Home
 Assistant device registry, and is dictated by that. There is no manual area
-override in COM System: to change a receiver's area, change the area of the
+override in Com System: to change a receiver's area, change the area of the
 device in Home Assistant. A receiver whose device has no area cannot be
 reached by area targets.
 
@@ -360,7 +360,7 @@ notification), each receiver creates its own device in the device registry
 Home Assistant UI. For types with an underlying device (mobile app, webOS
 TV, Music Assistant players, Echo devices), the area comes from that
 underlying device. Their receiver entities attach to that existing device
-and do not register a separate COM System device.
+and do not register a separate Com System device.
 
 ## 3. The `notify.com_system` action
 
@@ -466,6 +466,7 @@ Notes:
 - Markdown files must pass the default markdownlint rules (including the
   80-character line limit).
 - Documentation in `docs/` is maintained alongside the code (section 6.1).
+- Integration domain: `com_system`. Display name: "Com System".
 - Minimum supported Home Assistant version: the latest stable release at the
   time of building. No compatibility shims for older versions; the minimum
   is raised when needed and recorded in `hacs.json`.
@@ -559,4 +560,3 @@ Every phase includes updating the matching document(s) in `docs/`
 - Can config subentries be offered automatically for detected receivers
   (discovery), or only created from an "add receiver" flow that lists
   detected candidates?
-- Domain name and display name confirmation (`com_system` assumed).
