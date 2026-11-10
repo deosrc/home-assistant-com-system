@@ -12,17 +12,18 @@ A script is offered only when it has exactly one field, named
 other fields, or another selector are ignored.
 
 ```yaml
-script:
-  living_room_speaker:
-    alias: Living room speaker
-    fields:
-      notification:
-        selector:
-          object:
-    sequence:
-      - action: notify.living_room_speaker
-        data:
-          message: "{{ notification.title }}: {{ notification.message }}"
+fields:
+  notification:
+    selector:
+      object: {}
+    name: Notification
+    required: true
+sequence:
+  - action: persistent_notification.create
+    metadata: {}
+    data:
+      message: '{{ notification.message }}'
+      title: '{{ notification.title }}'
 ```
 
 Detection runs when the hub loads, after scripts are reloaded or added, and
