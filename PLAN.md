@@ -73,7 +73,9 @@ When several kinds of target are given, the results are combined as a
 area, or is named explicitly.
 
 Only **enabled** receivers (section 2.4) are triggered, whichever way they
-were targeted.
+were targeted. A disabled receiver that is named explicitly is still
+skipped. Skipped receivers are shown as skipped (disabled) in history and
+in the testing tool.
 
 Open questions on target resolution are listed in section 8.
 
@@ -449,8 +451,6 @@ Every phase includes updating the matching document(s) in `docs/`
 - Can config subentries be offered automatically for detected receivers
   (discovery), or only created from an "add receiver" flow that lists
   detected candidates?
-- If a disabled receiver is named explicitly as a target, is it still
-  skipped? Does the testing tool show disabled receivers as skipped?
 - Should the entity expose attributes (type, associated people and areas,
   last triggered)?
 - How are delivery failures reported (per receiver, aggregated, or
