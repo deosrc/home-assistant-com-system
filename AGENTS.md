@@ -36,17 +36,41 @@ records the conventions and how things work as built.
 - Domain `com_system`. The manifest does not use `single_config_entry`
   because receivers are separate config entries.
 - One hub entry (`entry_type: hub`) and one entry per receiver
-  (`entry_type: custom_receiver` so far, listed in `RECEIVER_ENTRY_TYPES`);
-  see `const.py`.
+  (`entry_type: custom_receiver` for custom receivers, `receiver` for
+  those created from a discovery; both are in `RECEIVER_ENTRY_TYPES`); see
+  `const.py`.
 - Receiver entry data: `entry_type`, `receiver_type` (missing means
   `custom`), `name`, optional `source_id`. Options: `people` (`person.*`
   entity ids) and `areas` (area ids). Entries are the only storage.
 - `receiver.py`: frozen `Receiver` dataclass built by `Receiver.from_entry`.
 - `receiver_type.py`: `ReceiverType` is the extension point (id, name,
-  capabilities, `async_deliver`, association hooks, `async_detect`).
-  Subclass it and call `register_receiver_type()` to add a type; ids are
-  unique. `CustomReceiverType` is the generic type. `async_deliver` and
-  discovery are not wired up yet.
+  capabilities, `async_deliver`, association hooks, `async_detect`,
+  `is_source_available`, `discoverable`). Subclass it and call
+  `register_receiver_type()` to add a type; ids are unique.
+  `CustomReceiverType` is the generic type. `async_deliver` is not wired up
+  yet.
+- `builtin_types.py`: the six built-in types (mobile app, Alexa Media
+  Player, persistent notification, Pushover, webOS TV, Music Assistant),
+  registered in `async_setup`. They have detection only; delivery is added
+  by each type's own feature. `DeviceReceiverType` offers one receiver per
+  device of `source_domain` (source id is the device identifier in that
+  domain); `EntryReceiverType` offers one per config entry (source id is its
+  unique id, else its entry id). To add a built-in type, subclass one, set
+  `type_id`, `name`, `source_domain`, and add it to `BUILTIN_RECEIVER_TYPES`.
+  The Alexa Media Player and Music Assistant device identifiers are assumed
+  to be `(domain, <serial or player id>)` and were not checked against the
+  integrations.
+- `detection.py`: `ReceiverDetector` is created by the hub entry's setup
+  (`entry.runtime_data`). It detects once Home Assistant has started, after
+  device registry changes (debounced) and hourly. For each candidate it
+  calls `flow.async_init` with source `integration_discovery`; the flow's
+  unique id is `<type_id>_<source_id>` (`discovery_unique_id`). Candidates
+  whose unique id is an existing entry (configured or ignored) are skipped,
+  so a deleted receiver is offered again and an ignored one is not. A
+  receiver whose source is gone is never removed; the detector tracks
+  availability via `is_source_available` and reloads the entry when its
+  source returns. Entities (later) must derive availability from the same
+  method.
 - `registry.py`: `ReceiverRegistry` reads receivers from the config entries
   on each call, so it is always current and needs no hub or load order. It
   is created once in `async_setup` as `hass.data[DOMAIN]["registry"]`.
@@ -54,9 +78,13 @@ records the conventions and how things work as built.
 - `config_flow.py`: the user step creates the hub if none exists, otherwise
   it continues to `custom_receiver` (name only). One hub is enforced there.
   The options flow of a receiver edits its people and areas; the hub's
-  options flow is a stub. Integration discovery and reconfigure are stubs.
-- `__init__.py`: `async_setup` creates the registry; entry setup and unload
-  are no-ops.
+  options flow is a stub. `integration_discovery` aborts with
+  `not_available` without a hub or a known type, otherwise sets the unique
+  id, aborts if configured and shows a confirm-only `confirm` step that
+  creates the receiver (core's Ignore needs no code). Reconfigure is a stub.
+- `__init__.py`: `async_setup` registers the built-in types and creates the
+  registry; setting up the hub starts the detector; receiver entry setup and
+  unload are no-ops.
 - Strings live in `strings.json`; `translations/en.json` is a copy and must
   be kept in step.
 - `hacs.json` records the minimum Home Assistant version; keep it in step

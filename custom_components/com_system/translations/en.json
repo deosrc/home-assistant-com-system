@@ -11,11 +11,19 @@
         "data": {
           "name": "Name"
         }
+      },
+      "confirm": {
+        "title": "Add a receiver",
+        "description": "Add {name} ({type}) as a Com System receiver? It starts enabled. Choose Ignore to stop it being offered."
       }
     },
     "abort": {
-      "not_implemented": "This is not implemented yet."
-    }
+      "not_implemented": "This is not implemented yet.",
+      "already_configured": "This receiver is already added.",
+      "already_in_progress": "This receiver is already waiting to be added.",
+      "not_available": "This receiver cannot be added because its type is not available or the Com System hub does not exist."
+    },
+    "flow_title": "{name} ({type})"
   },
   "options": {
     "step": {
