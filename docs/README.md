@@ -24,7 +24,9 @@ Reconfiguration and hub options are stubs for now and do nothing yet.
 
 - [Receivers](receivers/README.md): the receiver concept and custom
   receivers.
+- [Targets](targets.md): how people, areas and receivers decide where a
+  notification goes.
 - [User interface](ui.md): the sidebar panel and its websocket commands.
 
-More documents (targets, content, conditions and actions) are added as those
+More documents (content, conditions and actions) are added as those
 features are built.

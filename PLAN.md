@@ -107,30 +107,6 @@ that builds on this removes it from the plan):
 - **Setup order:** `async_setup` runs once however entries load, so receiver
   entries load with or without the hub and in any order.
 
-### 2.2 Targets
-
-Targets determine which receivers are triggered by a notification.
-
-- **Specific receivers** – an option to name receivers directly.
-- **People** – the main mechanism. Resolves to the receivers associated with
-  those people.
-- **Areas** – the main mechanism. Resolves to the receivers associated with
-  those areas.
-- **Default** – when no targets are specified, the notification goes to
-  **all people and all areas**. The persistent notification receiver is the
-  exception: it is only used when named explicitly (section 2.5).
-
-When several kinds of target are given, the results are combined as a
-**union**: a receiver is used if it matches any listed person, any listed
-area, or is named explicitly.
-
-Only **enabled** receivers (the enabled switch, section 2.4) are triggered,
-whichever way they were targeted. A disabled receiver that is named
-explicitly is still skipped. Skipped receivers are shown as skipped
-(disabled) in history and in the testing tool.
-
-Open questions on target resolution are listed in section 8.
-
 ### 2.3 Message parameters
 
 The `notify.com_system` action parameters fall into two groups:
@@ -203,7 +179,7 @@ The entities themselves are built (see `AGENTS.md` and
   grouped on the receiver's device too.
 - **Source device:** types that attach to another integration's device
   implement `ReceiverType.source_device_identifiers`; reloading receivers
-  whose source device reappears is the hub detection's job (section 2.2).
+  whose source device reappears is the hub detection's job.
 
 ### 2.5 Supported receiver types
 
@@ -313,22 +289,22 @@ decide, per notification, whether that receiver is used.
 
 Evaluation order for a notification:
 
-1. Resolve targets to receivers (section 2.2).
+1. Resolve targets to receivers (`docs/targets.md`).
 2. Drop receivers that are disabled (section 2.4).
 3. Drop receivers whose conditions do not pass.
 4. Deliver to the remaining receivers.
 
-### 2.7 Associating receivers with people and areas
+### 2.7 Associating receivers with people
 
-Targeting by person or area needs a way to decide which receivers belong to
+Targeting by person needs a way to decide which receivers belong to
 whom. Each receiver type provides an association mechanism (part of the
 receiver type definition, section 2.5). Person associations can be
 overridden manually on any receiver and are stored as part of the receiver's
-own configuration. Areas are not set manually (see below).
+own configuration.
 
 A receiver is associated with **at most one person**. A device used by
 several people is treated as shared (see below) and reached through areas or
-explicit targets. A receiver has **at most one area**.
+explicit targets.
 
 **Mobile app (first implementation):**
 
@@ -409,24 +385,10 @@ while Pushover could be associated with a person manually. The persistent
 notification receiver is system-wide, so it has no person or area and is
 only used when named explicitly (section 2.5).
 
-**Areas:** a receiver's area is the area assigned to its device in the Home
-Assistant device registry, and is dictated by that. There is no manual area
-override in Com System: to change a receiver's area, change the area of the
-device in Home Assistant. A receiver whose device has no area cannot be
-reached by area targets.
-
-For types with no natural device (Pushover, custom receivers, persistent
-notification), each receiver creates its own device in the device registry
-(e.g. "Pushover - Dale"), so the user can assign an area to it in the normal
-Home Assistant UI. For types with an underlying device (mobile app, webOS
-TV, Music Assistant players, Echo devices), the area comes from that
-underlying device. Their receiver entities attach to that existing device
-and do not register a separate Com System device.
-
 ## 3. The `notify.com_system` action
 
 - Provided by the integration and registered under the `notify` domain.
-- Accepts the target parameters (section 2.2) plus the content parameters
+- Accepts the target parameters (`docs/targets.md`) plus the content parameters
   (section 2.3).
 - Resolves targets to a set of receivers, drops disabled ones, drops those
   whose conditions do not pass, then delivers to each remaining receiver.
@@ -495,15 +457,11 @@ Core components (names provisional):
 
 | Component | Responsibility |
 | --- | --- |
-| Target resolver | Maps people, areas or receivers to a set of receivers |
 | Receiver entities | Enabled switch and read-only `notification_receiver` |
 | Condition evaluator | Runs a receiver's conditions against a notification |
 | Dispatcher | Delivers to each resolved receiver, handling failures |
 | Notify action | Entry point; validates input, calls resolver, dispatcher |
 | Config/options flow | UI for creating and editing receivers |
-
-The target resolver also applies the default of "everyone" when no targets
-are given.
 
 ## 5. User interface
 

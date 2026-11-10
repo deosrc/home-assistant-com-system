@@ -123,6 +123,15 @@ records the conventions and how things work as built.
   dev server instead. The manifest depends on `frontend`, `http`,
   `panel_custom` and `websocket_api`, and tests need `home-assistant-frontend`
   (pinned in `requirements-dev.txt` to what Home Assistant requires).
+- `targets.py`: `resolve_targets(hass, people=, areas=, receivers=)` returns
+  `ResolvedTargets(receivers, skipped)` (sorted by name). Union of people,
+  areas (`ReceiverRegistry.people_of` / `areas_of`) and named receiver entry
+  ids; no targets means every receiver with a person or area. Types with
+  `targetable_by_association = False` (persistent notification) match only
+  when named. Disabled receivers (the enabled switch entity in
+  `hass.data[DOMAIN][DATA_ENTITIES]`, or not loaded) go to `skipped`
+  whichever way they matched. The `notify.com_system` action (not built
+  yet) must call it and record `skipped` receivers. See `docs/targets.md`.
 - `websocket_api.py`: the commands behind the panel
   (`com_system/ping`, `dashboard`, `receivers/list`, `receivers/set_enabled`,
   `discoveries/list`). Every command must have `@websocket_api.require_admin`;
