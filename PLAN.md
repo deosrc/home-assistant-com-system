@@ -53,8 +53,10 @@ Each receiver needs (details **TBD**):
   set up (e.g. a webOS TV, a mobile app device) and creates a subentry for
   each, without a confirmation step. (Home Assistant has no native
   "discovered" card for subentries, but subentries can be added in code.)
-  Auto-created receivers start enabled, and the user can then edit, disable
-  or delete them.
+  Auto-created receivers start enabled, and the user can edit or disable
+  them. Detection always ensures a receiver exists for every detected
+  device, so a deleted auto-created receiver is **recreated** on the next
+  detection; to stop a receiver being used, disable it instead.
 - Custom receivers are always created manually, through the subentry flow.
 
 ### 2.2 Targets
@@ -573,7 +575,5 @@ Every phase includes updating the matching document(s) in `docs/`
   domain cleanly, and how much of the core `EventEntity` can be reused (the
   phase 3 spike confirms)? Fallback: real `event` entities filtered by
   integration.
-- If a user deletes an auto-created receiver, is it recreated on the next
-  detection? (An ignore list would be needed to prevent this.)
 - When the underlying device or integration is removed, is the receiver
   removed automatically or kept as unavailable?
