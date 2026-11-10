@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Home Assistant: attach",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": { "host": "localhost", "port": 5678 },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/custom_components",
+          "remoteRoot": "${workspaceFolder}/config/custom_components"
+        },
+        {
+          "localRoot": "${workspaceFolder}/custom_components",
+          "remoteRoot": "${workspaceFolder}/custom_components"
+        }
+      ],
+      "justMyCode": false
+    }
+  ]
+}

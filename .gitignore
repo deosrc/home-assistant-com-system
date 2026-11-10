@@ -1,0 +1,9 @@
+node_modules/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.venv/
+
+# Dev Home Assistant runtime state (keep configuration.yaml only)
+config/*
+!config/configuration.yaml
