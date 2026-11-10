@@ -47,6 +47,16 @@ class ReceiverType:
         """Return the areas the receiver relates to."""
         return receiver.areas
 
+    def source_device_identifiers(
+        self, receiver: Receiver
+    ) -> set[tuple[str, str]] | None:
+        """Return the identifiers of the device the receiver attaches to.
+
+        None (the default) means the receiver has no source device and gets
+        its own device.
+        """
+        return None
+
     async def async_detect(self, hass: HomeAssistant) -> list[DiscoveryCandidate]:
         """Return receivers that could be offered as discoveries."""
         return []

@@ -113,7 +113,6 @@ that builds on this removes it from the plan):
   re-attach only when the receiver entry is **reloaded**, so the hub's
   detection must reload (or re-link) receivers whose source device
   reappears.
-- **Switch state** is restored on restart with `RestoreEntity`.
 - **Isolation:** an update listener that reloads only its own entry means
   editing one receiver leaves others untouched. Disabling a receiver's config
   entry does not remove its entities: they stay as `unavailable` (restored)
@@ -210,84 +209,21 @@ notifications and the testing tool). Delivery is not treated as a failure.
 
 ### 2.4 Receiver entities and enabled state
 
-Each Notification Receiver exposes two entities, which share the receiver's
-device.
+The entities themselves are built (see `AGENTS.md` and
+`docs/receivers/README.md`). What remains:
 
-**Enabled switch (`switch` domain):**
-
-- A standard Home Assistant `switch`. `on` means the receiver is
-  **enabled** and `off` means disabled.
-- The enabled state controls whether the receiver is triggered by
-  `notify.com_system`. Disabled receivers are skipped during delivery.
-- The state survives restarts (restored on startup).
-- Being a real switch, it is toggleable from the standard Home Assistant UI
-  (more-info dialog, cards) and uses the standard, described
-  `switch.turn_on`, `switch.turn_off` and `switch.toggle` actions.
-- Conditions such as do-not-disturb times are **not** built into Com
-  System. They are created with ordinary Home Assistant automations that
-  call these switch actions (e.g. turn a receiver off at 22:00 and on at
-  07:00). This keeps the integration simple and avoids duplicating
-  scheduling features.
-
-**Receiver entity (`notification_receiver` domain):**
-
-- A read-only entity in a new **`notification_receiver`** domain. The
-  dedicated domain lets entity selectors and select inputs be filtered to
-  receivers only. It is the entity named when a receiver is targeted
-  explicitly.
-- It is **modelled on Home Assistant's `event` entities**. The receiver
-  entity **subclasses the core `EventEntity`** (spike #4 decision), which
-  gives the timestamp state, `event_type` attribute, restore and
-  `event_types` capability for free. A real `event` entity was considered,
-  but a dedicated domain keeps selector filtering simple.
-- Its **state** is the date and time of the last notification attempt for
-  that receiver (an ISO 8601 timestamp), or `unknown` before the first.
-- Like an event entity it also has an event type describing the delivery
-  result (delivered, failed or skipped).
-- Its **attributes** hold the content of that last notification (title,
-  message, priority, image and data), any warnings, and the receiver's type
-  and associated person and area. Exact attribute names are **TBD**, as is
-  whether skipped notifications count as attempts.
-- It provides **no actions**. Having no services in the new domain means
-  Home Assistant has no service descriptions to look up for it (it can only
-  load them from an integration of the same name, and none exists).
-
-**Why two entities:** a new domain gives clean selector filtering, but the
-Home Assistant frontend only offers toggle controls for a fixed set of
-domains, and a separate integration for the domain is not possible because
-HACS allows one integration per repository. Splitting the enabled state
-into a real `switch` gets the full standard UI and described actions, and
-keeps the new domain simple.
-
-Implementation notes:
-
-- The `notification_receiver` domain is provided by `com_system` itself
-  (one integration, not a separate one). `async_setup` creates an
-  `EntityComponent[EventEntity]` for the domain (stored in `hass.data`), and
-  a receiver entry's `async_setup_entry` calls
-  `component.async_setup_entry(entry)` directly, so the platform is
-  `com_system/notification_receiver.py`. Do **not** use
-  `hass.config_entries.async_forward_entry_setups(entry,
-  ["notification_receiver"])`: it tries to set up an integration named
-  `notification_receiver`, which does not exist, so it logs `Setup failed for
-  'notification_receiver': Integration not found` and adds no entities
-  (without raising). Unload with `component.async_unload_entry(entry)`.
-- Known costs of the new domain (all harmless): Home Assistant logs one
-  warning, `Failed to load integration for translation: Integration
-  'notification_receiver' not found`, when the platform loads, and domain
-  level translations (device class names and so on) do not exist. Entity
-  level translations under `component.com_system.entity.notification_receiver`
-  still work. `event` domain features keyed on the domain, such as the
-  `event.received` automation trigger and the frontend's event more-info,
-  do not apply; use state triggers on the timestamp state instead.
-- Static attributes (receiver type, person, area) go in
-  `extra_state_attributes`, which is not `@final`; `state`,
-  `state_attributes` and `_trigger_event` are, so per-attempt content goes
-  through the `event_attributes` argument of `_trigger_event`.
-- The two entities, and the personal/shared select for mobile app
-  receivers (section 2.7), are grouped on the receiver's device.
-- The switch is the source of truth for enabled state; the receiver entity
-  does not mirror it.
+- **Delivery:** the enabled switch controls whether a receiver is triggered
+  by `notify.com_system`. Disabled receivers are skipped during delivery,
+  and the dispatcher records every attempt (result, content and warnings)
+  with `async_record_attempt` on the receiver entity. The switch and the
+  receiver entity are found in `hass.data[DOMAIN]["entities"][entry_id]`.
+- **Open question:** whether skipped notifications (a disabled receiver)
+  count as attempts and update the receiver entity's state.
+- **Mobile app receivers:** the personal/shared select (section 2.7) is
+  grouped on the receiver's device too.
+- **Source device:** types that attach to another integration's device
+  implement `ReceiverType.source_device_identifiers`; reloading receivers
+  whose source device reappears is the hub detection's job (section 2.2).
 
 ### 2.5 Supported receiver types
 

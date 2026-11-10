@@ -32,5 +32,12 @@
         }
       }
     }
+  },
+  "entity": {
+    "switch": {
+      "enabled": {
+        "name": "Enabled"
+      }
+    }
   }
 }
