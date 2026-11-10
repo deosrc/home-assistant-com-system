@@ -66,7 +66,8 @@ Targets determine which receivers are triggered by a notification.
 - **Areas** – the main mechanism. Resolves to the receivers associated with
   those areas.
 - **Default** – when no targets are specified, the notification goes to
-  **all people and all areas**.
+  **all people and all areas**. The persistent notification receiver is the
+  exception: it is only used when named explicitly (section 2.5).
 
 When several kinds of target are given, the results are combined as a
 **union**: a receiver is used if it matches any listed person, any listed
@@ -203,9 +204,10 @@ The **persistent notification** receiver posts to the notification area in
 the Home Assistant UI (using the `persistent_notification` actions). Unlike
 the other types it is not tied to a person or device: every user sees the
 same notifications. It also has no push behaviour, so it suits a
-record-of-last-resort. Its handling of content (e.g. a notification ID so a
-notification can be replaced or dismissed) and its association with people
-and areas are **TBD** (see section 2.7).
+record-of-last-resort. It has no person or area association and is used
+**only when named explicitly** as a target, never by person or area targets
+or by the default (everyone) target. Its handling of content (e.g. a
+notification ID so a notification can be replaced or dismissed) is **TBD**.
 
 **Delivery and discovery per type:**
 
@@ -221,7 +223,9 @@ and areas are **TBD** (see section 2.7).
   later goes missing, the receiver shows as unavailable and deliveries to it
   fail with a clear per-receiver result. Exact action names and data are
   verified against the integration during implementation.
-- **Persistent notification, Pushover, webOS TV, Music Assistant** – **TBD**.
+- **Persistent notification** – a single receiver, used only when named
+  explicitly. Delivery calls the `persistent_notification` actions.
+- **Pushover, webOS TV, Music Assistant** – **TBD**.
 
 Receiver type definitions are written in code, and each declares its
 capabilities: which typed fields and `data` keys it supports. Custom
@@ -294,8 +298,8 @@ explicit targets. Whether a receiver can have more than one area is **TBD**.
 **Other receiver types:** the mechanism is TBD for each. For example, Alexa
 devices and TVs are likely to be associated by area rather than by person,
 while Pushover could be associated with a person manually. The persistent
-notification receiver is system-wide, so it has no natural person or area;
-how it takes part in person and area targeting is TBD.
+notification receiver is system-wide, so it has no person or area and is
+only used when named explicitly (section 2.5).
 
 **Areas:** a receiver can usually take its area from the underlying device
 or entity in the Home Assistant area registry, with a manual override.
@@ -488,9 +492,8 @@ Every phase includes updating the matching document(s) in `docs/`
   detected candidates?
 - Frontend build and release process: are built assets committed to the
   repository, or built in CI and attached to releases (HACS support)?
-- How do persistent notification, Pushover, webOS TV and Music Assistant
-  each deliver notifications (which actions or
-  entities), and how are their receivers discovered?
+- How do Pushover, webOS TV and Music Assistant each deliver notifications
+  (which actions or entities), and how are their receivers discovered?
 - Music Assistant announcements are not a notify action: how does the
   receiver model accommodate non-notify delivery mechanisms?
 - What variables describe the notification to conditions (title, message,
@@ -511,10 +514,6 @@ Every phase includes updating the matching document(s) in `docs/`
   inferred (e.g. a tablet logged in as a kiosk user)?
 - Can a receiver have more than one area?
 - Should the personal/shared setting be generalised to all receiver types?
-- How does the persistent notification receiver take part in targeting:
-  only for the default (everyone) and explicit targets, or whenever any
-  person or area is targeted? Can it be associated with a person to show the
-  notification only to them (not supported natively)?
 - Should persistent notifications be created with a stable ID so repeated
   notifications replace each other, and can the user dismiss them via COM
   System?
