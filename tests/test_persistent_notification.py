@@ -14,6 +14,7 @@ from custom_components.com_system.const import (
 )
 from homeassistant.components import persistent_notification as pn
 from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.setup import async_setup_component
 
@@ -122,3 +123,18 @@ async def test_not_reached_by_everyone(hass: HomeAssistant) -> None:
             return_response=True,
         )
     assert not _stored(hass)
+
+
+async def test_people_option_hidden(hass: HomeAssistant) -> None:
+    """The options form has no people field and stored people are ignored."""
+    entry = await _add(hass, people=["person.alice"])
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["step_id"] == "no_options"
+    assert not result["data_schema"]
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {})
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+
+    registry = hass.data[DOMAIN]["registry"]
+    [receiver] = registry.all()
+    assert registry.people_of(receiver) == ()

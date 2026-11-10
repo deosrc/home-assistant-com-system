@@ -128,6 +128,8 @@ class PersistentNotificationReceiverType(ReceiverType):
     type_id = RECEIVER_TYPE_PERSISTENT_NOTIFICATION
     name = "Persistent notification"
     discoverable = True
+    # Every user sees the same notifications, so there is no person.
+    supports_people = False
     SOURCE_ID = "persistent_notification"
 
     async def async_detect(self, hass: HomeAssistant) -> list[DiscoveryCandidate]:

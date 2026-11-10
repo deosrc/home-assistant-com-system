@@ -37,9 +37,9 @@ used when it is named (or reached through its device or a label).
   reaches every receiver that has an area.
 - A receiver with no area is never reached by an area or floor target, and
   one with no person is never reached by a person target.
-- The **persistent notification** receiver needs no special handling: it
-  starts with no person and no area, so it is only used when named. Give it
-  a person or an area and it is reached like any other receiver.
+- The **persistent notification** receiver cannot have a person. It starts
+  with no area, so it is only used when named. Give its device an area and
+  area targets reach it like any other receiver.
 - Unknown people, areas and receivers match nothing.
 
 ## Disabled receivers

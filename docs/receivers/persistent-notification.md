@@ -10,9 +10,10 @@ resort.
 There is one receiver, offered as a discovery on **Settings > Devices &
 services**. Choose **Add** to create it.
 
-It starts with no person and no area, so it is **only used when named
-explicitly** in the `receivers` target. If you give it a person or an area
-(see [Receivers](README.md#people-and-areas)), person and area targets
+It cannot relate to a person, so **Configure** has no people option and
+person targets never reach it. It starts with no area, so it is **only
+used when named explicitly** in the `receivers` target. If you give its
+device an area (see [Receivers](README.md#people-and-areas)), area targets
 reach it like any other receiver. See [Targets](../targets.md).
 
 ## Supported content

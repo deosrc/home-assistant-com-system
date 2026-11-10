@@ -32,6 +32,10 @@
         "title": "Com System options",
         "description": "There are no options yet."
       },
+      "no_options": {
+        "title": "Receiver options",
+        "description": "This receiver has no options."
+      },
       "receiver": {
         "title": "Receiver options",
         "description": "Choose the people this receiver relates to. Its area is the area of its device.",
