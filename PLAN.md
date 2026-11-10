@@ -121,6 +121,30 @@ Implementation notes:
 - Whether a custom integration can cleanly register a brand-new entity
   domain (and its actions) is a risk to validate early. See section 8.
 
+### 2.5 Supported receiver types
+
+Initially supported receiver types, in priority order:
+
+| Priority | Receiver type | Notes (to be verified) |
+| --- | --- | --- |
+| 1 | Mobile app | Core; per-device notify actions; rich content |
+| 2 | Alexa Media Player | Non-native (custom); speech/announcements |
+| 3 | Pushover | Core; priority, sound, attachments |
+| 4 | webOS TV | Core; on-screen toast notifications |
+| 5 | Music Assistant | Announcements via its own actions |
+
+Each type needs a receiver-type definition (names provisional) covering:
+
+- How receivers of that type are discovered and configured.
+- Which common and receiver-specific content parameters it supports
+  (section 2.3), i.e. its capabilities.
+- How a COM System notification is translated into the underlying Home
+  Assistant action call.
+
+The custom (user-mapped action) receiver from section 2.1 remains the
+fallback for anything not on this list. Further types can be added later,
+so the type definition should be an extension point rather than hard-coded.
+
 ## 3. The `notify.com_system` action
 
 - Provided by the integration and registered under the `notify` domain.
@@ -217,11 +241,13 @@ Notes:
    dispatcher, delivery and error handling.
 7. **Content parameters** – common content first, then receiver-specific
    content (e.g. mobile app actions) with per-receiver-type handling.
-8. **History store** – persist recent notifications and delivery results.
-9. **Websocket API** – commands for receivers, history, preview and test.
-10. **UI** – panel shell and dashboard, then recent notifications,
+8. **Receiver types** – extensible type definition, then in priority order:
+   mobile app, Alexa Media Player, Pushover, webOS TV, Music Assistant.
+9. **History store** – persist recent notifications and delivery results.
+10. **Websocket API** – commands for receivers, history, preview and test.
+11. **UI** – panel shell and dashboard, then recent notifications,
    receivers, notification designer and testing tool.
-11. **Documentation and release** – README, examples, HACS release.
+12. **Documentation and release** – README, examples, HACS release.
 
 ## 8. Open questions
 
@@ -258,5 +284,13 @@ Notes:
 - How much history is kept, where is it stored (HA storage or database),
   and is it configurable?
 - Should the UI be admin-only, or visible to all users?
+- How does each supported type deliver notifications: which actions or
+  entities does it use, and how are its receivers discovered?
+- Alexa Media Player is a non-native integration: how do we handle it being
+  absent, and its differing action names across versions?
+- Music Assistant announcements are not a notify action: how does the
+  receiver model accommodate non-notify delivery mechanisms?
+- Should receivers of a type be created automatically from the underlying
+  integration's actions/entities, or added manually?
 - Minimum supported Home Assistant version.
 - Domain name and display name confirmation (`com_system` assumed).
