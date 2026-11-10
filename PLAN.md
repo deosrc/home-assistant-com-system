@@ -350,6 +350,9 @@ sidebar panel). Details of each view are **TBD**; the intended scope is:
 
 Notes:
 
+- The UI is a custom sidebar panel written as Lit web components in
+  TypeScript, built with a bundler (e.g. Vite), following the Home Assistant
+  frontend's own stack and reusing its components where possible.
 - The designer and testing tool both build on the `notify.com_system`
   action, so they must exercise the same code path as automations.
 - Warnings about unsupported content are shown in recent notifications and
@@ -461,8 +464,8 @@ Every phase includes updating the matching document(s) in `docs/`
 - Can config subentries be offered automatically for detected receivers
   (discovery), or only created from an "add receiver" flow that lists
   detected candidates?
-- Frontend approach: custom panel built with Lit/web components, or other?
-  Build and release process for the frontend assets.
+- Frontend build and release process: are built assets committed to the
+  repository, or built in CI and attached to releases (HACS support)?
 - How much history is kept, where is it stored (HA storage or database),
   and is it configurable?
 - Should the UI be admin-only, or visible to all users?
