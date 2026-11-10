@@ -53,8 +53,11 @@ records the conventions and how things work as built.
   capabilities, `async_deliver`, association hooks, `async_detect`,
   `is_source_available`, `discoverable`). Subclass it and call
   `register_receiver_type()` to add a type; ids are unique.
-  `CustomReceiverType` is the generic type. `async_deliver` is not wired up
-  yet.
+  `CustomReceiverType` is the generic type. `async_deliver(hass, receiver,
+  notification)` returns a list of warnings (content the type dropped) and
+  raises to report a failure; the base class raises `NotImplementedError`,
+  which the dispatcher reports as a failed result. No type delivers yet:
+  each type's own feature implements it.
 - `builtin_types.py`: the six built-in types (mobile app, Alexa Media
   Player, persistent notification, Pushover, webOS TV, Music Assistant),
   registered in `async_setup`. They have detection only; delivery is added
@@ -130,11 +133,33 @@ records the conventions and how things work as built.
   `targetable_by_association = False` (persistent notification) match only
   when named. Disabled receivers (the enabled switch entity in
   `hass.data[DOMAIN][DATA_ENTITIES]`, or not loaded) go to `skipped`
-  whichever way they matched. The `notify.com_system` action (not built
-  yet) must call it and record `skipped` receivers. See `docs/targets.md`.
+  whichever way they matched. See `docs/targets.md`.
+- `notify.py`: registers `notify.com_system` from `async_setup`
+  (`supports_response=OPTIONAL`) with a voluptuous schema (`message`,
+  `title`, `person`, `area_id`, `entity_id`) and its UI description through
+  `async_set_service_schema` (the `notify` domain's `services.yaml` is
+  core's, so there is no `services.yaml`; name and description are plain
+  strings). `entity_id` takes `notification_receiver` entities, mapped to
+  entry ids through the entity registry (`resolve_call_targets`); ones that
+  are not Com System's stay in the list as the entity id so they match
+  nothing instead of triggering the default. `async_send` resolves,
+  dispatches and returns `{results, counts}`; it raises
+  `ServiceValidationError` only when no enabled receiver matched (none, or
+  all disabled). The websocket test send calls the action through
+  `hass.services`, so UI and automations share one path.
+- `dispatcher.py`: `async_dispatch(hass, resolved, notification)` delivers
+  to the enabled receivers concurrently (`asyncio.gather`); `_deliver`
+  never raises, so one failure cannot affect another (unknown type,
+  `NotImplementedError` and any exception become `failed` results with a
+  reason). Disabled receivers become `skipped`. Every result, including
+  failed and skipped, is recorded with `async_record_attempt` (so skipped
+  attempts do update the receiver entity). Results are
+  `ReceiverResult(receiver, type_name, result, reason, warnings)`, ordered by
+  name; `result` is one of `RESULTS` (`delivered`, `failed`, `skipped`).
+  Conditions are not evaluated yet.
 - `websocket_api.py`: the commands behind the panel
   (`com_system/ping`, `dashboard`, `receivers/list`, `receivers/set_enabled`,
-  `discoveries/list`). Every command must have `@websocket_api.require_admin`;
+  `discoveries/list`, `notify/preview`, `notify/test`). Every command must have `@websocket_api.require_admin`;
   `tests/test_panel.py` checks all of them reject a read-only user. They read
   the registry and config entries (`areas` come from
   `ReceiverRegistry.areas_of`); enabling or disabling calls the receiver's
@@ -142,10 +167,16 @@ records the conventions and how things work as built.
   discoveries are the `integration_discovery` flows in progress. Add new
   commands to `async_register_commands` and to `COMMANDS` in the test.
 - `frontend/`: the panel source (Lit 3, TypeScript, Vite 6, Vitest, ESLint).
-  `com-system-panel.ts` is the shell and navigation (routes `dashboard` and
-  `receivers` under `/com-system/`), `api.ts` wraps the websocket commands
-  (`ComSystemApi`), and each view is its own element (`dashboard-view.ts`,
-  `receivers-view.ts`) that refetches when switch states change. Add views
+  `com-system-panel.ts` is the shell and navigation (routes `dashboard`,
+  `receivers` and `test` under `/com-system/`), `api.ts` wraps the websocket
+  commands (`ComSystemApi`), and each view is its own element
+  (`dashboard-view.ts`, `receivers-view.ts`, `test-view.ts`); the first two
+  refetch when switch states change. `test-view.ts` is the testing tool: it
+  previews with `notify/preview` on every target change and sends with
+  `notify/test`. Lit in jsdom drops a template expression that is the last
+  thing in a template (the response card), so `test-view.ts` wraps it in a
+  `div`; keep a wrapper if you add a trailing expression. Avoid a
+  `title` property on elements: it clashes with `HTMLElement.title`. Add views
   by adding an element, an entry in `VIEWS` and a command. Elements use
   `static properties` and `declare` fields (no decorators). The build is one
   ES module and the HMR client is imported only when the mode is

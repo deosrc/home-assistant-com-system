@@ -26,6 +26,8 @@ COMMANDS = [
     {"type": "com_system/receivers/list"},
     {"type": "com_system/receivers/set_enabled", "entry_id": "x", "enabled": False},
     {"type": "com_system/discoveries/list"},
+    {"type": "com_system/notify/preview"},
+    {"type": "com_system/notify/test", "message": "x"},
 ]
 
 
@@ -126,6 +128,7 @@ async def test_receivers_list_and_enable_disable(
     assert receiver["enabled"] is True
     assert receiver["available"] is True
     assert receiver["entity_id"] == "switch.office_enabled"
+    assert receiver["receiver_entity_id"] == "notification_receiver.office"
 
     msg = await _call(
         client,
@@ -275,3 +278,46 @@ async def test_pending_discoveries(hass: HomeAssistant, hass_ws_client) -> None:
 
     msg = await _call(client, {"type": "com_system/dashboard"})
     assert msg["result"]["pending_discoveries"] == len(names)
+
+
+async def test_notify_preview_and_test(hass: HomeAssistant, hass_ws_client) -> None:
+    """Preview resolves without sending; test goes through the action."""
+    await _setup(hass)
+    on = await _add_custom(hass, "Alpha")
+    off = await _add_custom(hass, "Beta")
+    await hass.services.async_call(
+        "switch", "turn_off", {"entity_id": "switch.beta_enabled"}, blocking=True
+    )
+    client = await hass_ws_client(hass)
+    targets = {
+        "entity_id": ["notification_receiver.alpha", "notification_receiver.beta"]
+    }
+
+    msg = await _call(client, {"type": "com_system/notify/preview", **targets})
+    assert msg["result"]["receivers"] == [
+        {
+            "entry_id": on.entry_id,
+            "name": "Alpha",
+            "type": "Custom",
+            "outcome": "reached",
+            "reason": None,
+        },
+        {
+            "entry_id": off.entry_id,
+            "name": "Beta",
+            "type": "Custom",
+            "outcome": "skipped",
+            "reason": "Receiver is disabled",
+        },
+    ]
+
+    msg = await _call(
+        client, {"type": "com_system/notify/test", "message": "hi", **targets}
+    )
+    assert msg["success"]
+    # The custom type does not deliver yet, so it fails; Beta is skipped.
+    assert msg["result"]["counts"] == {"delivered": 0, "failed": 1, "skipped": 1}
+
+    msg = await _call(client, {"type": "com_system/notify/test", "message": "hi"})
+    assert not msg["success"]
+    assert msg["error"]["code"] == "send_failed"

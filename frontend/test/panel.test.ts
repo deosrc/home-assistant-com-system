@@ -11,6 +11,7 @@ const RECEIVER = {
   enabled: true,
   available: true,
   entity_id: "switch.office_enabled",
+  receiver_entity_id: "notification_receiver.office",
   people: ["person.zed", "person.alice"],
   areas: ["unknown_area", "office"],
 };
@@ -32,6 +33,39 @@ function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
       case "com_system/discoveries/list":
         return {
           discoveries: [{ flow_id: "f1", name: "Pixel", type: "Mobile app" }],
+        };
+      case "com_system/notify/preview":
+        return {
+          receivers: [
+            {
+              entry_id: "e1",
+              name: "Office",
+              type: "Custom",
+              outcome: "reached",
+              reason: null,
+            },
+            {
+              entry_id: "e2",
+              name: "Den",
+              type: "Custom",
+              outcome: "skipped",
+              reason: "Receiver is disabled",
+            },
+          ],
+        };
+      case "com_system/notify/test":
+        return {
+          results: [
+            {
+              entry_id: "e1",
+              name: "Office",
+              type: "Custom",
+              result: "failed",
+              reason: "Not implemented",
+              warnings: ["dropped"],
+            },
+          ],
+          counts: { delivered: 0, failed: 1, skipped: 0 },
         };
       default:
         return null;
@@ -177,5 +211,81 @@ describe("panel layout", () => {
     expect(panel.hasAttribute("narrow")).toBe(true);
     expect(panel.shadowRoot!.querySelector("nav.bottom-bar")).not.toBeNull();
     expect(panel.shadowRoot!.querySelector("h1")!.textContent).toBe("Com System");
+  });
+});
+
+describe("testing tool", () => {
+  it("previews receivers and sends a test through the action", async () => {
+    const { hass, callWS } = makeHass();
+    const panel = await mount("/test", hass);
+    const view = panel.shadowRoot!.querySelector("com-system-test")!;
+    await settle(view);
+    const root = view.shadowRoot!;
+    // The default preview has no targets.
+    expect(callWS).toHaveBeenCalledWith({ type: "com_system/notify/preview" });
+    const rows = [...root.querySelectorAll(".preview tbody tr")];
+    expect(rows.map((r) => r.textContent!.replace(/\s+/g, " ").trim())).toEqual([
+      "Office Custom reached",
+      "Den Custom skipped (Receiver is disabled)",
+    ]);
+
+    const send = root.querySelector<HTMLButtonElement>("button.send")!;
+    expect(send.disabled).toBe(true); // no message yet
+    const message = root.querySelector("textarea")!;
+    message.value = "Hello";
+    message.dispatchEvent(new Event("input"));
+    await settle(view);
+    expect(send.disabled).toBe(false);
+
+    // Choosing a person re-runs the preview with that target.
+    const person = [...root.querySelectorAll<HTMLInputElement>("input[type=checkbox]")]
+      .find((c) => c.parentElement!.textContent!.includes("Alice"))!;
+    person.checked = true;
+    person.dispatchEvent(new Event("change"));
+    await settle(view);
+    expect(callWS).toHaveBeenCalledWith({
+      type: "com_system/notify/preview",
+      person: ["person.alice"],
+    });
+
+    send.click();
+    await settle(view);
+    expect(callWS).toHaveBeenCalledWith({
+      type: "com_system/notify/test",
+      message: "Hello",
+      person: ["person.alice"],
+    });
+    await settle(view);
+    const result = root.querySelector(".results")!.textContent!;
+    expect(result).toContain("failed");
+    expect(result).toContain("Not implemented");
+    expect(result).toContain("Warning: dropped");
+    expect(root.textContent!.replace(/\s+/g, " ")).toContain(
+      "0 delivered, 1 failed, 0 skipped",
+    );
+  });
+
+  it("shows an error when the send is rejected", async () => {
+    const { hass, callWS } = makeHass();
+    const panel = await mount("/test", hass);
+    const view = panel.shadowRoot!.querySelector("com-system-test")!;
+    await settle(view);
+    const impl = callWS.getMockImplementation()!;
+    callWS.mockImplementation(async (msg: { type: string }) => {
+      if (msg.type === "com_system/notify/test") {
+        throw { message: "No receiver matches the targets" };
+      }
+      return impl(msg);
+    });
+    const root = view.shadowRoot!;
+    const message = root.querySelector("textarea")!;
+    message.value = "Hello";
+    message.dispatchEvent(new Event("input"));
+    await settle(view);
+    root.querySelector<HTMLButtonElement>("button.send")!.click();
+    await settle(view);
+    expect(root.querySelector(".error")!.textContent).toContain(
+      "No receiver matches the targets",
+    );
   });
 });

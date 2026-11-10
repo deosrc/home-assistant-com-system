@@ -37,6 +37,23 @@ added. Choose **Review in Devices & services** to add or ignore them; see
 with a type that is no longer known stays in the list, with the type id as
 its type.
 
+## Test
+
+The testing tool sends a test notification and shows what happens.
+
+- Enter a **message** and an optional **title**, and tick the people,
+  areas and receivers to target. With nothing ticked the notification goes
+  to all people and areas, as it does from an automation.
+- **Receivers reached** updates as you change the targets, without sending
+  anything. Each matching receiver is `reached`, or `skipped` with the
+  reason (it is disabled).
+- **Send test** calls the [`notify.com_system` action](services.md), so it
+  behaves exactly as an automation does, and may send real notifications.
+  It is enabled once there is a message and at least one receiver would be
+  reached. The result shows each receiver's outcome (delivered, failed or
+  skipped) with the reason and any warnings, and the counts.
+- If nothing could be attempted, the error from the action is shown.
+
 ## Websocket commands
 
 The panel talks to Home Assistant through these commands. All require an
@@ -45,10 +62,17 @@ admin user.
 - `com_system/ping`: returns `{"pong": true}`.
 - `com_system/dashboard`: the counts shown on the dashboard.
 - `com_system/receivers/list`: each receiver's name, type, enabled state,
-  availability, entity id, people and areas.
+  availability, switch entity id, `notification_receiver` entity id
+  (`receiver_entity_id`), people and areas.
 - `com_system/receivers/set_enabled`: turns the receiver's enabled switch on
   or off (`entry_id`, `enabled`).
 - `com_system/discoveries/list`: the pending discoveries.
+- `com_system/notify/preview`: the receivers the targets (`person`,
+  `area_id`, `entity_id`, as in the action) would reach, each `reached` or
+  `skipped` with a reason. Sends nothing.
+- `com_system/notify/test`: sends through the `notify.com_system` action
+  (`message`, optional `title`, and the targets) and returns its response.
+  A failure to send is the error `send_failed`.
 
 ## Installing the panel
 

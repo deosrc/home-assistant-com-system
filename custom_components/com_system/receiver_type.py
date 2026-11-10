@@ -42,8 +42,15 @@ class ReceiverType:
 
     async def async_deliver(
         self, hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
-    ) -> None:
-        """Deliver a notification (implemented with the dispatcher)."""
+    ) -> list[str]:
+        """Deliver a notification to a receiver of this type.
+
+        ``notification`` has ``message`` and, when given, ``title``. Return
+        warnings for content the type dropped (empty when none). Raise to
+        report a failure; the dispatcher records it and carries on with the
+        other receivers. The default raises ``NotImplementedError``, which
+        the dispatcher reports as a failure.
+        """
         raise NotImplementedError
 
     def associated_people(self, receiver: Receiver) -> tuple[str, ...]:

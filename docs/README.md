@@ -26,7 +26,9 @@ Reconfiguration and hub options are stubs for now and do nothing yet.
   receivers.
 - [Targets](targets.md): how people, areas and receivers decide where a
   notification goes.
+- [The notify.com_system action](services.md): sending a notification, its
+  fields, delivery and the per-receiver response.
 - [User interface](ui.md): the sidebar panel and its websocket commands.
 
-More documents (content, conditions and actions) are added as those
+More documents (rich content, conditions and notification actions) are added as those
 features are built.

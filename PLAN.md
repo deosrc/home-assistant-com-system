@@ -168,13 +168,6 @@ notifications and the testing tool). Delivery is not treated as a failure.
 The entities themselves are built (see `AGENTS.md` and
 `docs/receivers/README.md`). What remains:
 
-- **Delivery:** the enabled switch controls whether a receiver is triggered
-  by `notify.com_system`. Disabled receivers are skipped during delivery,
-  and the dispatcher records every attempt (result, content and warnings)
-  with `async_record_attempt` on the receiver entity. The switch and the
-  receiver entity are found in `hass.data[DOMAIN]["entities"][entry_id]`.
-- **Open question:** whether skipped notifications (a disabled receiver)
-  count as attempts and update the receiver entity's state.
 - **Mobile app receivers:** the personal/shared select (section 2.7) is
   grouped on the receiver's device too.
 - **Source device:** types that attach to another integration's device
@@ -387,50 +380,16 @@ only used when named explicitly (section 2.5).
 
 ## 3. The `notify.com_system` action
 
-- Provided by the integration and registered under the `notify` domain.
-- Accepts the target parameters (`docs/targets.md`) plus the content parameters
-  (section 2.3).
-- Resolves targets to a set of receivers, drops disabled ones, drops those
-  whose conditions do not pass, then delivers to each remaining receiver.
-- Delivery is independent per receiver: one receiver failing never blocks
-  the others.
-- The action returns **response data** listing each receiver's result
-  (success, failed or skipped, with the reason and any warnings). Failures
-  are also logged and recorded in history.
-- The action itself only raises an error when nothing could be attempted
-  (e.g. invalid input), not when individual receivers fail.
-- Exact response format: **TBD**.
+The action, dispatcher and per-receiver response are built; see
+[docs/services.md](docs/services.md) and `AGENTS.md`. What remains:
 
-**Registration (spike #5, confirmed on Home Assistant 2026.10.4):**
-
-- Register from `async_setup` with
-  `hass.services.async_register("notify", "com_system", handler,
-  schema=..., supports_response=SupportsResponse.OPTIONAL)`. It coexists
-  with the core `notify` integration's own services and survives `notify`
-  being set up afterwards. Use `OPTIONAL` so automations that ignore the
-  response still work.
-- Response data is returned by the handler as a dict and reaches callers
-  via `return_response=True` (and `response_variable` in automations).
-- UI metadata comes from `async_set_service_schema(hass, "notify",
-  "com_system", {...})`, not `services.yaml`: the `notify` domain's
-  `services.yaml` belongs to core, and the integration's own
-  `services.yaml` is not read for it. The description gives `name`,
-  `description` and `fields` with selectors, and HA adds the response
-  marker itself. It appears in the `get_services` websocket result that the
-  automation editor uses.
-- `name` and `description` are plain strings set in code. They cannot be
-  translated through `strings.json`, as translations for the `notify`
-  domain's services belong to core.
-- Targets: the `target:` selector in the description only supports entity
-  and device filters (it always offers areas, floors and labels). It has no
-  person concept. Use explicit fields instead: `person` (entity selector,
-  `domain: person`, `multiple`), `area_id` (area selector, `multiple`) and
-  `entity_id` (entity selector, `multiple`), plus `title` and `message`
-  (text selectors).
-- The schema is validated by the voluptuous schema passed to
-  `async_register`; invalid input raises before the handler runs.
-- Not verified: rendering in a real frontend (only the websocket
-  description was checked).
+- Resolved receivers whose **conditions** do not pass are dropped before
+  delivery and reported as skipped (section 2.6).
+- The content parameters of section 2.3 (`priority`, `image`, `data`) are
+  added to the schema, and unsupported content produces warnings.
+- Failures are also recorded in history (section 5).
+- Not verified: how the action renders in a real frontend (only the
+  websocket description was checked).
 
 ## 4. Architecture (initial outline)
 
@@ -443,13 +402,13 @@ custom_components/com_system/
   manifest.json
   config_flow.py    # config + options flow, receiver management
   const.py
-  notify.py         # notify.com_system implementation
+  notify.py         # notify.com_system action
+  dispatcher.py     # per-receiver delivery
   notification_receiver.py  # read-only receiver entity (new domain)
   switch.py         # enabled switch entity
   services.yaml / strings.json / translations/
   websocket_api.py  # commands backing the UI
   frontend/         # panel source and build output (TBD)
-  (target resolver, dispatcher modules - TBD)
 tests/
 ```
 
@@ -459,8 +418,6 @@ Core components (names provisional):
 | --- | --- |
 | Receiver entities | Enabled switch and read-only `notification_receiver` |
 | Condition evaluator | Runs a receiver's conditions against a notification |
-| Dispatcher | Delivers to each resolved receiver, handling failures |
-| Notify action | Entry point; validates input, calls resolver, dispatcher |
 | Config/options flow | UI for creating and editing receivers |
 
 ## 5. User interface
@@ -475,21 +432,21 @@ scope is:
 | Recent notifications | History of notifications sent and their delivery |
 | Receivers (extend) | Add, edit and remove receivers, with a conditions editor |
 | Notification designer | Compose a notification (targets and content) |
-| Testing tool | Send a test notification and see how it resolves |
 | Dashboard (extend) | Recent activity |
+| Testing tool (extend) | Conditions in the preview; rich content |
 
 Notes:
 
 - The panel is admin-only and the websocket commands behind it require an
   admin user. It will expose notification contents and conditions and send
   notifications, so this must stay.
-- The designer and testing tool both build on the `notify.com_system`
-  action, so they must exercise the same code path as automations.
-- Warnings about unsupported content are shown in recent notifications and
-  the testing tool.
-- The testing tool should show which receivers a notification would reach
-  (target resolution) and the per-receiver outcome, including receivers
-  skipped because they are disabled or a condition did not pass.
+- The designer must build on the `notify.com_system` action, as the
+  testing tool does, so it exercises the same code path as automations.
+- Warnings about unsupported content are shown in recent notifications;
+  the testing tool already shows the warnings an action returns.
+- The testing tool (built, see [docs/ui.md](docs/ui.md)) must also show
+  receivers skipped because a condition did not pass, once conditions
+  exist.
 - The receiver editor needs a conditions editor. Home Assistant's condition
   selector can likely be reused.
 - The designer must account for receiver-specific content (section 2.3),

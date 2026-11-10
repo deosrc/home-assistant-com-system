@@ -1,6 +1,7 @@
 import { LitElement, css, html, nothing } from "lit";
 import "./dashboard-view";
 import "./receivers-view";
+import "./test-view";
 import { sharedStyles } from "./styles";
 import type { HomeAssistant, PanelRoute } from "./types";
 
@@ -14,6 +15,7 @@ if (import.meta.env.MODE === "development") {
 const VIEWS = [
   { path: "dashboard", label: "Dashboard" },
   { path: "receivers", label: "Receivers" },
+  { path: "test", label: "Test" },
 ] as const;
 
 /** The admin-only Com System panel: navigation and the active view. */
@@ -176,7 +178,9 @@ export class ComSystemPanel extends LitElement {
       <main>
         ${active === "receivers"
           ? html`<com-system-receivers .hass=${this.hass}></com-system-receivers>`
-          : html`<com-system-dashboard .hass=${this.hass}></com-system-dashboard>`}
+          : active === "test"
+            ? html`<com-system-test .hass=${this.hass}></com-system-test>`
+            : html`<com-system-dashboard .hass=${this.hass}></com-system-dashboard>`}
       </main>
     `;
   }

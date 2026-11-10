@@ -39,6 +39,20 @@ describe("ComSystemApi", () => {
     });
   });
 
+  it("previews and sends tests with only the chosen targets", async () => {
+    const { hass, callWS } = fakeHass({ receivers: [] });
+    await new ComSystemApi(hass).previewNotify({ area_id: ["kitchen"] });
+    expect(callWS).toHaveBeenCalledWith({
+      type: "com_system/notify/preview",
+      area_id: ["kitchen"],
+    });
+    await new ComSystemApi(hass).sendTest("Hi", "", {});
+    expect(callWS).toHaveBeenLastCalledWith({
+      type: "com_system/notify/test",
+      message: "Hi",
+    });
+  });
+
   it("formats errors", () => {
     expect(errorMessage({ code: "x", message: "Nope" })).toBe("Nope");
     expect(errorMessage("plain")).toBe("plain");
