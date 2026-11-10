@@ -79,7 +79,8 @@ Content parameters are split into two tiers:
   - **Typed fields** – commonly used parameters (used by several receiver
     types, or common in notification content) are explicit, validated
     top-level fields in the action schema. Receivers that do not support a
-    typed field handle it as described in section 8. Which parameters become
+    typed field handle it as described under unsupported content below.
+    Which parameters become
     typed fields is **TBD**.
   - **Free-form `data`** – anything COM System does not support explicitly
     goes in a `data` object keyed by receiver type, e.g.
@@ -88,9 +89,13 @@ Content parameters are split into two tiers:
     types. (Keying by type is an assumption from "mixed per-type blocks and
     typed fields"; to be confirmed.)
 
-Receiver-specific content raises a design question: what happens when a
-notification carries content that a resolved receiver does not support?
-See section 8.
+**Unsupported content:** when a notification carries content that a
+resolved receiver does not support (e.g. mobile app actions sent to a
+persistent notification), the notification is still delivered with the
+content the receiver does support. The unsupported content is dropped and a
+**warning is logged**. Warnings are recorded with the notification's
+delivery result so they can be shown in the COM System UI (recent
+notifications and the testing tool). Delivery is not treated as a failure.
 
 ### 2.4 Receiver entity and enabled state
 
@@ -290,6 +295,8 @@ Notes:
 
 - The designer and testing tool both build on the `notify.com_system`
   action, so they must exercise the same code path as automations.
+- Warnings about unsupported content are shown in recent notifications and
+  the testing tool.
 - The testing tool should show which receivers a notification would reach
   (target resolution) and the per-receiver outcome, including receivers
   skipped because they are disabled or a condition did not pass.
@@ -387,9 +394,6 @@ Every phase includes updating the matching document(s) in `docs/`
 
 - Which commonly used parameters become typed fields (e.g. actions, image,
   priority, sound), and how is a typed field mapped to each receiver type?
-- When a receiver does not support a piece of content, is it ignored,
-  downgraded (e.g. actions folded into the message text) or treated as an
-  error?
 - How does a receiver declare its type and capabilities, and can custom
   receivers declare their own?
 - How are responses to notification actions (e.g. a button press on a mobile
