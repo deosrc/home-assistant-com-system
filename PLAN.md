@@ -265,10 +265,15 @@ decide, per notification, whether that receiver is used.
 - Conditions use Home Assistant's built-in conditions system (the same
   format as automation and script conditions, including template, state,
   time and logical `and`/`or`/`not` conditions).
-- Each condition is evaluated with the **notification details** supplied as
-  variables, so conditions can inspect the notification. The exact variable
-  shape is **TBD** (e.g. a `notification` object holding title, message,
-  receiver-specific data and the requested targets).
+- Each condition is evaluated with these variables:
+  - `notification` – the notification details: ID, title, message,
+    priority, image, `data` and the requested targets.
+  - `receiver` – the receiver's own context: name, type, associated person
+    and area, and entity ID.
+  - `resolved_targets` – why the receiver matched: which person, area or
+    explicit target selected it.
+- Exact field names within these variables are **TBD** and will be
+  documented in `docs/conditions.md`.
 - If the conditions do not pass, the receiver is skipped for that
   notification only. This is separate from the receiver's enabled state
   (section 2.4), which blocks all notifications.
@@ -511,14 +516,10 @@ Every phase includes updating the matching document(s) in `docs/`
   detected candidates?
 - Frontend build and release process: are built assets committed to the
   repository, or built in CI and attached to releases (HACS support)?
-- What variables describe the notification to conditions (title, message,
-  data, targets, resolved receiver), and are they stable enough to document?
 - If a condition errors (e.g. a template fails), is the receiver skipped,
   used anyway, or is the error reported? Is it recorded in history?
 - Where are conditions stored and edited: per receiver only, or can some be
   shared or global across receivers?
-- Can conditions use the receiver's own context (e.g. its associated people
-  or areas) as well as the notification details?
 - Are the docs only read in the repository, or also published (e.g. GitHub
   Pages)? Affects link style and whether a site generator is needed.
 - Should CI fail when code changes without a matching docs change, or is
