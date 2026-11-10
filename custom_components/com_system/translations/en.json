@@ -1,0 +1,28 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Com System",
+        "description": "Create the Com System hub. Receivers are added afterwards."
+      },
+      "custom_receiver": {
+        "title": "Add a custom receiver",
+        "description": "Add a receiver that delivers through Home Assistant actions.",
+        "data": {
+          "name": "Name"
+        }
+      }
+    },
+    "abort": {
+      "not_implemented": "This is not implemented yet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Com System options",
+        "description": "There are no options yet."
+      }
+    }
+  }
+}
