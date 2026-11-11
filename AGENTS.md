@@ -30,6 +30,11 @@ records the conventions and how things work as built.
 - Lint Python: `ruff check .` and `ruff format --check .` (format with
   `ruff format .`). Ruff is configured in `pyproject.toml`.
 - Lint Markdown: `npm run lint:md`.
+- Icon: `custom_components/com_system/brand/` holds `icon.png` (256 px) and
+  `icon@2x.png` (512 px) on a transparent background; Home Assistant serves
+  them without the brands repository. The source is `assets/icon.svg`. To
+  regenerate, render it to PNG at those widths (for example with
+  `@resvg/resvg-js`).
 - Panel (in `frontend/`): `npm run lint`, `npm test`, `npm run build`.
   Hot reload: `scripts/develop` starts Vite and sets
   `COM_SYSTEM_PANEL_DEV_URL` (opt out with `COM_SYSTEM_PANEL_BUNDLE=1`);
