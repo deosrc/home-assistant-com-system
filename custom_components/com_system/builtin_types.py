@@ -36,6 +36,7 @@ from .receiver_type import (
     get_receiver_type,
     register_receiver_type,
 )
+from .webostv import async_deliver_webostv
 
 
 def _source_entries(hass: HomeAssistant, domain: str) -> list[ConfigEntry]:
@@ -201,8 +202,26 @@ class WebOSTVReceiverType(EntryReceiverType):
     type_id = RECEIVER_TYPE_WEBOSTV
     name = "webOS TV"
     source_domain = "webostv"
-    # Not implemented yet (no delivery), so not offered as a discovery.
-    discoverable = False
+    # A TV is shared, so it has no person (and no people option).
+    supports_people = False
+
+    def source_device_identifiers(
+        self, receiver: Receiver
+    ) -> set[tuple[str, str]] | None:
+        """Attach to the TV's device, so the area is the TV's area.
+
+        The integration's device identifier is the config entry's unique id,
+        which is the receiver's source id.
+        """
+        if receiver.source_id is None:
+            return None
+        return {(self.source_domain, receiver.source_id)}
+
+    async def async_deliver(
+        self, hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
+    ) -> list[str]:
+        """Show a toast through the TV's ``notify.<title>`` action."""
+        return await async_deliver_webostv(hass, receiver, notification)
 
 
 class MusicAssistantReceiverType(DeviceReceiverType):
