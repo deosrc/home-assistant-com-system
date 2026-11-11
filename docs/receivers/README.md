@@ -35,8 +35,9 @@ detected:
 | Music Assistant | Music Assistant player |
 
 Detection offers receivers. Sending is added as each type is built. So far
-[Persistent notification](persistent-notification.md) and
-[mobile app](mobile-app.md) receivers send.
+[Persistent notification](persistent-notification.md),
+[mobile app](mobile-app.md) and
+[Alexa Media Player](alexa-media-player.md) receivers send.
 
 ### Deleting, disabling and removed devices
 
