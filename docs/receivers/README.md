@@ -35,7 +35,8 @@ detected:
 | Music Assistant | Music Assistant player |
 
 Detection only offers receivers. Sending notifications to each type is
-added as that type is built.
+added as that type is built. So far only
+[Persistent notification](persistent-notification.md) sends.
 
 ### Deleting, disabling and removed devices
 
@@ -55,7 +56,9 @@ A custom receiver is a script that takes a `notification` object; see
 
 ## People and areas
 
-Choose **Configure** on a receiver to set the people it relates to. Com
+Choose **Configure** on a receiver to set the people it relates to (not
+offered for receiver types that cannot relate to a person, such as
+Persistent notification). Com
 System uses this to find the receivers for a person. Leave it empty if the
 receiver is not tied to anyone.
 

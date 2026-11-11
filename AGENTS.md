@@ -70,14 +70,27 @@ records the conventions and how things work as built.
   `CustomReceiverType` is the generic type. `async_deliver(hass, receiver,
   notification)` returns a list of warnings (content the type dropped) and
   raises to report a failure; the base class raises `NotImplementedError`,
-  which the dispatcher reports as a failed result. No type delivers yet:
-  each type's own feature implements it.
+  which the dispatcher reports as a failed result. The custom
+  type and the persistent notification type deliver so far; each other
+  built-in type's own feature implements it.
 - `builtin_types.py`: the six built-in types (mobile app, Alexa Media
   Player, persistent notification, Pushover, webOS TV, Music Assistant),
-  registered in `async_setup`. They have detection only; delivery is added
-  by each type's own feature. `DeviceReceiverType` offers one receiver per
-  device of `source_domain` (source id is the device identifier in that
-  domain, and the receiver's entities attach to that device via
+  registered in `async_setup`. They have detection; delivery is added by
+  each type's own feature (the persistent notification type has it).
+  `PersistentNotificationReceiverType.async_deliver` calls
+  `persistent_notification.create` (blocking) with `message` and, when
+  given, `title`, and never sends `notification_id`: HA then generates one,
+  so every notification is its own and Com System never replaces or
+  dismisses it. It declares no capabilities and returns no warnings. It sets
+  `supports_people = False` on `ReceiverType` (default True): the options
+  flow then shows an empty `no_options` step instead of the people field,
+  and `associated_people` returns nothing even if people were stored. The
+  action's fields were checked against HA 2026.10. Com System has no
+  notification ID yet; when it does, pass it as `notification_id` (create
+  would then replace a notification with the same id).
+  `DeviceReceiverType` offers one receiver per device of `source_domain`
+  (source id is the device identifier in that domain, and the receiver's
+  entities attach to that device via
   `source_device_identifiers`); `EntryReceiverType` offers one per config
   entry (source id is its unique id, else its entry id; no source device, so
   entities get their own). To add a built-in type, subclass one, set
@@ -146,9 +159,9 @@ records the conventions and how things work as built.
   areas (`ReceiverRegistry.people_of` / `areas_of`) and named receiver entry
   ids; a group that is not given is not targeted, so no targets at all match
   nothing (there is no default). There is no per-type exclusion: the
-  persistent notification receiver has no person or area until the user
-  sets one, so it matches only when named, but once mapped it is reached
-  like any receiver. Disabled receivers (the enabled
+  persistent notification receiver has no area until its device gets one,
+  so it matches only when named, but then area targets reach it. It never
+  has a person (see `supports_people`). Disabled receivers (the enabled
   switch entity in `hass.data[DOMAIN][DATA_ENTITIES]`, or not loaded) go to
   `skipped` whichever way they matched. See `docs/targets.md`.
 - `notify.py`: registers `notify.com_system` from `async_setup`

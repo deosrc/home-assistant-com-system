@@ -37,6 +37,9 @@ class ReceiverType:
     # Whether receivers of the type are created from discoveries (built-in
     # types) and so need a source to detect. Custom receivers are manual.
     discoverable: bool = False
+    # Whether receivers of the type can relate to people. When False the
+    # options form has no people field and no person target reaches them.
+    supports_people: bool = True
 
     async def async_deliver(
         self, hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
@@ -53,7 +56,7 @@ class ReceiverType:
 
     def associated_people(self, receiver: Receiver) -> tuple[str, ...]:
         """Return the people the receiver relates to."""
-        return receiver.people
+        return receiver.people if self.supports_people else ()
 
     def source_device_identifiers(
         self, receiver: Receiver

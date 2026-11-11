@@ -26,6 +26,7 @@ from .const import (
     ENTRY_TYPE_HUB,
     ENTRY_TYPE_RECEIVER,
     RECEIVER_ENTRY_TYPES,
+    RECEIVER_TYPE_CUSTOM,
 )
 from .detection import discovery_unique_id
 from .receiver_type import get_receiver_type
@@ -143,6 +144,14 @@ class ComSystemOptionsFlow(OptionsFlow):
                 return self.async_create_entry(data=self.config_entry.options)
             return self.async_show_form(step_id="init")
 
+        receiver_type = get_receiver_type(
+            self.config_entry.data.get(CONF_RECEIVER_TYPE, RECEIVER_TYPE_CUSTOM)
+        )
+        if receiver_type is not None and not receiver_type.supports_people:
+            if user_input is not None:
+                return self.async_create_entry(data=self.config_entry.options)
+            return self.async_show_form(step_id="no_options")
+
         if user_input is not None:
             return self.async_create_entry(data=user_input)
 
@@ -163,4 +172,10 @@ class ComSystemOptionsFlow(OptionsFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Save the receiver's people."""
+        return await self.async_step_init(user_input)
+
+    async def async_step_no_options(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Finish the form of a type with nothing to configure."""
         return await self.async_step_init(user_input)

@@ -133,7 +133,7 @@ async def test_shared_receiver_only_reached_by_name(
 async def test_persistent_notification_follows_its_mapping(
     hass: HomeAssistant,
 ) -> None:
-    """The persistent notification receiver is reached only as it is mapped."""
+    """The persistent notification receiver is reached by name or area only."""
     e = await _setup(hass)
     pid = e["persistent"].entry_id
     # With no person or area it is only reached when named.
@@ -142,14 +142,13 @@ async def test_persistent_notification_follows_its_mapping(
     assert pid not in _ids(resolve_targets(hass, people=["person.carol"]).receivers)
     assert pid in _ids(resolve_targets(hass, receivers=[pid]).receivers)
 
-    # Mapped to a person, people targets reach it like any receiver.
+    # People do not apply to it: a stored person is ignored.
     hass.config_entries.async_update_entry(
         e["persistent"], options={CONF_PEOPLE: ["person.carol"]}
     )
     await hass.async_block_till_done()
-    assert pid in _ids(resolve_targets(hass, people=["person.carol"]).receivers)
-    assert pid in _ids(resolve_targets(hass, all_people=True).receivers)
-    assert pid not in _ids(resolve_targets(hass, people=["person.alice"]).receivers)
+    assert pid not in _ids(resolve_targets(hass, people=["person.carol"]).receivers)
+    assert pid not in _ids(resolve_targets(hass, all_people=True).receivers)
 
     # Given an area, area targets reach it too.
     device = dr.async_get(hass).async_get_device_by_identifier((DOMAIN, pid), pid)
