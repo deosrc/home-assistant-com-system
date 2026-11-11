@@ -65,7 +65,7 @@ async def async_entry_devices(hass: HomeAssistant, entry: ConfigEntry) -> list[s
         response = await hass.async_add_executor_job(
             api.validate, entry.data["user_key"]
         )
-    except Exception:  # noqa: BLE001 - any API or network failure
+    except Exception:  # any API or network failure
         _LOGGER.debug("Could not list Pushover devices of %s", entry.title)
         return []
     devices = response.get("devices") if isinstance(response, dict) else None
