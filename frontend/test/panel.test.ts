@@ -10,7 +10,7 @@ const RECEIVER = {
   type_known: true,
   enabled: true,
   available: true,
-  entity_id: "switch.office_enabled",
+  entity_id: "switch.office_notifications_enabled",
   receiver_entity_id: "notification_receiver.office",
   device_id: "dev1",
   audience: null,
@@ -87,7 +87,7 @@ function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
   const hass = {
     callWS,
     states: {
-      "switch.office_enabled": { state: "on" },
+      "switch.office_notifications_enabled": { state: "on" },
       "person.alice": { state: "home", attributes: { friendly_name: "Alice" } },
       "person.zed": { state: "home", attributes: { friendly_name: "Zed" } },
     },

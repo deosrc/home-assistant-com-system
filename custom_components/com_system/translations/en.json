@@ -48,7 +48,7 @@
   "entity": {
     "switch": {
       "enabled": {
-        "name": "Enabled"
+        "name": "Notifications Enabled"
       }
     },
     "select": {

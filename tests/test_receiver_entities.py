@@ -26,7 +26,7 @@ from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
-SWITCH = "switch.office_enabled"
+SWITCH = "switch.office_notifications_enabled"
 RECEIVER = "notification_receiver.office"
 
 

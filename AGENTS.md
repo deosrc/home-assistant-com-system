@@ -132,10 +132,12 @@ records the conventions and how things work as built.
   Unknown types stay listed (`type_of` returns `None`).
 - Each receiver entry has two entities on one device, set up in
   `async_setup_entry` (the hub has none): the enabled `switch`
-  (`switch.py`, `RestoreEntity`, on by default, the source of truth for
+  (`switch.py`, named "Notifications Enabled", `RestoreEntity`, on by
+  default, the source of truth for
   enabled) and the read-only `notification_receiver` entity
   (`notification_receiver.py`, subclasses `EventEntity`; event types
-  `delivered`, `failed`, `skipped`). Both derive from `ReceiverEntity`
+  `delivered`, `failed`, `skipped`). The switch and the mobile app select
+  have `EntityCategory.CONFIG`. All derive from `ReceiverEntity`
   (`entity.py`), which builds the device (`(com_system, entry_id)`), or
   attaches to the source device returned by
   `ReceiverType.source_device_identifiers`, and registers the entity in

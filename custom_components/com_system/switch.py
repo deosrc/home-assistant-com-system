@@ -6,6 +6,7 @@ from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -25,6 +26,7 @@ class ReceiverEnabledSwitch(ReceiverEntity, SwitchEntity, RestoreEntity):
 
     entity_key = ENTITY_KEY
     _attr_translation_key = "enabled"
+    _attr_entity_category = EntityCategory.CONFIG
     _attr_is_on = True
 
     async def async_added_to_hass(self) -> None:

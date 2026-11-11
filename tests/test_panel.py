@@ -144,7 +144,7 @@ async def test_receivers_list_and_enable_disable(
     )
     assert receiver["device_id"] == device.id
     assert receiver["available"] is True
-    assert receiver["entity_id"] == "switch.office_enabled"
+    assert receiver["entity_id"] == "switch.office_notifications_enabled"
     assert receiver["receiver_entity_id"] == "notification_receiver.office"
 
     msg = await _call(
@@ -156,7 +156,7 @@ async def test_receivers_list_and_enable_disable(
         },
     )
     assert msg["success"]
-    assert hass.states.get("switch.office_enabled").state == "off"
+    assert hass.states.get("switch.office_notifications_enabled").state == "off"
 
     msg = await _call(client, {"type": "com_system/dashboard"})
     assert msg["result"]["total"] == 1
@@ -172,7 +172,7 @@ async def test_receivers_list_and_enable_disable(
             "enabled": True,
         },
     )
-    assert hass.states.get("switch.office_enabled").state == "on"
+    assert hass.states.get("switch.office_notifications_enabled").state == "on"
 
 
 async def test_receiver_area_comes_from_its_device(
@@ -183,7 +183,7 @@ async def test_receiver_area_comes_from_its_device(
     entry = await _add_custom(hass, "Office")
     area = ar.async_get(hass).async_create("Study")
     registry = er.async_get(hass)
-    device_id = registry.async_get("switch.office_enabled").device_id
+    device_id = registry.async_get("switch.office_notifications_enabled").device_id
     dr.async_get(hass).async_update_device(device_id, area_id=area.id)
 
     msg = await _call(await hass_ws_client(hass), {"type": "com_system/receivers/list"})
@@ -303,7 +303,10 @@ async def test_notify_preview_and_test(hass: HomeAssistant, hass_ws_client) -> N
     on = await _add_custom(hass, "Alpha")
     off = await _add_custom(hass, "Beta")
     await hass.services.async_call(
-        "switch", "turn_off", {"entity_id": "switch.beta_enabled"}, blocking=True
+        "switch",
+        "turn_off",
+        {"entity_id": "switch.beta_notifications_enabled"},
+        blocking=True,
     )
     client = await hass_ws_client(hass)
     targets = {

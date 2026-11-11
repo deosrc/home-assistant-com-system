@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -29,6 +30,7 @@ class ReceiverAudienceSelect(ReceiverEntity, SelectEntity, RestoreEntity):
 
     entity_key = AUDIENCE_KEY
     _attr_translation_key = "audience"
+    _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(self, hass: HomeAssistant, receiver: Receiver) -> None:
         """Initialise with personal and shared as the options."""

@@ -26,8 +26,8 @@ A person set on the receiver with **Configure** overrides this link.
 
 ## Personal or shared
 
-Each mobile app receiver has a **Device use** select entity on its device,
-with two options:
+Each mobile app receiver has a **Device use** select entity (a
+configuration entity) on its device, with two options:
 
 - **Personal**: the device is reached when its person is targeted.
 - **Shared** (for example a wall tablet): the device has no person, so it is

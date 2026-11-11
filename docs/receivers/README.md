@@ -69,13 +69,15 @@ it, change the area of the device.
 ## Receiver entities
 
 Each receiver has a device with two entities. Mobile app receivers have a
-third, [Device use](mobile-app.md#personal-or-shared).
+third, [Device use](mobile-app.md#personal-or-shared), also a configuration
+entity.
 
-- **Enabled** (`switch`): on means the receiver is enabled, off means it
-  is disabled. New receivers are enabled, and the state is kept across
-  restarts. Use the normal switch controls and the `switch.turn_on`,
-  `switch.turn_off` and `switch.toggle` actions, for example in an
-  automation that turns a receiver off at night and on in the morning.
+- **Notifications Enabled** (`switch`, a configuration entity): on means
+  the receiver is enabled, off means it is disabled. New receivers are
+  enabled, and the state is kept across restarts. Use the normal switch
+  controls and the `switch.turn_on`, `switch.turn_off` and `switch.toggle`
+  actions, for example in an automation that turns a receiver off at night
+  and on in the morning.
 - **Receiver** (`notification_receiver`): read-only. Its state is the time
   of the last notification attempt, or `unknown` before the first. Its
   `event_type` attribute is the result (`delivered`, `failed` or
