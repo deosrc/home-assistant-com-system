@@ -30,6 +30,13 @@ from .mobile_app import (
     linked_person,
     mobile_app_people,
 )
+from .pushover import (
+    PUSHOVER_DOMAIN,
+    async_deliver_pushover,
+    async_entry_devices,
+    source_entry,
+    source_id_of,
+)
 from .receiver import Receiver
 from .receiver_type import (
     DiscoveryCandidate,
@@ -37,6 +44,7 @@ from .receiver_type import (
     get_receiver_type,
     register_receiver_type,
 )
+from .webostv import async_deliver_webostv
 
 ALEXA_NOTIFY_SERVICE = "alexa_media"
 
@@ -217,14 +225,37 @@ class PersistentNotificationReceiverType(ReceiverType):
         return []
 
 
-class PushoverReceiverType(EntryReceiverType):
-    """One receiver per Pushover config entry."""
+class PushoverReceiverType(ReceiverType):
+    """One receiver per device (target) of each Pushover config entry."""
 
     type_id = RECEIVER_TYPE_PUSHOVER
     name = "Pushover"
-    source_domain = "pushover"
-    # Not implemented yet (no delivery), so not offered as a discovery.
-    discoverable = False
+    capabilities = frozenset({"title"})
+    discoverable = True
+    # Pushover has no user link: the person is chosen in the options
+    # (supports_people stays True).
+
+    async def async_detect(self, hass: HomeAssistant) -> list[DiscoveryCandidate]:
+        """Return a candidate for each device of each loaded Pushover entry."""
+        candidates = []
+        for entry in _source_entries(hass, PUSHOVER_DOMAIN):
+            for device in await async_entry_devices(hass, entry):
+                candidates.append(
+                    DiscoveryCandidate(
+                        source_id_of(entry, device), f"{entry.title} {device}"
+                    )
+                )
+        return candidates
+
+    def is_source_available(self, hass: HomeAssistant, receiver: Receiver) -> bool:
+        """Return whether the Pushover config entry still exists."""
+        return source_entry(hass, receiver) is not None
+
+    async def async_deliver(
+        self, hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
+    ) -> list[str]:
+        """Call the entry's ``notify.<name>`` action for the device."""
+        return await async_deliver_pushover(hass, receiver, notification)
 
 
 class WebOSTVReceiverType(EntryReceiverType):
@@ -233,8 +264,26 @@ class WebOSTVReceiverType(EntryReceiverType):
     type_id = RECEIVER_TYPE_WEBOSTV
     name = "webOS TV"
     source_domain = "webostv"
-    # Not implemented yet (no delivery), so not offered as a discovery.
-    discoverable = False
+    # A TV is shared, so it has no person (and no people option).
+    supports_people = False
+
+    def source_device_identifiers(
+        self, receiver: Receiver
+    ) -> set[tuple[str, str]] | None:
+        """Attach to the TV's device, so the area is the TV's area.
+
+        The integration's device identifier is the config entry's unique id,
+        which is the receiver's source id.
+        """
+        if receiver.source_id is None:
+            return None
+        return {(self.source_domain, receiver.source_id)}
+
+    async def async_deliver(
+        self, hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
+    ) -> list[str]:
+        """Show a toast through the TV's ``notify.<title>`` action."""
+        return await async_deliver_webostv(hass, receiver, notification)
 
 
 class MusicAssistantReceiverType(DeviceReceiverType):

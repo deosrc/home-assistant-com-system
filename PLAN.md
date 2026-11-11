@@ -195,15 +195,13 @@ Each type needs a receiver-type definition (names provisional) covering:
 - **Mobile app** – built for message and title (see
   `docs/receivers/mobile-app.md`). Still to do: data (actions, image,
   channel and so on).
-- **Pushover** – one receiver per Pushover config entry (notify target).
-  Delivery calls the Pushover notify action:
-  `priority` maps to Pushover priority, `image` to an attachment, and other
-  options (e.g. sound, URL) go in `data`. Pushover has no user link, so the
-  person is chosen manually by editing the receiver.
-- **webOS TV** – one receiver per webostv config entry. Delivery calls the TV's
-  notify action (an on-screen toast: message only, with an optional icon in
-  `data`). TVs are shared devices with no person; the area comes from the device
-  registry.
+- **Pushover** – one receiver per device (target) of each Pushover entry;
+  built for message and title (see
+  `docs/receivers/pushover.md`). Still to do: `priority` maps to Pushover
+  priority (-1/0/1/2, with `retry` and `expire` for 2), `image` to the
+  `attachment` data key (a local file path that must be in
+  `allowlist_external_dirs`, so a URL or media reference needs resolving to
+  a file first), and other options (sound, URL) go in `data`.
 - **Music Assistant** – one receiver per Music Assistant player. Delivery calls
   Music Assistant's announcement action rather than a notify action (the message
   is spoken; options such as an announcement URL or volume go in `data`). How a
@@ -268,9 +266,9 @@ several people is treated as shared (see below) and reached through areas or
 explicit targets.
 
 **Other receiver types:** the mechanism is TBD for each. For example, TVs
-are likely to be associated by area rather than by person, while Pushover
-could be associated with a person manually. Echo devices (built) are
-associated by area; a person can only be set manually.
+are likely to be associated by area rather than by person. Pushover is
+associated with a person manually (built), and Echo devices (built) by area,
+with a person only set manually.
 
 ## 3. The `notify.com_system` action
 
