@@ -171,6 +171,12 @@ describe("panel", () => {
     expect(text).toContain("Office");
     expect(text).toContain("failed");
     expect(text).toContain("Boom");
+    const badges = [...view.shadowRoot!.querySelectorAll("summary .badge")];
+    expect(badges.map((b) => b.textContent!.trim())).toEqual([
+      "0 delivered",
+      "1 failed",
+      "0 skipped",
+    ]);
     expect(text).toContain("dropped");
   });
 

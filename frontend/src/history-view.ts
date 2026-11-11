@@ -39,6 +39,33 @@ export class ComSystemHistory extends LitElement {
         justify-content: space-between;
         gap: 8px;
       }
+      summary {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        padding: 4px 0;
+      }
+      .badges {
+        display: inline-flex;
+        gap: 4px;
+      }
+      .badge {
+        padding: 2px 10px;
+        border-radius: 16px;
+        font-size: 12px;
+        white-space: nowrap;
+        background: var(--secondary-background-color, #f0f0f0);
+      }
+      .badge.delivered {
+        color: var(--success-color, #43a047);
+      }
+      .badge.failed {
+        color: var(--error-color, #db4437);
+      }
+      .badge.skipped {
+        color: var(--warning-color, #ffa600);
+      }
       hr {
         border: none;
         border-top: 1px solid var(--divider-color, #e0e0e0);
@@ -54,13 +81,13 @@ export class ComSystemHistory extends LitElement {
         padding: 8px;
         border-bottom: 1px solid var(--divider-color, #e0e0e0);
       }
-      .delivered {
+      td.delivered {
         color: var(--success-color, #43a047);
       }
-      .failed {
+      td.failed {
         color: var(--error-color, #db4437);
       }
-      .skipped {
+      td.skipped {
         color: var(--warning-color, #ffa600);
       }
     `,
@@ -93,6 +120,17 @@ export class ComSystemHistory extends LitElement {
         </button>`;
   }
 
+  private renderCounts(r: HistoryRecord) {
+    const counts = (["delivered", "failed", "skipped"] as const).map(
+      (k) => [k, r.results.filter((x) => x.result === k).length] as const,
+    );
+    return html`<span class="badges"
+      >${counts.map(
+        ([k, n]) => html`<span class="badge ${k}" title=${k}>${n} ${k}</span>`,
+      )}</span
+    >`;
+  }
+
   protected render() {
     if (this.error) {
       return html`<p class="error">${this.error}</p>`;
@@ -121,34 +159,40 @@ export class ComSystemHistory extends LitElement {
                   : ""
               }
               <hr />
-              <table>
-                <thead>
-                  <tr>
-                    <th>Receiver</th>
-                    <th>Type</th>
-                    <th>Outcome</th>
-                    <th>Details</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${r.results.map(
-                    (x) =>
-                      html`<tr>
-                        <td>${x.name}</td>
-                        <td>${x.type}</td>
-                        <td class=${x.result}>${x.result}</td>
-                        <td>
-                          ${[
-                            x.reason,
-                            ...x.warnings.map((w) => `Warning: ${w}`),
-                          ]
-                            .filter(Boolean)
-                            .join("; ")}
-                        </td>
-                      </tr>`,
-                  )}
-                </tbody>
-              </table>
+              <details>
+                <summary>
+                  <span>Receivers (${r.results.length})</span>
+                  ${this.renderCounts(r)}
+                </summary>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Receiver</th>
+                      <th>Type</th>
+                      <th>Outcome</th>
+                      <th>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${r.results.map(
+                      (x) =>
+                        html`<tr>
+                          <td>${x.name}</td>
+                          <td>${x.type}</td>
+                          <td class=${x.result}>${x.result}</td>
+                          <td>
+                            ${[
+                              x.reason,
+                              ...x.warnings.map((w) => `Warning: ${w}`),
+                            ]
+                              .filter(Boolean)
+                              .join("; ")}
+                          </td>
+                        </tr>`,
+                    )}
+                  </tbody>
+                </table>
+              </details>
             </div>
           `,
         )}
