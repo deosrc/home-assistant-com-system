@@ -30,6 +30,7 @@ COMMANDS = [
     {"type": "com_system/scripts/rescan"},
     {"type": "com_system/notify/preview"},
     {"type": "com_system/notify/test", "message": "x"},
+    {"type": "com_system/history/list"},
 ]
 
 

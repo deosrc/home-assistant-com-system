@@ -30,7 +30,11 @@
     "step": {
       "init": {
         "title": "Com System options",
-        "description": "There are no options yet."
+        "description": "Notification history keeps the most recent notifications, up to both limits. Changes apply straight away.",
+        "data": {
+          "history_max_count": "Notifications to keep",
+          "history_max_age_days": "Days to keep them"
+        }
       },
       "no_options": {
         "title": "Receiver options",

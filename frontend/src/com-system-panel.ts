@@ -1,5 +1,6 @@
 import { LitElement, css, html, nothing } from "lit";
 import "./dashboard-view";
+import "./history-view";
 import "./receivers-view";
 import "./test-view";
 import { sharedStyles } from "./styles";
@@ -9,12 +10,15 @@ import type { HomeAssistant, PanelRoute } from "./types";
 // dev server, so the HMR client has to be loaded explicitly, from the dev
 // server's origin. Vite removes this block from production builds.
 if (import.meta.env.MODE === "development") {
-  void import(/* @vite-ignore */ new URL("/@vite/client", import.meta.url).href);
+  void import(
+    /* @vite-ignore */ new URL("/@vite/client", import.meta.url).href
+  );
 }
 
 const VIEWS = [
   { path: "dashboard", label: "Dashboard" },
   { path: "receivers", label: "Receivers" },
+  { path: "history", label: "Recent" },
   { path: "test", label: "Test" },
 ] as const;
 
@@ -155,12 +159,13 @@ export class ComSystemPanel extends LitElement {
     const tabs = html`
       <nav class=${this.narrow ? "bottom-bar" : ""}>
         ${VIEWS.map(
-          (v) => html`<a
-            class=${v.path === active ? "active" : ""}
-            href="${prefix}/${v.path}"
-            @click=${(ev: Event) => this.navigate(ev, v.path)}
-            >${v.label}</a
-          >`,
+          (v) =>
+            html`<a
+              class=${v.path === active ? "active" : ""}
+              href="${prefix}/${v.path}"
+              @click=${(ev: Event) => this.navigate(ev, v.path)}
+              >${v.label}</a
+            >`,
         )}
       </nav>
     `;
@@ -171,16 +176,25 @@ export class ComSystemPanel extends LitElement {
             .hass=${this.hass}
             .narrow=${this.narrow}
           ></ha-menu-button>
-          ${this.narrow ? html`<h1>Com System</h1>` : nothing}
-          ${tabs}
+          ${this.narrow ? html`<h1>Com System</h1>` : nothing} ${tabs}
         </div>
       </div>
       <main>
-        ${active === "receivers"
-          ? html`<com-system-receivers .hass=${this.hass}></com-system-receivers>`
-          : active === "test"
-            ? html`<com-system-test .hass=${this.hass}></com-system-test>`
-            : html`<com-system-dashboard .hass=${this.hass}></com-system-dashboard>`}
+        ${
+          active === "receivers"
+            ? html`<com-system-receivers
+                .hass=${this.hass}
+              ></com-system-receivers>`
+            : active === "history"
+              ? html`<com-system-history
+                  .hass=${this.hass}
+                ></com-system-history>`
+              : active === "test"
+                ? html`<com-system-test .hass=${this.hass}></com-system-test>`
+                : html`<com-system-dashboard
+                    .hass=${this.hass}
+                  ></com-system-dashboard>`
+        }
       </main>
     `;
   }

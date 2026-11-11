@@ -79,6 +79,26 @@ function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
           ],
           counts: { delivered: 0, failed: 1, skipped: 0 },
         };
+      case "com_system/history/list":
+        return {
+          notifications: [
+            {
+              id: "h1",
+              time: "2026-11-11T10:00:00+00:00",
+              notification: { title: "Laundry", message: "Done" },
+              results: [
+                {
+                  entry_id: "e1",
+                  name: "Office",
+                  type: "Custom",
+                  result: "failed",
+                  reason: "Boom",
+                  warnings: ["dropped"],
+                },
+              ],
+            },
+          ],
+        };
       default:
         return null;
     }
@@ -138,6 +158,20 @@ describe("panel", () => {
     const panel = await mount("/receivers", hass);
     const active = panel.shadowRoot!.querySelector("nav a.active")!;
     expect(active.textContent).toBe("Receivers");
+  });
+
+  it("shows recent notifications with results and warnings", async () => {
+    const { hass } = makeHass();
+    const panel = await mount("/history", hass);
+    const view = panel.shadowRoot!.querySelector("com-system-history")!;
+    await settle(view);
+    const text = view.shadowRoot!.textContent!;
+    expect(text).toContain("Laundry");
+    expect(text).toContain("Done");
+    expect(text).toContain("Office");
+    expect(text).toContain("failed");
+    expect(text).toContain("Boom");
+    expect(text).toContain("dropped");
   });
 
   it("lists receivers and discoveries and toggles enabled", async () => {

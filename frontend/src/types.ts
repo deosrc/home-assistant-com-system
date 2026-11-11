@@ -99,3 +99,17 @@ export interface ScriptCheckResult {
   /** True when a rescan would offer the script as a receiver. */
   can_rescan: boolean;
 }
+
+export interface HistoryRecord {
+  id: string;
+  /** ISO timestamp (UTC). */
+  time: string;
+  notification: {
+    title?: string;
+    message?: string;
+    priority?: string;
+    image?: string;
+    data?: Record<string, unknown>;
+  };
+  results: SendResult[];
+}

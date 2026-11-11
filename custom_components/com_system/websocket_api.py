@@ -23,6 +23,7 @@ from .const import (
     CONF_ENTRY_TYPE,
     CONF_RECEIVER_TYPE,
     CONF_SOURCE_ID,
+    DATA_HISTORY,
     DATA_REGISTRY,
     DOMAIN,
     ENTRY_TYPE_HUB,
@@ -62,6 +63,7 @@ def async_register_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_scripts_rescan)
     websocket_api.async_register_command(hass, ws_notify_preview)
     websocket_api.async_register_command(hass, ws_notify_test)
+    websocket_api.async_register_command(hass, ws_history_list)
 
 
 def _switch_entity_id(hass: HomeAssistant, entry_id: str) -> str | None:
@@ -420,3 +422,23 @@ async def ws_scripts_rescan(
         return
     await hub.runtime_data.async_detect()
     connection.send_result(msg["id"])
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "com_system/history/list",
+        vol.Optional("limit"): vol.All(int, vol.Range(min=1)),
+    }
+)
+@websocket_api.async_response
+async def ws_history_list(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Return the recent notifications, newest first."""
+    history = hass.data[DOMAIN][DATA_HISTORY]
+    connection.send_result(
+        msg["id"], {"notifications": await history.async_list(msg.get("limit"))}
+    )

@@ -48,8 +48,8 @@ Each receiver needs (details **TBD**):
   receiver** (top-level entries, not subentries). Receiver entities are
   created by each receiver's own entry.
 - The **hub** entry is created once by the user. It holds the
-  integration-level settings (an options flow; initially the history
-  retention limits). One hub is enforced in the config
+  integration-level settings (an options flow; built: the history
+  retention limits, see `AGENTS.md`). One hub is enforced in the config
   flow; the manifest does not use `single_config_entry`, which would block
   receiver entries. The user flow creates the hub if none exists, and once
   one exists it becomes "add a custom receiver".
@@ -279,7 +279,6 @@ The action, dispatcher and per-receiver response are built; see
   delivery and reported as skipped (section 2.6).
 - The content parameters of section 2.3 (`priority`, `image`, `data`) are
   added to the schema, and unsupported content produces warnings.
-- Failures are also recorded in history (section 5).
 - Not verified: how the action renders in a real frontend (only the
   websocket description was checked).
 
@@ -321,10 +320,9 @@ scope is:
 
 | View | Purpose |
 | --- | --- |
-| Recent notifications | History of notifications sent and their delivery |
 | Receivers (extend) | Conditions editor (add, edit and remove are built) |
 | Notification designer | Compose a notification (targets and content) |
-| Dashboard (extend) | Recent activity |
+| Dashboard (extend) | Recent activity (the history store is built) |
 | Testing tool (extend) | Conditions in the preview; rich content |
 
 Notes:
@@ -334,7 +332,7 @@ Notes:
   notifications, so this must stay.
 - The designer must build on the `notify.com_system` action, as the
   testing tool does, so it exercises the same code path as automations.
-- Warnings about unsupported content are shown in recent notifications;
+- Warnings about unsupported content are shown in recent notifications (built);
   the testing tool already shows the warnings an action returns.
 - The testing tool (built, see [docs/ui.md](docs/ui.md)) must also show
   receivers skipped because a condition did not pass, once conditions
@@ -343,12 +341,6 @@ Notes:
   selector can likely be reused.
 - The designer must account for receiver-specific content (section 2.3),
   e.g. showing mobile app action options only when relevant.
-- Recent notifications requires a history store. History is kept in Home
-  Assistant's JSON storage (`Store`), capped by count and age (default to be
-  chosen, e.g. last 200 notifications or 30 days, whichever comes first),
-  and the limits are configurable in the integration options.
-- Websocket commands are still needed for history, resolution preview and
-  test sends.
 - The pending discoveries list links to Devices & services to add or
   ignore. Doing that inside the panel is not done.
 - The release flow (`release.yml`, `zip_release` in `hacs.json`) has not run

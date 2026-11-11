@@ -18,10 +18,14 @@ from homeassistant.helpers import selector
 from .const import (
     CONF_DISCOVERY_TYPE,
     CONF_ENTRY_TYPE,
+    CONF_HISTORY_MAX_AGE_DAYS,
+    CONF_HISTORY_MAX_COUNT,
     CONF_NAME,
     CONF_PEOPLE,
     CONF_RECEIVER_TYPE,
     CONF_SOURCE_ID,
+    DEFAULT_HISTORY_MAX_AGE_DAYS,
+    DEFAULT_HISTORY_MAX_COUNT,
     DOMAIN,
     ENTRY_TYPE_HUB,
     ENTRY_TYPE_RECEIVER,
@@ -133,7 +137,7 @@ class ComSystemConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class ComSystemOptionsFlow(OptionsFlow):
-    """Handle options (stub; hub history limits arrive later)."""
+    """Handle options: the hub's history limits and a receiver's people."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -141,8 +145,38 @@ class ComSystemOptionsFlow(OptionsFlow):
         """Show the options form: the people for receivers."""
         if self.config_entry.data.get(CONF_ENTRY_TYPE) not in RECEIVER_ENTRY_TYPES:
             if user_input is not None:
-                return self.async_create_entry(data=self.config_entry.options)
-            return self.async_show_form(step_id="init")
+                return self.async_create_entry(data=user_input)
+            schema = vol.Schema(
+                {
+                    vol.Required(
+                        CONF_HISTORY_MAX_COUNT, default=DEFAULT_HISTORY_MAX_COUNT
+                    ): selector.NumberSelector(
+                        selector.NumberSelectorConfig(
+                            min=1,
+                            max=10000,
+                            step=1,
+                            mode=selector.NumberSelectorMode.BOX,
+                        )
+                    ),
+                    vol.Required(
+                        CONF_HISTORY_MAX_AGE_DAYS, default=DEFAULT_HISTORY_MAX_AGE_DAYS
+                    ): selector.NumberSelector(
+                        selector.NumberSelectorConfig(
+                            min=1,
+                            max=3650,
+                            step=1,
+                            mode=selector.NumberSelectorMode.BOX,
+                            unit_of_measurement="days",
+                        )
+                    ),
+                }
+            )
+            return self.async_show_form(
+                step_id="init",
+                data_schema=self.add_suggested_values_to_schema(
+                    schema, self.config_entry.options
+                ),
+            )
 
         receiver_type = get_receiver_type(
             self.config_entry.data.get(CONF_RECEIVER_TYPE, RECEIVER_TYPE_CUSTOM)

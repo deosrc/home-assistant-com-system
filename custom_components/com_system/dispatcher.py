@@ -12,6 +12,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import (
     DATA_ENTITIES,
+    DATA_HISTORY,
     DOMAIN,
     RESULT_DELIVERED,
     RESULT_FAILED,
@@ -104,7 +105,8 @@ async def async_dispatch(
 
     Receivers are delivered to concurrently; one failing or raising never
     affects another. Skipped (disabled) receivers get a skipped result. Every
-    attempt is recorded on the receiver's entity. Results are ordered by
+    attempt is recorded on the receiver's entity and in the history store.
+    Results are ordered by
     receiver name, then entry id.
     """
     registry: ReceiverRegistry = hass.data[DOMAIN]["registry"]
@@ -126,4 +128,5 @@ async def async_dispatch(
     )
     for result in results:
         _record(hass, result, notification)
+    await hass.data[DOMAIN][DATA_HISTORY].async_record(notification, results)
     return results
