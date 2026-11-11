@@ -33,14 +33,18 @@ async def _setup_hub(hass: HomeAssistant) -> MockConfigEntry:
     return hub
 
 
-def _add_phone(hass: HomeAssistant, device_id: str, name: str):
-    source = MockConfigEntry(domain="mobile_app", title=name)
+def _add_device(hass: HomeAssistant, domain: str, device_id: str, name: str):
+    source = MockConfigEntry(domain=domain, title=name)
     source.add_to_hass(hass)
     return dr.async_get(hass).async_get_or_create(
         config_entry_id=source.entry_id,
-        identifiers={("mobile_app", device_id)},
+        identifiers={(domain, device_id)},
         name=name,
     )
+
+
+def _add_phone(hass: HomeAssistant, device_id: str, name: str):
+    return _add_device(hass, "mobile_app", device_id, name)
 
 
 def _flows(hass: HomeAssistant) -> dict[str, dict]:
@@ -76,17 +80,16 @@ async def test_nothing_offered_without_sources(hass: HomeAssistant) -> None:
     assert set(_flows(hass)) == {"persistent_notification_persistent_notification"}
 
 
-async def test_entry_based_type(hass: HomeAssistant) -> None:
-    """A Pushover config entry is offered, an ignored one is not."""
+async def test_unimplemented_types_not_offered(hass: HomeAssistant) -> None:
+    """Types without delivery yet are not offered, even with sources present."""
     MockConfigEntry(domain="pushover", title="Phone", unique_id="user1").add_to_hass(
         hass
     )
-    MockConfigEntry(
-        domain="pushover", source=config_entries.SOURCE_IGNORE, unique_id="user2"
-    ).add_to_hass(hass)
+    MockConfigEntry(domain="webostv", title="TV", unique_id="tv1").add_to_hass(hass)
+    _add_device(hass, "alexa_media", "echo1", "Echo")
+    _add_device(hass, "music_assistant", "player1", "Player")
     await _setup_hub(hass)
-    assert "pushover_user1" in _flows(hass)
-    assert "pushover_user2" not in _flows(hass)
+    assert set(_flows(hass)) == {"persistent_notification_persistent_notification"}
 
 
 async def test_confirm_creates_enabled_receiver(hass: HomeAssistant) -> None:
