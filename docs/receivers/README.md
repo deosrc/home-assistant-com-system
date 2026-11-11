@@ -36,8 +36,9 @@ detected:
 
 Detection offers receivers. Sending is added as each type is built. So far
 [Persistent notification](persistent-notification.md),
-[mobile app](mobile-app.md), [Pushover](pushover.md) and
-[webOS TV](webostv.md) receivers send.
+[mobile app](mobile-app.md), [Pushover](pushover.md),
+[webOS TV](webostv.md) and [Alexa Media Player](alexa-media-player.md)
+receivers send.
 
 ### Deleting, disabling and removed devices
 

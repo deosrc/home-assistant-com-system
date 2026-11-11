@@ -176,7 +176,6 @@ Initially supported receiver types, in priority order:
 | Priority | Receiver type | Notes (to be verified) |
 | --- | --- | --- |
 | 1 | Mobile app | Core; per-device notify actions; rich content |
-| 2 | Alexa Media Player | Non-native (custom); speech/announcements |
 | 3 | Persistent notification | Core; HA UI notification area |
 | 4 | Pushover | Core; priority, sound, attachments |
 | 5 | webOS TV | Core; on-screen toast notifications |
@@ -196,12 +195,6 @@ Each type needs a receiver-type definition (names provisional) covering:
 - **Mobile app** – built for message and title (see
   `docs/receivers/mobile-app.md`). Still to do: data (actions, image,
   channel and so on).
-- **Alexa Media Player** (non-native integration) – one receiver per Echo
-  device. Delivery calls the integration's
-  `notify.alexa_media_*` action with announce/TTS data. If the integration
-  later goes missing, the receiver shows as unavailable and deliveries to it
-  fail with a clear per-receiver result. Exact action names and data are
-  verified against the integration during implementation.
 - **Pushover** – one receiver per device (target) of each Pushover entry;
   built for message and title (see
   `docs/receivers/pushover.md`). Still to do: `priority` maps to Pushover
@@ -272,9 +265,10 @@ A receiver is associated with **at most one person**. A device used by
 several people is treated as shared (see below) and reached through areas or
 explicit targets.
 
-**Other receiver types:** the mechanism is TBD for each. For example, Alexa
-devices are likely to be associated by area rather than by person,
-while Pushover is associated with a person manually (built).
+**Other receiver types:** the mechanism is TBD for each. For example, TVs
+are likely to be associated by area rather than by person. Pushover is
+associated with a person manually (built), and Echo devices (built) by area,
+with a person only set manually.
 
 ## 3. The `notify.com_system` action
 

@@ -76,15 +76,16 @@ records the conventions and how things work as built.
   notification)` returns a list of warnings (content the type dropped) and
   raises to report a failure; the base class raises `NotImplementedError`,
   which the dispatcher reports as a failed result. The custom, persistent
-  notification, mobile app, Pushover and webOS TV types deliver so far; each
+  notification, mobile app, Pushover, webOS TV and Alexa Media Player types
+  deliver so far; each
   other built-in type's own feature implements it.
   `associated_people(hass, receiver)` takes `hass` so a type can look people
   up at use time.
 - `builtin_types.py`: the six built-in types (mobile app, Alexa Media
   Player, persistent notification, Pushover, webOS TV, Music Assistant),
   registered in `async_setup`. They have detection; delivery is added by
-  each type's own feature (the persistent notification, mobile app, Pushover
-  and webOS TV types have it).
+  each type's own feature (the persistent notification, mobile app,
+  Pushover, webOS TV and Alexa Media Player types have it).
   `PersistentNotificationReceiverType.async_deliver` calls
   `persistent_notification.create` (blocking) with `message` and, when
   given, `title`, and never sends `notification_id`: HA then generates one,
@@ -103,9 +104,20 @@ records the conventions and how things work as built.
   entry (source id is its unique id, else its entry id; no source device, so
   entities get their own). To add a built-in type, subclass one, set
   `type_id`, `name`, `source_domain`, and add it to `BUILTIN_RECEIVER_TYPES`.
-  The Alexa Media Player and Music Assistant device identifiers are assumed
-  to be `(domain, <serial or player id>)` and were not checked against the
-  integrations.
+  The Music Assistant device identifiers are assumed to be
+  `(domain, <player id>)` and were not checked against the integration.
+  `AlexaMediaReceiverType` (a `DeviceReceiverType`, domain `alexa_media`,
+  checked against the integration's source): the Echo's device identifier is
+  `("alexa_media", <unique_id>)`, which is the serial number (for a second
+  account it is a slug of serial and email). Delivery calls the single
+  `notify.alexa_media` action (the integration registers it for all devices)
+  with `target: [source_id]`, `type: announce`, `message` and optional
+  `title`; it fails if the action is missing. The integration silently skips
+  an offline Echo (Com System reports delivered) and, for `announce`, only
+  matches the serial, so a second account's devices are skipped. Availability
+  is the device being in the registry. The type keeps the people option
+  (nothing links an Echo to a person); its area is its device's. Capabilities
+  are `title`. See `docs/receivers/alexa-media-player.md`.
 - `pushover.py` and `PushoverReceiverType`: one receiver per device
   (target) of each loaded `pushover` config entry. The source id is
   `<entry unique id or entry id>:<device>`. Core's integration does not

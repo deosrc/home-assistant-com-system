@@ -13,6 +13,7 @@ from typing import Any
 
 from homeassistant.config_entries import SOURCE_IGNORE, ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 
 from .const import (
@@ -44,6 +45,8 @@ from .receiver_type import (
     register_receiver_type,
 )
 from .webostv import async_deliver_webostv
+
+ALEXA_NOTIFY_SERVICE = "alexa_media"
 
 
 def _source_entries(hass: HomeAssistant, domain: str) -> list[ConfigEntry]:
@@ -157,8 +160,37 @@ class AlexaMediaReceiverType(DeviceReceiverType):
     type_id = RECEIVER_TYPE_ALEXA_MEDIA
     name = "Alexa Media Player"
     source_domain = "alexa_media"
-    # Not implemented yet (no delivery), so not offered as a discovery.
-    discoverable = False
+    capabilities = frozenset({"title"})
+
+    async def async_deliver(
+        self, hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
+    ) -> list[str]:
+        """Announce the notification on the Echo through ``notify.alexa_media``.
+
+        The integration registers one notify action for all its devices and
+        picks the device from ``target``, which matches the device's serial
+        number (the receiver's source id). ``type: announce`` is used, so the
+        message is spoken and the title is shown on devices with a screen.
+        """
+        if receiver.source_id is None:
+            raise HomeAssistantError("The Echo device is not known")
+        if not hass.services.has_service("notify", ALEXA_NOTIFY_SERVICE):
+            raise HomeAssistantError(
+                f"The action notify.{ALEXA_NOTIFY_SERVICE} is not available; "
+                "is Alexa Media Player installed and loaded?"
+            )
+        data: dict[str, Any] = {"type": "announce"}
+        message: dict[str, Any] = {
+            "message": notification["message"],
+            "target": [receiver.source_id],
+            "data": data,
+        }
+        if notification.get("title"):
+            message["title"] = notification["title"]
+        await hass.services.async_call(
+            "notify", ALEXA_NOTIFY_SERVICE, message, blocking=True
+        )
+        return []
 
 
 class PersistentNotificationReceiverType(ReceiverType):

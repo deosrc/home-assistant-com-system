@@ -85,7 +85,6 @@ async def test_unimplemented_types_not_offered(hass: HomeAssistant) -> None:
     MockConfigEntry(domain="pushover", title="Phone", unique_id="user1").add_to_hass(
         hass
     )
-    _add_device(hass, "alexa_media", "echo1", "Echo")
     _add_device(hass, "music_assistant", "player1", "Player")
     await _setup_hub(hass)
     assert set(_flows(hass)) == {"persistent_notification_persistent_notification"}

@@ -18,4 +18,9 @@ fi
 [[ -e config/scenes.yaml ]] || echo '[]' > config/scenes.yaml
 touch config/scripts.yaml
 
+# PYTHONPATH (set by the devcontainer for the tests) puts the repository's
+# custom_components first, which hides config/custom_components, so other
+# custom integrations (such as Alexa Media Player) are not found. Home
+# Assistant loads Com System through the symlink in config/ instead.
+unset PYTHONPATH
 hass --config "${PWD}/config" "$@"
