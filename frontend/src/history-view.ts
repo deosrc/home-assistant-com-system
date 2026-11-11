@@ -18,6 +18,19 @@ export class ComSystemHistory extends LitElement {
   static styles = [
     sharedStyles,
     css`
+      .toolbar {
+        display: flex;
+        justify-content: flex-end;
+        padding-bottom: 16px;
+      }
+      button.refresh {
+        padding: 8px 16px;
+        font-weight: 500;
+        color: var(--text-primary-color, #fff);
+        background: var(--primary-color);
+        border: none;
+        border-radius: var(--ha-button-border-radius, 9999px);
+      }
       .entry {
         margin-bottom: 16px;
       }
@@ -57,6 +70,15 @@ export class ComSystemHistory extends LitElement {
     }
   }
 
+  /** HA's button when it is loaded, otherwise a styled native one. */
+  private renderRefresh() {
+    return customElements.get("ha-button")
+      ? html`<ha-button @click=${() => void this.load()}>Refresh</ha-button>`
+      : html`<button class="refresh" @click=${() => void this.load()}>
+          Refresh
+        </button>`;
+  }
+
   protected render() {
     if (this.error) {
       return html`<p class="error">${this.error}</p>`;
@@ -69,7 +91,7 @@ export class ComSystemHistory extends LitElement {
     }
     return html`
       <div>
-        <button @click=${() => void this.load()}>Refresh</button>
+        <div class="toolbar">${this.renderRefresh()}</div>
         ${this.records.map(
           (r) => html`
             <div class="card entry">
