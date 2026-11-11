@@ -14,7 +14,8 @@ code, so new types can be added without changing the receiver model.
 
 The hub finds the devices and integrations that can receive notifications
 and offers each as a discovery on **Settings > Devices & services**. You
-decide for each one:
+decide for each one. Disabled devices and disabled integrations are not
+offered.
 
 - **Add** creates the receiver. New receivers start enabled.
 - **Ignore** stops that device ever being offered again. To offer it again,

@@ -90,6 +90,31 @@ async def test_unimplemented_types_not_offered(hass: HomeAssistant) -> None:
     assert set(_flows(hass)) == {"persistent_notification_persistent_notification"}
 
 
+async def test_disabled_device_not_offered(hass: HomeAssistant) -> None:
+    """A disabled source device is not offered."""
+    device = _add_phone(hass, "p1", "Phone")
+    _add_phone(hass, "p2", "Other")
+    dr.async_get(hass).async_update_device(
+        device.id, disabled_by=dr.DeviceEntryDisabler.USER
+    )
+    await _setup_hub(hass)
+    flows = _flows(hass)
+    assert f"{RECEIVER_TYPE_MOBILE_APP}_p1" not in flows
+    assert f"{RECEIVER_TYPE_MOBILE_APP}_p2" in flows
+
+
+async def test_disabled_source_entry_not_offered(hass: HomeAssistant) -> None:
+    """A disabled source config entry is not offered."""
+    MockConfigEntry(
+        domain="webostv",
+        title="TV",
+        unique_id="tv1",
+        disabled_by=config_entries.ConfigEntryDisabler.USER,
+    ).add_to_hass(hass)
+    await _setup_hub(hass)
+    assert "webostv_tv1" not in _flows(hass)
+
+
 async def test_webostv_offered(hass: HomeAssistant) -> None:
     """A webOS TV config entry is offered as a receiver."""
     MockConfigEntry(domain="webostv", title="TV", unique_id="tv1").add_to_hass(hass)
