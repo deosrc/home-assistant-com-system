@@ -22,7 +22,7 @@ const ALL_AREAS = "All Areas";
 type ReceiversChoice = typeof SELECT | typeof ALL_AREAS;
 
 /** The lists the built-in form edits. */
-type TargetKey = "person" | "area_id" | "entity_id";
+type TargetKey = "people" | "area_id" | "entity_id";
 
 const ACTION = "notify.com_system";
 
@@ -234,9 +234,9 @@ export class ComSystemTest extends LitElement {
     if (this.message) data.message = this.message;
     // A field that is not given is left out, which unticks it in the form.
     if (this.personChoice === EVERYONE) {
-      data.person = { active_choice: EVERYONE, [EVERYONE]: true };
+      data.people = { active_choice: EVERYONE, [EVERYONE]: true };
     } else if (this.personChoice === INDIVIDUALS) {
-      data.person = { active_choice: INDIVIDUALS, [INDIVIDUALS]: this.people };
+      data.people = { active_choice: INDIVIDUALS, [INDIVIDUALS]: this.people };
     }
     if (this.receiversChoice === ALL_AREAS) {
       data.receivers = { active_choice: ALL_AREAS, [ALL_AREAS]: true };
@@ -251,9 +251,9 @@ export class ComSystemTest extends LitElement {
     const data = (ev.detail.value.data ?? {}) as Record<string, unknown>;
     this.message = data.message === undefined ? "" : String(data.message);
     this.subject = data.title === undefined ? "" : String(data.title);
-    const person = (data.person ?? {}) as Record<string, unknown>;
+    const person = (data.people ?? {}) as Record<string, unknown>;
     this.personChoice =
-      data.person === undefined
+      data.people === undefined
         ? undefined
         : person.active_choice === INDIVIDUALS
           ? INDIVIDUALS
@@ -292,9 +292,9 @@ export class ComSystemTest extends LitElement {
   private get targets(): NotifyTargets {
     const targets: NotifyTargets = {};
     if (this.personChoice === EVERYONE) {
-      targets.person = { active_choice: EVERYONE, [EVERYONE]: true };
+      targets.people = { active_choice: EVERYONE, [EVERYONE]: true };
     } else if (this.people.length) {
-      targets.person = this.people;
+      targets.people = this.people;
     }
     if (this.receiversChoice === ALL_AREAS) {
       targets.receivers = { active_choice: ALL_AREAS, [ALL_AREAS]: true };
@@ -319,13 +319,13 @@ export class ComSystemTest extends LitElement {
   }
 
   private chosen(key: TargetKey): string[] {
-    return key === "person" ? this.people : (this.selection[key] ?? []);
+    return key === "people" ? this.people : (this.selection[key] ?? []);
   }
 
   private toggle(key: TargetKey, id: string, checked: boolean): void {
     const current = this.chosen(key).filter((x) => x !== id);
     const next = checked ? [...current, id] : current;
-    if (key === "person") {
+    if (key === "people") {
       this.people = next;
     } else {
       const selection = { ...this.selection, [key]: next };
@@ -362,7 +362,7 @@ export class ComSystemTest extends LitElement {
         .map(([id, a]) => ({ id, name: a.name }))
         .sort(byName);
     }
-    if (key === "person") {
+    if (key === "people") {
       return Object.entries(this.hass.states)
         .filter(([id]) => id.startsWith("person."))
         .map(([id, s]) => ({ id, name: s.attributes?.friendly_name ?? id }))
@@ -403,7 +403,7 @@ export class ComSystemTest extends LitElement {
       </fieldset>
       ${
         this.personChoice === INDIVIDUALS
-          ? this.renderTargets("person", "Individuals")
+          ? this.renderTargets("people", "Individuals")
           : ""
       }
     </div>`;

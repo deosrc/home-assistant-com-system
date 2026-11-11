@@ -32,7 +32,7 @@ SERVICE_NAME = "com_system"
 
 ATTR_MESSAGE = "message"
 ATTR_TITLE = "title"
-ATTR_PERSON = "person"
+ATTR_PEOPLE = "people"
 ATTR_RECEIVERS = "receivers"
 ATTR_AREA_ID = "area_id"
 ATTR_ENTITY_ID = "entity_id"
@@ -48,7 +48,7 @@ CHOICE_EVERYONE = "Everyone"
 CHOICE_INDIVIDUALS = "Individuals"
 
 
-def validate_person(value: Any) -> dict[str, Any]:
+def validate_people(value: Any) -> dict[str, Any]:
     """Validate the people field and return it in the choose form."""
     if isinstance(value, dict):
         choice = value.get("active_choice")
@@ -105,7 +105,7 @@ SERVICE_SCHEMA = vol.Schema(
     {
         vol.Optional(ATTR_TITLE): cv.string,
         vol.Required(ATTR_MESSAGE): cv.string,
-        vol.Optional(ATTR_PERSON): validate_person,
+        vol.Optional(ATTR_PEOPLE): validate_people,
         vol.Optional(ATTR_RECEIVERS): validate_receivers,
     }
 )
@@ -130,7 +130,7 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
             "example": "The washing has finished",
             "selector": {"text": {"multiline": True}},
         },
-        ATTR_PERSON: {
+        ATTR_PEOPLE: {
             "name": "People",
             "description": (
                 "Notify receivers associated with individual people, or with everyone."
@@ -231,7 +231,7 @@ def resolve_call_targets(hass: HomeAssistant, data: dict[str, Any]) -> ResolvedT
     A field that is not given targets nothing, so a call with neither
     ``person`` nor ``receivers`` resolves to no receivers.
     """
-    person = validate_person(data[ATTR_PERSON]) if ATTR_PERSON in data else None
+    person = validate_people(data[ATTR_PEOPLE]) if ATTR_PEOPLE in data else None
     receivers = (
         validate_receivers(data[ATTR_RECEIVERS]) if ATTR_RECEIVERS in data else None
     )
@@ -270,7 +270,7 @@ async def async_send(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any
     disabled). Receivers
     that fail are reported in the response instead.
     """
-    if ATTR_PERSON not in data and ATTR_RECEIVERS not in data:
+    if ATTR_PEOPLE not in data and ATTR_RECEIVERS not in data:
         raise ServiceValidationError("No targets given: set people, receivers or both")
     resolved = resolve_call_targets(hass, data)
     if not resolved.receivers:

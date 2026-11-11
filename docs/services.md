@@ -10,10 +10,10 @@ send a notification to the receivers that match its [targets](targets.md).
 | --- | --- | --- |
 | `title` | no | A title; folded into the message where there is none. |
 | `message` | yes | The message to send. |
-| `person` | no | Individual people, or everyone (see below). |
+| `people` | no | Individual people, or everyone (see below). |
 | `receivers` | no | Selected receivers, or all areas (see below). |
 
-`person` and `receivers` are the targets. They are combined as a union;
+`people` and `receivers` are the targets. They are combined as a union;
 see [targets](targets.md). A field that is not given is not targeted, so
 with only `receivers` no person is targeted, and the other way round. Give
 at least one. In the form, untick a field to leave it out; **Everyone** and
@@ -21,20 +21,20 @@ at least one. In the form, untick a field to leave it out; **Everyone** and
 
 ### People
 
-`person` is a choice between **Individuals** and **Everyone**. Individuals
+`people` is a choice between **Individuals** and **Everyone**. Individuals
 reaches the receivers of the `person.*` entities you pick, and picking none
 adds no people (use this to target only receivers). Everyone reaches every
 receiver that is associated with any person. In YAML:
 
 ```yaml
-person:
+people:
   active_choice: Individuals
   Individuals:
     - person.alice
 ```
 
 ```yaml
-person:
+people:
   active_choice: Everyone
   Everyone: true
 ```
@@ -78,7 +78,7 @@ action: notify.com_system
 data:
   title: Laundry
   message: The washing has finished
-  person:
+  people:
     active_choice: Individuals
     Individuals:
       - person.alice
@@ -127,7 +127,7 @@ Ignoring the response is fine: the action works without
 The action raises an error only when nothing could be attempted:
 
 - the input is invalid (for example `message` is missing),
-- neither `person` nor `receivers` is given, or
+- neither `people` nor `receivers` is given, or
 - no receiver matches the targets, or every receiver that matches is
   disabled.
 

@@ -98,7 +98,7 @@ async def test_action_registered_with_schema(hass: HomeAssistant) -> None:
     assert await async_setup_component(hass, DOMAIN, {})
     assert hass.services.has_service("notify", "com_system")
     description = (await async_get_all_descriptions(hass))["notify"]["com_system"]
-    assert {"title", "message", "person", "receivers"} <= set(description["fields"])
+    assert {"title", "message", "people", "receivers"} <= set(description["fields"])
 
 
 async def test_invalid_input_rejected(hass: HomeAssistant) -> None:
@@ -107,7 +107,7 @@ async def test_invalid_input_rejected(hass: HomeAssistant) -> None:
     with pytest.raises(vol.Invalid):
         await _send(hass, title="no message")
     with pytest.raises(vol.Invalid):
-        await _send(hass, message="hi", person=["light.nope"])
+        await _send(hass, message="hi", people=["light.nope"])
     with pytest.raises(vol.Invalid):
         await _send(hass, message="hi", priority="high")
 
@@ -118,7 +118,7 @@ async def test_delivers_to_each_receiver(hass: HomeAssistant, types) -> None:
     alice = await _add(hass, "Alice", people=["person.alice"])
     await _add(hass, "Shared")  # no person or area: not in the default
 
-    response = await _send(hass, message="Hello", title="Hi", person=EVERYONE)
+    response = await _send(hass, message="Hello", title="Hi", people=EVERYONE)
 
     assert response["counts"] == {"delivered": 1, "failed": 0, "skipped": 0}
     [result] = response["results"]
@@ -142,7 +142,7 @@ async def test_failure_does_not_block_others(hass: HomeAssistant, types) -> None
     await _add(hass, "C custom", "custom", people=["person.a"])
     await _add(hass, "D unknown", "gone", people=["person.a"])
 
-    response = await _send(hass, message="x", person=EVERYONE)
+    response = await _send(hass, message="x", people=EVERYONE)
 
     by_name = {r["name"]: r for r in response["results"]}
     assert [r["name"] for r in response["results"]] == sorted(by_name)
@@ -167,7 +167,7 @@ async def test_disabled_receiver_is_skipped(hass: HomeAssistant, types) -> None:
         blocking=True,
     )
 
-    response = await _send(hass, message="x", person=EVERYONE)
+    response = await _send(hass, message="x", people=EVERYONE)
 
     by_name = {r["name"]: r for r in response["results"]}
     assert by_name["Off"]["result"] == "skipped"
@@ -182,7 +182,7 @@ async def test_warnings_returned_and_recorded(hass: HomeAssistant, types) -> Non
     await _add(hass, "Alice", people=["person.alice"])
     types.deliver.return_value = ["dropped title"]
 
-    response = await _send(hass, message="x", title="t", person=EVERYONE)
+    response = await _send(hass, message="x", title="t", people=EVERYONE)
 
     assert response["results"][0]["warnings"] == ["dropped title"]
     state = hass.states.get("notification_receiver.alice")
@@ -206,7 +206,7 @@ async def test_attempts_recorded_for_failed_and_skipped(
     )
     await _add(hass, "On", people=["person.a"])
 
-    await _send(hass, message="x", person=EVERYONE)
+    await _send(hass, message="x", people=EVERYONE)
 
     assert (
         hass.states.get("notification_receiver.broken").attributes["event_type"]
@@ -225,13 +225,13 @@ async def test_targets(hass: HomeAssistant, types) -> None:
     await _add(hass, "Bob", people=["person.bob"])
     await _add(hass, "Shared")
 
-    by_person = await _send(hass, message="x", person="person.bob")
+    by_person = await _send(hass, message="x", people="person.bob")
     assert [r["name"] for r in by_person["results"]] == ["Bob"]
 
     named = await _send(
         hass,
         message="x",
-        person=["person.alice"],
+        people=["person.alice"],
         receivers=_select("notification_receiver.shared"),
     )
     assert [r["name"] for r in named["results"]] == ["Alice", "Shared"]
@@ -243,7 +243,7 @@ async def test_raises_when_nothing_can_be_attempted(hass: HomeAssistant, types) 
     with pytest.raises(ServiceValidationError, match="No targets given"):
         await _send(hass, message="x")
     with pytest.raises(ServiceValidationError, match="No receiver matches"):
-        await _send(hass, message="x", person=EVERYONE)
+        await _send(hass, message="x", people=EVERYONE)
 
     await _add(hass, "Off", people=["person.a"])
     await hass.services.async_call(
@@ -253,7 +253,7 @@ async def test_raises_when_nothing_can_be_attempted(hass: HomeAssistant, types) 
         blocking=True,
     )
     with pytest.raises(ServiceValidationError, match="disabled"):
-        await _send(hass, message="x", person="person.a")
+        await _send(hass, message="x", people="person.a")
     with pytest.raises(ServiceValidationError, match="No receiver matches"):
         await _send(hass, message="x", receivers=_select("notification_receiver.nope"))
 
@@ -282,26 +282,26 @@ async def test_people_choice(hass: HomeAssistant, types) -> None:
     await _add(hass, "Shared")
 
     everyone = await _send(
-        hass, message="x", person={"active_choice": "Everyone", "Everyone": True}
+        hass, message="x", people={"active_choice": "Everyone", "Everyone": True}
     )
     assert [r["name"] for r in everyone["results"]] == ["Alice", "Bob"]
 
     individuals = await _send(
         hass,
         message="x",
-        person={"active_choice": "Individuals", "Individuals": ["person.bob"]},
+        people={"active_choice": "Individuals", "Individuals": ["person.bob"]},
     )
     assert [r["name"] for r in individuals["results"]] == ["Bob"]
 
     # A plain list still means individuals.
-    plain = await _send(hass, message="x", person=["person.alice"])
+    plain = await _send(hass, message="x", people=["person.alice"])
     assert [r["name"] for r in plain["results"]] == ["Alice"]
 
     # Everyone is combined with the other targets as a union.
     union = await _send(
         hass,
         message="x",
-        person={"active_choice": "Everyone", "Everyone": True},
+        people={"active_choice": "Everyone", "Everyone": True},
         receivers=_select("notification_receiver.shared"),
     )
     assert [r["name"] for r in union["results"]] == ["Alice", "Bob", "Shared"]
@@ -311,7 +311,7 @@ async def test_people_choice(hass: HomeAssistant, types) -> None:
         await _send(
             hass,
             message="x",
-            person={"active_choice": "Individuals", "Individuals": []},
+            people={"active_choice": "Individuals", "Individuals": []},
             receivers=_select("notification_receiver.nope"),
         )
 
@@ -320,12 +320,12 @@ async def test_people_choice_invalid(hass: HomeAssistant) -> None:
     """An unknown choice or a non-person entity is rejected."""
     assert await async_setup_component(hass, DOMAIN, {})
     with pytest.raises(vol.Invalid):
-        await _send(hass, message="x", person={"active_choice": "Nobody"})
+        await _send(hass, message="x", people={"active_choice": "Nobody"})
     with pytest.raises(vol.Invalid):
         await _send(
             hass,
             message="x",
-            person={"active_choice": "Individuals", "Individuals": ["light.a"]},
+            people={"active_choice": "Individuals", "Individuals": ["light.a"]},
         )
 
 
@@ -333,8 +333,8 @@ async def test_description_order_and_people_selector(hass: HomeAssistant) -> Non
     """Title comes first and people are a choose selector."""
     assert await async_setup_component(hass, DOMAIN, {})
     fields = (await async_get_all_descriptions(hass))["notify"]["com_system"]["fields"]
-    assert list(fields) == ["title", "message", "person", "receivers"]
-    choices = fields["person"]["selector"]["choose"]["choices"]
+    assert list(fields) == ["title", "message", "people", "receivers"]
+    choices = fields["people"]["selector"]["choose"]["choices"]
     assert list(choices) == ["Individuals", "Everyone"]
     assert choices["Individuals"]["selector"]["entity"] == {
         "domain": "person",
@@ -430,7 +430,7 @@ async def test_ungiven_group_is_not_targeted(hass: HomeAssistant, types) -> None
     response = await _send(hass, message="x", receivers=_select(area_id=[kitchen]))
     assert [r["name"] for r in response["results"]] == ["Echo"]
     # No receivers given: only people are targeted.
-    response = await _send(hass, message="x", person=EVERYONE)
+    response = await _send(hass, message="x", people=EVERYONE)
     assert [r["name"] for r in response["results"]] == ["Alice", "Echo"]
-    response = await _send(hass, message="x", person=["person.alice"])
+    response = await _send(hass, message="x", people=["person.alice"])
     assert [r["name"] for r in response["results"]] == ["Alice"]

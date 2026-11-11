@@ -362,11 +362,11 @@ async def test_notify_preview_people_choice(
         ["person.a"],
     ):
         msg = await _call(
-            client, {"type": "com_system/notify/preview", "person": person}
+            client, {"type": "com_system/notify/preview", "people": person}
         )
         assert [r["name"] for r in msg["result"]["receivers"]] == ["Alpha"], person
 
     msg = await _call(
-        client, {"type": "com_system/notify/preview", "person": {"active_choice": "x"}}
+        client, {"type": "com_system/notify/preview", "people": {"active_choice": "x"}}
     )
     assert not msg["success"]

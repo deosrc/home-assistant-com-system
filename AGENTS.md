@@ -185,19 +185,19 @@ records the conventions and how things work as built.
   `skipped` whichever way they matched. See `docs/targets.md`.
 - `notify.py`: registers `notify.com_system` from `async_setup`
   (`supports_response=OPTIONAL`) with a voluptuous schema (`message`,
-  `title`, `person`, `receivers`; title is first, which sets the order in
+  `title`, `people`, `receivers`; title is first, which sets the order in
   the form) and its UI description through
   `async_set_service_schema` (the `notify` domain's `services.yaml` is
   core's, so the integration's `services.yaml` is deliberately empty (hassfest
-  requires the file); name and description are plain strings). `person` and
+  requires the file); name and description are plain strings). `people` and
   `receivers` are `choose` selectors whose choice names are the labels the
   form shows, because the selector has no label
-  field and the notify domain's translations are core's: `person` is
+  field and the notify domain's translations are core's: `people` is
   `Individuals` (entity selector) or `Everyone`, `receivers` is `Select`
   (a `target` selector limited to `notification_receiver` entities of this
   integration) or `All Areas`. The first choice is what the form shows for
   an unset field, so the panel always sends a value. The value is
-  `{active_choice, <choice>: value}`; `validate_person` and
+  `{active_choice, <choice>: value}`; `validate_people` and
   `validate_receivers` normalise it (a plain person or list means
   individuals, a plain target dict means Select) and `resolve_targets` takes
   `all_people` and `all_areas`. `_select_targets` turns a Select target into
@@ -206,7 +206,7 @@ records the conventions and how things work as built.
   `async_extract_referenced_entity_ids` finds for devices and labels).
   Receiver entities are mapped to entry ids through the entity registry;
   ones that are not Com System's match nothing. A call with neither
-  `person` nor `receivers` raises "No targets given", and the panel leaves
+  `people` nor `receivers` raises "No targets given", and the panel leaves
   an unticked field out of the data.
   `async_send` resolves, dispatches and returns `{results, counts}`; it
   raises `ServiceValidationError` only when no enabled receiver matched
@@ -245,7 +245,7 @@ records the conventions and how things work as built.
   `notify/test`. The form is Home Assistant's `ha-service-control` with
   `hide-picker hide-description` and `.value = {action: "notify.com_system",
   data}`; its `value-changed` `detail.value.data` holds `title`, `message`,
-  `person` and `receivers` (choose values: when the user flips the choice
+  `people` and `receivers` (choose values: when the user flips the choice
   the other choice's value stays in the object, so read `active_choice`
   first; the Select value is a target with any of `entity_id`, `area_id`,
   `device_id`, `floor_id`, `label_id`, all kept and sent), which are the

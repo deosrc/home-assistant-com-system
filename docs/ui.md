@@ -88,7 +88,7 @@ admin user.
   `checks` (each `id`, `ok`, `message`) and `can_rescan`.
 - `com_system/scripts/rescan`: runs detection now (needs the hub loaded).
 - `com_system/discoveries/list`: the pending discoveries.
-- `com_system/notify/preview`: the receivers the targets (`person` and
+- `com_system/notify/preview`: the receivers the targets (`people` and
   `receivers`, as in the action) would reach, each `reached` or
   `skipped` with a reason. Sends nothing.
 - `com_system/notify/test`: sends through the `notify.com_system` action
