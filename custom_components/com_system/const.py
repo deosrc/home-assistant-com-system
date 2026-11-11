@@ -55,3 +55,9 @@ CONF_DISCOVERY_TYPE = "receiver_type"
 # registry change so a burst of changes causes one detection.
 DETECTION_INTERVAL_SECONDS = 3600
 DETECTION_DEBOUNCE_SECONDS = 5
+
+# The personal/shared setting of a mobile app receiver, the options of its
+# select entity.
+AUDIENCE_PERSONAL = "personal"
+AUDIENCE_SHARED = "shared"
+AUDIENCES = (AUDIENCE_PERSONAL, AUDIENCE_SHARED)

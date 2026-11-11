@@ -58,7 +58,7 @@ class ReceiverRegistry:
         receiver_type = self.type_of(receiver)
         if receiver_type is None:
             return receiver.people
-        return receiver_type.associated_people(receiver)
+        return receiver_type.associated_people(self._hass, receiver)
 
     def areas_of(self, receiver: Receiver) -> tuple[str, ...]:
         """Return the area of a receiver (none, or one).

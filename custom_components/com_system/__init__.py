@@ -38,6 +38,8 @@ type ComSystemConfigEntry = ConfigEntry[ReceiverDetector]
 
 _LOGGER = logging.getLogger(__name__)
 
+PLATFORMS = [Platform.SWITCH, Platform.SELECT]
+
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the integration once, independent of config entries."""
@@ -78,7 +80,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ComSystemConfigEntry) ->
     # Do not forward to the notification_receiver platform: it is not an
     # integration, so forwarding fails. Hand the entry to the component.
     await hass.data[DOMAIN][DATA_COMPONENT].async_setup_entry(entry)
-    await hass.config_entries.async_forward_entry_setups(entry, [Platform.SWITCH])
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     # Editing a receiver reloads only that receiver.
     entry.async_on_unload(entry.add_update_listener(_async_reload_entry))
     return True
@@ -92,9 +94,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ComSystemConfigEntry) -
     """Unload the hub or a receiver."""
     if not _is_receiver(entry):
         return True
-    unloaded = await hass.config_entries.async_unload_platforms(
-        entry, [Platform.SWITCH]
-    )
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     unloaded = (
         await hass.data[DOMAIN][DATA_COMPONENT].async_unload_entry(entry) and unloaded
     )

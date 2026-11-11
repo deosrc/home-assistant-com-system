@@ -49,6 +49,17 @@ committed.
 - `scripts/develop-frontend` does the same against a throwaway configuration
   with a test admin (`test` / `test-pass-123`) and some checks.
 
+### Testing with the mobile app
+
+`scripts/android-emulator` starts an Android emulator with the Home Assistant
+companion app, for testing mobile app receivers. Run it on the host, not in
+the devcontainer. It needs the Android SDK with the API 34 Google APIs
+x86_64 system image, KVM and the GitHub CLI; the first run creates the
+virtual device and downloads the app. In the app, connect to
+`http://10.0.2.2:8123`, which is the host's loopback where the devcontainer
+forwards Home Assistant. Log in as your dev user, then add the device when Com
+System offers it.
+
 ### Test and lint
 
 - **Run tests** task, or `python3 -m pytest tests`.

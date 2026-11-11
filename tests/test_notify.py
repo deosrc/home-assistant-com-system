@@ -161,7 +161,10 @@ async def test_disabled_receiver_is_skipped(hass: HomeAssistant, types) -> None:
     await _add(hass, "On", people=["person.a"])
     await _add(hass, "Off", people=["person.a"])
     await hass.services.async_call(
-        "switch", "turn_off", {"entity_id": "switch.off_enabled"}, blocking=True
+        "switch",
+        "turn_off",
+        {"entity_id": "switch.off_notifications_enabled"},
+        blocking=True,
     )
 
     response = await _send(hass, message="x", person=EVERYONE)
@@ -196,7 +199,10 @@ async def test_attempts_recorded_for_failed_and_skipped(
     await _add(hass, "Broken", "test_broken", people=["person.a"])
     await _add(hass, "Off", people=["person.a"])
     await hass.services.async_call(
-        "switch", "turn_off", {"entity_id": "switch.off_enabled"}, blocking=True
+        "switch",
+        "turn_off",
+        {"entity_id": "switch.off_notifications_enabled"},
+        blocking=True,
     )
     await _add(hass, "On", people=["person.a"])
 
@@ -241,7 +247,10 @@ async def test_raises_when_nothing_can_be_attempted(hass: HomeAssistant, types) 
 
     await _add(hass, "Off", people=["person.a"])
     await hass.services.async_call(
-        "switch", "turn_off", {"entity_id": "switch.off_enabled"}, blocking=True
+        "switch",
+        "turn_off",
+        {"entity_id": "switch.off_notifications_enabled"},
+        blocking=True,
     )
     with pytest.raises(ServiceValidationError, match="disabled"):
         await _send(hass, message="x", person="person.a")

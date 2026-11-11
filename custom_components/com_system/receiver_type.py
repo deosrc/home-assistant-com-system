@@ -54,7 +54,9 @@ class ReceiverType:
         """
         raise NotImplementedError
 
-    def associated_people(self, receiver: Receiver) -> tuple[str, ...]:
+    def associated_people(
+        self, hass: HomeAssistant, receiver: Receiver
+    ) -> tuple[str, ...]:
         """Return the people the receiver relates to."""
         return receiver.people if self.supports_people else ()
 

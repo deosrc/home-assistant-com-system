@@ -34,9 +34,9 @@ detected:
 | webOS TV | webOS TV config entry |
 | Music Assistant | Music Assistant player |
 
-Detection only offers receivers. Sending notifications to each type is
-added as that type is built. So far only
-[Persistent notification](persistent-notification.md) sends.
+Detection offers receivers. Sending is added as each type is built. So far
+[Persistent notification](persistent-notification.md) and
+[mobile app](mobile-app.md) receivers send.
 
 ### Deleting, disabling and removed devices
 
@@ -58,7 +58,8 @@ A custom receiver is a script that takes a `notification` object; see
 
 Choose **Configure** on a receiver to set the people it relates to (not
 offered for receiver types that cannot relate to a person, such as
-Persistent notification). Com
+Persistent notification, or whose person is worked out for them, such as
+[mobile app](mobile-app.md#which-person-a-device-belongs-to)). Com
 System uses this to find the receivers for a person. Leave it empty if the
 receiver is not tied to anyone.
 
@@ -68,13 +69,16 @@ it, change the area of the device.
 
 ## Receiver entities
 
-Each receiver has a device with two entities.
+Each receiver has a device with two entities. Mobile app receivers have a
+third, [Device use](mobile-app.md#personal-or-shared), also a configuration
+entity.
 
-- **Enabled** (`switch`): on means the receiver is enabled, off means it
-  is disabled. New receivers are enabled, and the state is kept across
-  restarts. Use the normal switch controls and the `switch.turn_on`,
-  `switch.turn_off` and `switch.toggle` actions, for example in an
-  automation that turns a receiver off at night and on in the morning.
+- **Notifications Enabled** (`switch`, a configuration entity): on means
+  the receiver is enabled, off means it is disabled. New receivers are
+  enabled, and the state is kept across restarts. Use the normal switch
+  controls and the `switch.turn_on`, `switch.turn_off` and `switch.toggle`
+  actions, for example in an automation that turns a receiver off at night
+  and on in the morning.
 - **Receiver** (`notification_receiver`): read-only. Its state is the time
   of the last notification attempt, or `unknown` before the first. Its
   `event_type` attribute is the result (`delivered`, `failed` or
@@ -83,8 +87,7 @@ Each receiver has a device with two entities.
   receiver's `receiver_type`, `people` and `areas` (the device's area). It has
   no actions. To react to a notification, use a state trigger on this entity.
 
-Sending notifications is not implemented yet, so the receiver entity stays
-`unknown` for now.
+The receiver entity stays `unknown` until the receiver is notified.
 
 ## The receiver registry
 

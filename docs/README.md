@@ -24,6 +24,8 @@ Hub options are a stub for now and do nothing yet.
 
 - [Receivers](receivers/README.md): the receiver concept.
 - [Custom receivers](receivers/custom.md): scripts as receivers.
+- [Mobile app receivers](receivers/mobile-app.md): delivery, the person
+  link and personal or shared devices.
 - [Targets](targets.md): how people, areas and receivers decide where a
   notification goes.
 - [The notify.com_system action](services.md): sending a notification, its

@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# Starts an Android emulator with the Home Assistant companion app, to test
+# mobile app receivers. Run it on the host, not in the devcontainer. It needs
+# the Android SDK (emulator, platform-tools and the API 34 "Google APIs" x86_64
+# system image), KVM and the GitHub CLI. The first run creates the AVD
+# `com_system_api34` (without avdmanager, so Java is not needed) and downloads
+# the app; later runs reuse them. The app is installed if it is missing.
+#
+# In the app, connect to http://10.0.2.2:8123: the emulator's name for the
+# host's loopback, where the devcontainer forwards Home Assistant.
+# Set ANDROID_SDK_ROOT if the SDK is not in ~/Android/Sdk. Extra arguments go
+# to the emulator (for example -no-snapshot for a clean boot).
+set -euo pipefail
+
+SDK="${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}"
+AVD=com_system_api34
+IMAGE="system-images/android-34/google_apis/x86_64/"
+PACKAGE=io.homeassistant.companion.android
+CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/com-system"
+ADB="$SDK/platform-tools/adb"
+
+[ -x "$SDK/emulator/emulator" ] || {
+  echo "Android emulator not found in $SDK. Set ANDROID_SDK_ROOT." >&2
+  exit 1
+}
+[ -d "$SDK/$IMAGE" ] || {
+  echo "Missing system image $IMAGE. Install it with sdkmanager:" >&2
+  echo "  sdkmanager 'system-images;android-34;google_apis;x86_64'" >&2
+  exit 1
+}
+
+AVD_HOME="${ANDROID_AVD_HOME:-$HOME/.android/avd}"
+if [ ! -d "$AVD_HOME/$AVD.avd" ]; then
+  echo "Creating the $AVD virtual device"
+  mkdir -p "$AVD_HOME/$AVD.avd"
+  cat >"$AVD_HOME/$AVD.ini" <<INI
+avd.ini.encoding=UTF-8
+path=$AVD_HOME/$AVD.avd
+path.rel=avd/$AVD.avd
+target=android-34
+INI
+  cat >"$AVD_HOME/$AVD.avd/config.ini" <<INI
+AvdId=$AVD
+avd.ini.displayname=Com System API 34
+PlayStore.enabled=no
+abi.type=x86_64
+hw.cpu.arch=x86_64
+hw.cpu.ncore=2
+hw.ramSize=2048
+hw.gpu.enabled=yes
+hw.gpu.mode=swiftshader_indirect
+hw.keyboard=yes
+hw.lcd.density=420
+hw.lcd.height=2400
+hw.lcd.width=1080
+hw.device.manufacturer=Google
+hw.device.name=pixel_6
+image.sysdir.1=$IMAGE
+tag.id=google_apis
+tag.display=Google APIs
+disk.dataPartition.size=6G
+showDeviceFrame=no
+INI
+fi
+
+# The full flavour has push through Google Play Services, which this image has.
+APK="$CACHE/app-full-release.apk"
+if [ ! -f "$APK" ]; then
+  command -v gh >/dev/null || {
+    echo "Install the GitHub CLI (gh) to download the app." >&2
+    exit 1
+  }
+  mkdir -p "$CACHE"
+  gh release download -R home-assistant/android -p app-full-release.apk \
+    -D "$CACHE" --clobber
+fi
+
+trap 'kill $(jobs -p) 2>/dev/null' EXIT
+"$SDK/emulator/emulator" -avd "$AVD" -no-audio -no-boot-anim -no-metrics "$@" &
+EMULATOR_PID=$!
+
+echo "Waiting for the emulator to boot"
+until [ "$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ]; do
+  kill -0 "$EMULATOR_PID" 2>/dev/null || {
+    echo "The emulator stopped. If the host is short of memory, close other apps." >&2
+    exit 1
+  }
+  sleep 3
+done
+
+"$ADB" shell pm list packages | grep -q "$PACKAGE" || "$ADB" install "$APK"
+"$ADB" shell monkey -p "$PACKAGE" -c android.intent.category.LAUNCHER 1 >/dev/null
+echo "Ready. In the app, connect to http://10.0.2.2:8123 (Ctrl+C stops the emulator)."
+wait "$EMULATOR_PID"

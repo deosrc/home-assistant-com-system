@@ -48,7 +48,16 @@
   "entity": {
     "switch": {
       "enabled": {
-        "name": "Enabled"
+        "name": "Notifications Enabled"
+      }
+    },
+    "select": {
+      "audience": {
+        "name": "Device use",
+        "state": {
+          "personal": "Personal",
+          "shared": "Shared"
+        }
       }
     }
   }

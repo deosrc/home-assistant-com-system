@@ -165,8 +165,6 @@ notifications and the testing tool). Delivery is not treated as a failure.
 The entities themselves are built (see `AGENTS.md` and
 `docs/receivers/README.md`). What remains:
 
-- **Mobile app receivers:** the personal/shared select (section 2.7) is
-  grouped on the receiver's device too.
 - **Source device:** types that attach to another integration's device
   implement `ReceiverType.source_device_identifiers`; reloading receivers
   whose source device reappears is the hub detection's job.
@@ -195,9 +193,9 @@ Each type needs a receiver-type definition (names provisional) covering:
 
 **Delivery per type:**
 
-- **Mobile app** – one receiver per registered device. Delivery calls that
-  device's `notify.mobile_app_<device>` action with the title, message and data
-  (actions, image, channel and so on).
+- **Mobile app** – built for message and title (see
+  `docs/receivers/mobile-app.md`). Still to do: data (actions, image,
+  channel and so on).
 - **Alexa Media Player** (non-native integration) – one receiver per Echo
   device. Delivery calls the integration's
   `notify.alexa_media_*` action with announce/TTS data. If the integration
@@ -269,84 +267,12 @@ Targeting by person needs a way to decide which receivers belong to
 whom. Each receiver type provides an association mechanism (part of the
 receiver type definition, section 2.5). Person associations can be
 overridden manually on any receiver and are stored as part of the receiver's
-own configuration.
+own configuration. The mobile app mechanism is built (see
+`docs/receivers/mobile-app.md` and `AGENTS.md`).
 
 A receiver is associated with **at most one person**. A device used by
 several people is treated as shared (see below) and reached through areas or
 explicit targets.
-
-**Mobile app (first implementation):**
-
-- A mobile app device is linked to a person in this order:
-  1. The Home Assistant user the app is registered with, mapped to the
-     person linked to that user.
-  2. Otherwise, the person whose device trackers include the app's device
-     tracker.
-  3. Otherwise, no person: the receiver is effectively shared until the
-     user sets a person manually.
-
-  **Lookup procedure (spike #7, confirmed on Home Assistant 2026.10.4):**
-
-  - The receiver's mobile app config entry (domain `mobile_app`) holds
-    `data["user_id"]`, the Home Assistant user that registered the app. It
-    is always present and is never edited, so it is the user to map from.
-    The app's device has identifier `("mobile_app", data["device_id"])`
-    and its device tracker has the entity registry unique ID
-    `data["device_id"]` (platform `mobile_app`).
-  - Step 1: find the `person.*` state whose `user_id` attribute equals the
-    entry's `user_id`. The attribute is only present when the person is
-    linked to a user, and a user can be linked to at most one person. This
-    link is independent of the person's device trackers, so it keeps
-    working if the tracker is removed from the person.
-  - Step 2: if there is no match, call
-    `homeassistant.components.person.persons_with_entity(hass,
-    tracker_entity_id)`, which returns the `person.*` entity IDs whose
-    `device_trackers` contain the tracker. Resolve the tracker with
-    `entity_registry.async_get_entity_id("device_tracker", "mobile_app",
-    data["device_id"])`. Normally this is `device_tracker.<device name>`
-    but do not rely on that; the entity registry may rename it.
-  - Step 3: if neither finds a person, there is no person (shared by
-    default). Nothing else is available: the registration holds no person
-    or name for the user beyond `user_id`.
-  - Mobile app adds the tracker to the registering user's person only **at
-    registration**, and only if a person is already linked to that user at
-    that moment. A person created or linked later does not get the tracker,
-    so step 2 alone misses that case; this is why step 1 comes first.
-  - Step 2 can return several persons (a tracker may be listed on more than
-    one). Take the first by entity ID order only as a tie-break and log it;
-    the rule that a receiver has at most one person still applies.
-  - Look up the device with
-    `device_registry.async_get_device_by_identifier(("mobile_app",
-    device_id), config_entry_id)`. `async_get_device` is deprecated in
-    2026.10 and raises in tests (identifiers are no longer unique across
-    config entries).
-  - Removing the Home Assistant user removes the mobile app entry, so a
-    receiver never points at a deleted user while its entry exists.
-  - Resolve at use time (or on person and tracker registry changes), not
-    once at discovery, because persons can be created, linked or edited
-    afterwards. A manual person set on the receiver overrides all of this.
-  - Verified with a throwaway test against a real `mobile_app`
-    registration flow: user-linked person found (step 1) with the tracker
-    also on the person; tracker removed from the person, step 1 still
-    finds it; no user-linked person gives step 1 empty and step 2 empty,
-    and after adding the tracker to a person manually step 2 finds it.
-- Some devices are not personal: wall-mounted tablets and shared devices
-  also run the mobile app. Notifying a person must not reach those.
-- Each mobile app receiver therefore also exposes a **select entity** to
-  define the device as **personal** or **shared**:
-  - **Personal** – associated with its logged-in user's person and
-    triggered when that person is targeted.
-  - **Shared** – not associated with any person, so never triggered by a
-    person target. It can still be triggered by area (e.g. the room it is
-    in) or by naming it explicitly.
-- Being a normal entity, the setting can be changed from the standard Home
-  Assistant UI and by automations.
-- The default is inferred from the person link: a newly detected device
-  with a linked person starts as **personal**, and one with no linked person
-  starts as **shared**. The user can change it at any time.
-
-The personal/shared select applies to **mobile app receivers only**. Other
-types already have a clear nature (see below).
 
 **Other receiver types:** the mechanism is TBD for each. For example, Alexa
 devices and TVs are likely to be associated by area rather than by person,

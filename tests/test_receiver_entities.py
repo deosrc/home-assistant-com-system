@@ -26,7 +26,7 @@ from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
-SWITCH = "switch.office_enabled"
+SWITCH = "switch.office_notifications_enabled"
 RECEIVER = "notification_receiver.office"
 
 
@@ -173,3 +173,19 @@ async def test_attaches_to_source_device(hass: HomeAssistant) -> None:
         assert {e.device_id for e in entities} == {device.id}
     finally:
         unregister_receiver_type("tv")
+
+
+async def test_receiver_entity_has_a_notification_icon(hass: HomeAssistant) -> None:
+    """The receiver entity shows a bell rather than the event default."""
+    await _setup(hass, _entry())
+    assert hass.states.get(RECEIVER).attributes["icon"] == "mdi:bell-ring"
+
+
+async def test_switch_icon_follows_state(hass: HomeAssistant) -> None:
+    """The switch shows a bell, crossed out when notifications are off."""
+    await _setup(hass, _entry())
+    assert hass.states.get(SWITCH).attributes["icon"] == "mdi:bell"
+    await hass.services.async_call(
+        "switch", "turn_off", {"entity_id": SWITCH}, blocking=True
+    )
+    assert hass.states.get(SWITCH).attributes["icon"] == "mdi:bell-off"

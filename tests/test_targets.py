@@ -162,7 +162,7 @@ async def test_disabled_receivers_are_skipped(hass: HomeAssistant) -> None:
     await hass.services.async_call(
         "switch",
         "turn_off",
-        {"entity_id": "switch.alice_phone_enabled"},
+        {"entity_id": "switch.alice_phone_notifications_enabled"},
         blocking=True,
     )
     for result in (
@@ -207,7 +207,7 @@ async def test_area_is_the_receiver_entitys(hass: HomeAssistant) -> None:
     e = await _setup(hass)
     shared = e["shared"].entry_id
     er.async_get(hass).async_update_entity(
-        "switch.shared_tablet_enabled", area_id=e["kitchen"]
+        "switch.shared_tablet_notifications_enabled", area_id=e["kitchen"]
     )
     assert shared not in _ids(resolve_targets(hass, areas=[e["kitchen"]]).receivers)
     assert shared not in _ids(resolve_targets(hass, all_areas=True).receivers)
