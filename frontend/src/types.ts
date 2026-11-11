@@ -65,12 +65,20 @@ export interface NotifyTargets {
   receivers?: ReceiversTarget;
 }
 
+/** Why a receiver was included: its own area or person that matched, or
+ * that it was named (`id` is then its entry id). */
+export interface MatchReason {
+  kind: "everyone" | "all_areas" | "area" | "person" | "receiver";
+  id?: string;
+}
+
 export interface PreviewEntry {
   entry_id: string;
   name: string;
   type: string;
   outcome: "reached" | "skipped";
   reason: string | null;
+  reasons?: MatchReason[];
 }
 
 export interface SendResult {
@@ -80,6 +88,7 @@ export interface SendResult {
   result: "delivered" | "failed" | "skipped";
   reason: string | null;
   warnings: string[];
+  reasons?: MatchReason[];
 }
 
 export interface SendResponse {

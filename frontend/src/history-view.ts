@@ -1,5 +1,6 @@
 import { LitElement, css, html } from "lit";
 import { ComSystemApi, errorMessage } from "./api";
+import { renderReasons, reasonStyles } from "./reasons";
 import { sharedStyles } from "./styles";
 import type { HistoryRecord, HomeAssistant } from "./types";
 
@@ -17,6 +18,7 @@ export class ComSystemHistory extends LitElement {
 
   static styles = [
     sharedStyles,
+    reasonStyles,
     css`
       .toolbar {
         display: flex;
@@ -62,24 +64,24 @@ export class ComSystemHistory extends LitElement {
       details[open] .chevron {
         transform: none;
       }
-      .badges {
+      .counts {
         display: inline-flex;
         gap: 4px;
       }
-      .badge {
+      .count {
         padding: 2px 10px;
         border-radius: 16px;
         font-size: 12px;
         white-space: nowrap;
         background: var(--secondary-background-color, #f0f0f0);
       }
-      .badge.delivered {
+      .count.delivered {
         color: var(--success-color, #43a047);
       }
-      .badge.failed {
+      .count.failed {
         color: var(--error-color, #db4437);
       }
-      .badge.skipped {
+      .count.skipped {
         color: var(--warning-color, #ffa600);
       }
       hr {
@@ -140,9 +142,9 @@ export class ComSystemHistory extends LitElement {
     const counts = (["delivered", "failed", "skipped"] as const)
       .map((k) => [k, r.results.filter((x) => x.result === k).length] as const)
       .filter(([, n]) => n > 0);
-    return html`<span class="badges"
+    return html`<span class="counts"
       >${counts.map(
-        ([k, n]) => html`<span class="badge ${k}" title=${k}>${n} ${k}</span>`,
+        ([k, n]) => html`<span class="count ${k}" title=${k}>${n} ${k}</span>`,
       )}</span
     >`;
   }
@@ -184,6 +186,7 @@ export class ComSystemHistory extends LitElement {
                     <tr>
                       <th>Receiver</th>
                       <th>Type</th>
+                      <th>Why</th>
                       <th>Outcome</th>
                       <th>Details</th>
                     </tr>
@@ -194,6 +197,7 @@ export class ComSystemHistory extends LitElement {
                         html`<tr>
                           <td>${x.name}</td>
                           <td>${x.type}</td>
+                          <td>${renderReasons(this.hass, x.reasons)}</td>
                           <td class=${x.result}>${x.result}</td>
                           <td>
                             ${[

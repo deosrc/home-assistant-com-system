@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -38,6 +38,8 @@ class ReceiverResult:
     result: str
     reason: str | None = None
     warnings: list[str] = field(default_factory=list)
+    # Why the receiver was included; see ``ResolvedTargets.reasons``.
+    reasons: list[dict[str, str]] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
         """Return the result as response data."""
@@ -48,6 +50,7 @@ class ReceiverResult:
             "result": self.result,
             "reason": self.reason,
             "warnings": list(self.warnings),
+            "reasons": [dict(r) for r in self.reasons],
         }
 
 
@@ -123,7 +126,10 @@ async def async_dispatch(
         for r in resolved.skipped
     ]
     results = sorted(
-        [*delivered, *skipped],
+        [
+            replace(r, reasons=list(resolved.reasons.get(r.receiver.entry_id, [])))
+            for r in [*delivered, *skipped]
+        ],
         key=lambda x: (x.receiver.name.casefold(), x.receiver.entry_id),
     )
     for result in results:

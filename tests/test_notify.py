@@ -129,6 +129,7 @@ async def test_delivers_to_each_receiver(hass: HomeAssistant, types) -> None:
         "result": "delivered",
         "reason": None,
         "warnings": [],
+        "reasons": [{"kind": "everyone"}],
     }
     types.deliver.assert_awaited_once()
     assert types.deliver.await_args.args[1] == {"message": "Hello", "title": "Hi"}

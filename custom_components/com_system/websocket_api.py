@@ -267,6 +267,7 @@ def ws_notify_preview(
             "type": receiver_type.name if receiver_type else receiver.type_id,
             "outcome": outcome,
             "reason": reason,
+            "reasons": list(resolved.reasons.get(receiver.entry_id, [])),
         }
 
     entries = [describe(r, "reached", None) for r in resolved.receivers] + [

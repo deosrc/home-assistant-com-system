@@ -211,3 +211,28 @@ async def test_area_is_the_receiver_entitys(hass: HomeAssistant) -> None:
     )
     assert shared not in _ids(resolve_targets(hass, areas=[e["kitchen"]]).receivers)
     assert shared not in _ids(resolve_targets(hass, all_areas=True).receivers)
+
+
+async def test_reasons_list_every_match(hass: HomeAssistant) -> None:
+    """A receiver can match by person, area and by being named, all at once."""
+    e = await _setup(hass)
+    result = resolve_targets(
+        hass,
+        people=["person.bob"],
+        areas=[e["lounge"]],
+        receivers=[e["both"].entry_id],
+    )
+    assert result.reasons[e["both"].entry_id] == [
+        {"kind": "person", "id": "person.bob"},
+        {"kind": "area", "id": e["lounge"]},
+        {"kind": "receiver", "id": e["both"].entry_id},
+    ]
+    assert result.reasons[e["bob"].entry_id] == [{"kind": "person", "id": "person.bob"}]
+    assert e["alice"].entry_id not in result.reasons
+    everyone = resolve_targets(hass, all_people=True, all_areas=True)
+    assert everyone.reasons[e["echo"].entry_id] == [{"kind": "all_areas"}]
+    assert everyone.reasons[e["alice"].entry_id] == [{"kind": "everyone"}]
+    assert everyone.reasons[e["both"].entry_id] == [
+        {"kind": "everyone"},
+        {"kind": "all_areas"},
+    ]

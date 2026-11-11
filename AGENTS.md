@@ -276,7 +276,12 @@ records the conventions and how things work as built.
   created in `async_setup`) keeps records newest first in a `Store`
   (`com_system.history`, saved with a delay). A record is `{id, time,
   notification, results}`, results being `ReceiverResult.as_dict()`
-  (including warnings). `async_dispatch` records every send, after feeding
+  (including warnings). `ResolvedTargets.reasons` (by entry id) and
+  `ReceiverResult.reasons` say why a receiver was included: `everyone` / `all_areas`
+  when those choices matched it, else the receiver's own `person`/`area`
+  that matched, and `receiver` when named; the preview
+  command and the action response carry them, and the panel's `reasons.ts`
+  renders them as badges. `async_dispatch` records every send, after feeding
   each receiver entity's last attempt. The limits are the hub entry's
   options `history_max_count` (default 200) and `history_max_age_days`
   (default 30), read by `limits()` each time, so the hub has no update

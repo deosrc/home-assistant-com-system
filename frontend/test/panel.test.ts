@@ -55,6 +55,10 @@ function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
               type: "Custom",
               outcome: "reached",
               reason: null,
+              reasons: [
+                { kind: "area", id: "office" },
+                { kind: "receiver", id: "e1" },
+              ],
             },
             {
               entry_id: "e2",
@@ -94,6 +98,11 @@ function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
                   result: "failed",
                   reason: "Boom",
                   warnings: ["dropped"],
+                  reasons: [
+                    { kind: "person", id: "person.alice" },
+                    { kind: "area", id: "office" },
+                    { kind: "receiver", id: "e1" },
+                  ],
                 },
               ],
             },
@@ -171,10 +180,14 @@ describe("panel", () => {
     expect(text).toContain("Office");
     expect(text).toContain("failed");
     expect(text).toContain("Boom");
-    const badges = [...view.shadowRoot!.querySelectorAll("summary .badge")];
-    expect(badges.map((b) => b.textContent!.trim())).toEqual([
-      "1 failed",
+    const why = [...view.shadowRoot!.querySelectorAll("td .badge")];
+    expect(why.map((b) => b.textContent!.trim())).toEqual([
+      "Office",
+      "Alice",
+      "Named",
     ]);
+    const badges = [...view.shadowRoot!.querySelectorAll("summary .count")];
+    expect(badges.map((b) => b.textContent!.trim())).toEqual(["1 failed"]);
     expect(text).toContain("dropped");
   });
 
@@ -361,7 +374,10 @@ describe("testing tool", () => {
     expect(labels).toEqual(["Title (optional)", "Message"]);
     const rows = [...root.querySelectorAll(".preview tbody tr")];
     expect(rows.map((r) => r.textContent!.replace(/\s+/g, " ").trim())).toEqual(
-      ["Office Custom reached", "Den Custom skipped (Receiver is disabled)"],
+      [
+        "Office Custom OfficeNamed reached",
+        "Den Custom None skipped (Receiver is disabled)",
+      ],
     );
 
     const send = root.querySelector<HTMLButtonElement>(".send")!;

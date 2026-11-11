@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Collection
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from homeassistant.core import HomeAssistant
 
@@ -22,6 +22,12 @@ class ResolvedTargets:
 
     receivers: tuple[Receiver, ...]
     skipped: tuple[Receiver, ...]
+    # Why each receiver matched, by entry id: a list of ``{"kind", "id"}``
+    # with kind ``person`` or ``area`` (the receiver's own person or area
+    # that matched), ``everyone`` or ``all_areas`` (those choices matched it,
+    # so no person or area is listed) or ``receiver`` (it was named). A
+    # receiver can have several; ``id`` is absent for everyone and all_areas.
+    reasons: dict[str, list[dict[str, str]]] = field(default_factory=dict)
 
 
 def is_enabled(hass: HomeAssistant, receiver: Receiver) -> bool:
@@ -61,19 +67,34 @@ def resolve_targets(
     named = set(receivers or ())
 
     matched: list[Receiver] = []
+    reasons: dict[str, list[dict[str, str]]] = {}
     for receiver in registry.all():
         receiver_people = registry.people_of(receiver)
         receiver_areas = registry.areas_of(receiver)
-        if receiver.entry_id in named or (
-            (all_people and receiver_people)
-            or (all_areas and receiver_areas)
-            or people_set.intersection(receiver_people)
-            or area_set.intersection(receiver_areas)
-        ):
+        why: list[dict[str, str]] = []
+        if all_people and receiver_people:
+            why.append({"kind": "everyone"})
+        else:
+            why += [
+                {"kind": "person", "id": p} for p in receiver_people if p in people_set
+            ]
+        if all_areas and receiver_areas:
+            why.append({"kind": "all_areas"})
+        else:
+            why += [
+                {"kind": "area", "id": area}
+                for area in receiver_areas
+                if area in area_set
+            ]
+        if receiver.entry_id in named:
+            why.append({"kind": "receiver", "id": receiver.entry_id})
+        if why:
             matched.append(receiver)
+            reasons[receiver.entry_id] = why
 
     matched.sort(key=lambda r: (r.name.casefold(), r.entry_id))
     return ResolvedTargets(
         receivers=tuple(r for r in matched if is_enabled(hass, r)),
         skipped=tuple(r for r in matched if not is_enabled(hass, r)),
+        reasons=reasons,
     )

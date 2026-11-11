@@ -1,5 +1,6 @@
 import { LitElement, css, html } from "lit";
 import { ComSystemApi, errorMessage } from "./api";
+import { renderReasons, reasonStyles } from "./reasons";
 import { sharedStyles } from "./styles";
 import type {
   HomeAssistant,
@@ -85,6 +86,7 @@ export class ComSystemTest extends LitElement {
 
   static styles = [
     sharedStyles,
+    reasonStyles,
     css`
       /* Copies the cards of Developer tools > Actions. ha-card styles the
          slotted .card-header, .card-content and .card-actions itself. */
@@ -484,6 +486,7 @@ export class ComSystemTest extends LitElement {
         <tr>
           <th>Receiver</th>
           <th>Type</th>
+          <th>Why</th>
           <th>Would be</th>
         </tr>
       </thead>
@@ -493,6 +496,7 @@ export class ComSystemTest extends LitElement {
             html`<tr>
               <td>${p.name}</td>
               <td>${p.type}</td>
+              <td>${renderReasons(this.hass, p.reasons)}</td>
               <td class=${p.outcome}>
                 ${p.reason ? `${p.outcome} (${p.reason})` : p.outcome}
               </td>
@@ -519,6 +523,7 @@ export class ComSystemTest extends LitElement {
             <tr>
               <th>Receiver</th>
               <th>Type</th>
+              <th>Why</th>
               <th>Outcome</th>
               <th>Details</th>
             </tr>
@@ -529,6 +534,7 @@ export class ComSystemTest extends LitElement {
                 html`<tr>
                   <td>${x.name}</td>
                   <td>${x.type}</td>
+                  <td>${renderReasons(this.hass, x.reasons)}</td>
                   <td class=${x.result}>${x.result}</td>
                   <td>
                     ${[x.reason, ...x.warnings.map((w) => `Warning: ${w}`)]
