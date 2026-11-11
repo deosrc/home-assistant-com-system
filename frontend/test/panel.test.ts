@@ -382,7 +382,7 @@ describe("testing tool", () => {
     await settle(view);
     expect(callWS).toHaveBeenCalledWith({
       type: "com_system/notify/preview",
-      person: ["person.alice"],
+      people: ["person.alice"],
       receivers: allAreas,
     });
 
@@ -405,7 +405,7 @@ describe("testing tool", () => {
     };
     expect(callWS).toHaveBeenCalledWith({
       type: "com_system/notify/preview",
-      person: ["person.alice"],
+      people: ["person.alice"],
       receivers: selected,
     });
 
@@ -414,7 +414,7 @@ describe("testing tool", () => {
     expect(callWS).toHaveBeenCalledWith({
       type: "com_system/notify/test",
       message: "Hello",
-      person: ["person.alice"],
+      people: ["person.alice"],
       receivers: selected,
     });
     await settle(view);
@@ -504,7 +504,7 @@ describe("testing tool with the Home Assistant Actions form", () => {
       await settle(view);
       expect(callWS).toHaveBeenCalledWith({
         type: "com_system/notify/preview",
-        person: ["person.alice"],
+        people: ["person.alice"],
         receivers: selected,
       });
       // The form is given back the same selection.
@@ -527,7 +527,7 @@ describe("testing tool with the Home Assistant Actions form", () => {
         type: "com_system/notify/test",
         message: "Hello",
         title: "Hi",
-        person: ["person.alice"],
+        people: ["person.alice"],
         receivers: selected,
       });
 
