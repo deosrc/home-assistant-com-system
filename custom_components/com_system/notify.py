@@ -132,6 +132,7 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
         },
         ATTR_PEOPLE: {
             "name": "People",
+            "default": {"active_choice": CHOICE_EVERYONE, CHOICE_EVERYONE: True},
             "description": (
                 "Notify receivers associated with individual people, or with everyone."
             ),
@@ -154,6 +155,10 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
         },
         ATTR_RECEIVERS: {
             "name": "Receivers",
+            "default": {
+                "active_choice": CHOICE_ALL_AREAS,
+                CHOICE_ALL_AREAS: True,
+            },
             "description": (
                 "Notify the receivers you select (by receiver, area, device, "
                 "floor or label), or every receiver that has an area."

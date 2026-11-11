@@ -335,6 +335,15 @@ async def test_description_order_and_people_selector(hass: HomeAssistant) -> Non
     assert await async_setup_component(hass, DOMAIN, {})
     fields = (await async_get_all_descriptions(hass))["notify"]["com_system"]["fields"]
     assert list(fields) == ["title", "message", "people", "receivers"]
+    # The form starts with Everyone and All Areas, as the Test page does.
+    assert fields["people"]["default"] == {
+        "active_choice": "Everyone",
+        "Everyone": True,
+    }
+    assert fields["receivers"]["default"] == {
+        "active_choice": "All Areas",
+        "All Areas": True,
+    }
     choices = fields["people"]["selector"]["choose"]["choices"]
     assert list(choices) == ["Individuals", "Everyone"]
     assert choices["Individuals"]["selector"]["entity"] == {

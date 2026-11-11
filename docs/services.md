@@ -16,8 +16,8 @@ send a notification to the receivers that match its [targets](targets.md).
 `people` and `receivers` are the targets. They are combined as a union;
 see [targets](targets.md). A field that is not given is not targeted, so
 with only `receivers` no person is targeted, and the other way round. Give
-at least one. In the form, untick a field to leave it out; **Everyone** and
-**All Areas** are what the Test page starts with.
+at least one. In the form, untick a field to leave it out. The form starts with
+**Everyone** and **All Areas**, as the Test page does.
 
 ### People
 
