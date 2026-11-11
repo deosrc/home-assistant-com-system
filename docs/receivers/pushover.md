@@ -14,9 +14,9 @@ reached.
 A notification is delivered by calling the entry's own
 `notify.<name>` action, where the name is the one given when the entry was
 set up (lower case, spaces as underscores), with the message, the device as
-its `target` and, when given, the title. If that action does not exist (for example the Pushover
-entry is not loaded) the delivery fails for that receiver only, with the
-reason in the result.
+its `target` and, when given, the title. If that action does not exist (for
+example the Pushover entry is not loaded) the delivery fails for that
+receiver only, with the reason in the result.
 
 ## Supported content
 
