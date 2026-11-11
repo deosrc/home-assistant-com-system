@@ -173,3 +173,9 @@ async def test_attaches_to_source_device(hass: HomeAssistant) -> None:
         assert {e.device_id for e in entities} == {device.id}
     finally:
         unregister_receiver_type("tv")
+
+
+async def test_receiver_entity_has_a_notification_icon(hass: HomeAssistant) -> None:
+    """The receiver entity shows a bell rather than the event default."""
+    await _setup(hass, _entry())
+    assert hass.states.get(RECEIVER).attributes["icon"] == "mdi:bell-ring"
