@@ -36,7 +36,8 @@ detected:
 
 Detection offers receivers. Sending is added as each type is built. So far
 [Persistent notification](persistent-notification.md),
-[mobile app](mobile-app.md) and [Pushover](pushover.md) receivers send.
+[mobile app](mobile-app.md), [Pushover](pushover.md) and
+[webOS TV](webostv.md) receivers send.
 
 ### Deleting, disabling and removed devices
 
@@ -58,10 +59,11 @@ A custom receiver is a script that takes a `notification` object; see
 
 Choose **Configure** on a receiver to set the people it relates to (not
 offered for receiver types that cannot relate to a person, such as
-Persistent notification, or whose person is worked out for them, such as
+Persistent notification and webOS TV, or whose person is worked out for
+them, such as
 [mobile app](mobile-app.md#which-person-a-device-belongs-to)). Pushover has
-no user link, so its person is [chosen here](pushover.md#person-and-area). Com
-System uses this to find the receivers for a person. Leave it empty if the
+no user link, so its person is [chosen here](pushover.md#person-and-area).
+Com System uses this to find the receivers for a person. Leave it empty if the
 receiver is not tied to anyone.
 
 A receiver's area is not set here. It is the area of the receiver's device

@@ -76,15 +76,15 @@ records the conventions and how things work as built.
   notification)` returns a list of warnings (content the type dropped) and
   raises to report a failure; the base class raises `NotImplementedError`,
   which the dispatcher reports as a failed result. The custom, persistent
-  notification, mobile app and Pushover types deliver so far; each other built-in
-  type's own feature implements it.
+  notification, mobile app, Pushover and webOS TV types deliver so far; each
+  other built-in type's own feature implements it.
   `associated_people(hass, receiver)` takes `hass` so a type can look people
   up at use time.
 - `builtin_types.py`: the six built-in types (mobile app, Alexa Media
   Player, persistent notification, Pushover, webOS TV, Music Assistant),
   registered in `async_setup`. They have detection; delivery is added by
-  each type's own feature (the persistent notification, mobile app and
-  Pushover types have it).
+  each type's own feature (the persistent notification, mobile app, Pushover
+  and webOS TV types have it).
   `PersistentNotificationReceiverType.async_deliver` calls
   `persistent_notification.create` (blocking) with `message` and, when
   given, `title`, and never sends `notification_id`: HA then generates one,
@@ -140,6 +140,19 @@ records the conventions and how things work as built.
   default is personal if a person is linked, else shared). Until it is loaded
   `audience_of` infers the default. The panel does not show or edit it: it is
   changed on the entity. Platforms are `PLATFORMS` in `__init__.py`.
+- `webostv.py` and `WebOSTVReceiverType` (an `EntryReceiverType`): delivery
+  calls `notify.<slugify(config entry title)>` (the legacy notify platform
+  the integration loads by discovery, named from the title at setup time)
+  with `message` and, if `notification["data"]["icon"]` is set,
+  `data: {icon}`; those are the only keys the integration reads (checked
+  against HA 2025.1 source), so the title is dropped with a warning. The
+  integration logs rather than raises when the TV is unreachable, so that is
+  reported as delivered. The source id is the entry's unique id, which is
+  also the TV's device identifier `(webostv, id)`, so
+  `source_device_identifiers` attaches the entities to that device and the
+  area is the TV's. `supports_people = False`. The `data` key is not in the
+  `notify.com_system` schema yet; the icon is tested through the delivery
+  function.
 - `detection.py`: `ReceiverDetector` is created by the hub entry's setup
   (`entry.runtime_data`). It detects once Home Assistant has started, after
   device registry changes (debounced) and hourly. For each candidate it

@@ -209,10 +209,6 @@ Each type needs a receiver-type definition (names provisional) covering:
   `attachment` data key (a local file path that must be in
   `allowlist_external_dirs`, so a URL or media reference needs resolving to
   a file first), and other options (sound, URL) go in `data`.
-- **webOS TV** – one receiver per webostv config entry. Delivery calls the TV's
-  notify action (an on-screen toast: message only, with an optional icon in
-  `data`). TVs are shared devices with no person; the area comes from the device
-  registry.
 - **Music Assistant** – one receiver per Music Assistant player. Delivery calls
   Music Assistant's announcement action rather than a notify action (the message
   is spoken; options such as an announcement URL or volume go in `data`). How a
@@ -277,7 +273,7 @@ several people is treated as shared (see below) and reached through areas or
 explicit targets.
 
 **Other receiver types:** the mechanism is TBD for each. For example, Alexa
-devices and TVs are likely to be associated by area rather than by person,
+devices are likely to be associated by area rather than by person,
 while Pushover is associated with a person manually (built).
 
 ## 3. The `notify.com_system` action
