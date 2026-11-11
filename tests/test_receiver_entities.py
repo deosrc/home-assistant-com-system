@@ -178,14 +178,14 @@ async def test_attaches_to_source_device(hass: HomeAssistant) -> None:
 async def test_receiver_entity_has_a_notification_icon(hass: HomeAssistant) -> None:
     """The receiver entity shows a bell rather than the event default."""
     await _setup(hass, _entry())
-    assert hass.states.get(RECEIVER).attributes["icon"] == "mdi:bell-ring"
+    assert hass.states.get(RECEIVER).attributes["icon"] == "mdi:message-text"
 
 
 async def test_switch_icon_follows_state(hass: HomeAssistant) -> None:
     """The switch shows a bell, crossed out when notifications are off."""
     await _setup(hass, _entry())
-    assert hass.states.get(SWITCH).attributes["icon"] == "mdi:bell"
+    assert hass.states.get(SWITCH).attributes["icon"] == "mdi:message-text"
     await hass.services.async_call(
         "switch", "turn_off", {"entity_id": SWITCH}, blocking=True
     )
-    assert hass.states.get(SWITCH).attributes["icon"] == "mdi:bell-off"
+    assert hass.states.get(SWITCH).attributes["icon"] == "mdi:message-off"

@@ -37,8 +37,8 @@ class ReceiverEnabledSwitch(ReceiverEntity, SwitchEntity, RestoreEntity):
 
     @property
     def icon(self) -> str:
-        """Return a bell, crossed out while notifications are off."""
-        return "mdi:bell" if self.is_on else "mdi:bell-off"
+        """Return a chat bubble, crossed out while notifications are off."""
+        return "mdi:message-text" if self.is_on else "mdi:message-off"
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Enable the receiver."""

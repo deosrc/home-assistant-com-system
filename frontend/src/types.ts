@@ -60,7 +60,7 @@ export type ReceiversTarget =
 
 export interface NotifyTargets {
   /** Everyone, or the listed `person.*` entities. */
-  person?: PersonTarget;
+  people?: PersonTarget;
   /** Every receiver with an area, or a selection of receivers. */
   receivers?: ReceiversTarget;
 }

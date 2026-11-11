@@ -1,6 +1,9 @@
 {
   "domain": "com_system",
   "name": "Com System",
+  "categories": [
+    "messaging_notifications"
+  ],
   "codeowners": ["@deosrc"],
   "config_flow": true,
   "dependencies": ["frontend", "http", "panel_custom", "websocket_api"],

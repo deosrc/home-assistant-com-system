@@ -40,7 +40,7 @@ class NotificationReceiverEntity(ReceiverEntity, EventEntity):
     """
 
     entity_key = ENTITY_KEY
-    _attr_icon = "mdi:bell-ring"
+    _attr_icon = "mdi:message-text"
 
     def __init__(self, hass: HomeAssistant, receiver: Receiver) -> None:
         """Initialise with the delivery results as event types."""

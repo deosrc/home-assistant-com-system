@@ -237,7 +237,7 @@ async def test_notify_by_person_reaches_personal_only(hass: HomeAssistant) -> No
     calls: list[ServiceCall] = []
     hass.services.async_register("notify", "mobile_app_pixel", calls.append)
     await _receiver(hass)
-    data = {"message": "Hi", "person": ["person.alice"]}
+    data = {"message": "Hi", "people": ["person.alice"]}
     await hass.services.async_call(
         "notify", "com_system", data, blocking=True, return_response=True
     )

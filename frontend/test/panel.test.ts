@@ -301,7 +301,7 @@ describe("testing tool", () => {
     const allAreas = { active_choice: "All Areas", "All Areas": true };
     expect(callWS).toHaveBeenCalledWith({
       type: "com_system/notify/preview",
-      person: everyone,
+      people: everyone,
       receivers: allAreas,
     });
     // Individuals and Select come first, Everyone and All Areas second.
@@ -382,7 +382,7 @@ describe("testing tool", () => {
     await settle(view);
     expect(callWS).toHaveBeenCalledWith({
       type: "com_system/notify/preview",
-      person: ["person.alice"],
+      people: ["person.alice"],
       receivers: allAreas,
     });
 
@@ -405,7 +405,7 @@ describe("testing tool", () => {
     };
     expect(callWS).toHaveBeenCalledWith({
       type: "com_system/notify/preview",
-      person: ["person.alice"],
+      people: ["person.alice"],
       receivers: selected,
     });
 
@@ -414,7 +414,7 @@ describe("testing tool", () => {
     expect(callWS).toHaveBeenCalledWith({
       type: "com_system/notify/test",
       message: "Hello",
-      person: ["person.alice"],
+      people: ["person.alice"],
       receivers: selected,
     });
     await settle(view);
@@ -482,7 +482,7 @@ describe("testing tool with the Home Assistant Actions form", () => {
               data: {
                 message: "Hello",
                 title: "Hi",
-                person: {
+                people: {
                   active_choice: "Individuals",
                   Individuals: ["person.alice"],
                   Everyone: true,
@@ -504,7 +504,7 @@ describe("testing tool with the Home Assistant Actions form", () => {
       await settle(view);
       expect(callWS).toHaveBeenCalledWith({
         type: "com_system/notify/preview",
-        person: ["person.alice"],
+        people: ["person.alice"],
         receivers: selected,
       });
       // The form is given back the same selection.
@@ -513,7 +513,7 @@ describe("testing tool with the Home Assistant Actions form", () => {
         data: {
           title: "Hi",
           message: "Hello",
-          person: {
+          people: {
             active_choice: "Individuals",
             Individuals: ["person.alice"],
           },
@@ -527,7 +527,7 @@ describe("testing tool with the Home Assistant Actions form", () => {
         type: "com_system/notify/test",
         message: "Hello",
         title: "Hi",
-        person: ["person.alice"],
+        people: ["person.alice"],
         receivers: selected,
       });
 
@@ -550,7 +550,7 @@ describe("testing tool with the Home Assistant Actions form", () => {
       });
       expect(
         (control as unknown as { value: { data: object } }).value.data,
-      ).not.toHaveProperty("person");
+      ).not.toHaveProperty("people");
     }
   });
 });

@@ -117,7 +117,7 @@ async def test_not_reached_by_everyone(hass: HomeAssistant) -> None:
             "com_system",
             {
                 "message": "Hello",
-                "person": {"active_choice": "Everyone", "Everyone": True},
+                "people": {"active_choice": "Everyone", "Everyone": True},
             },
             blocking=True,
             return_response=True,

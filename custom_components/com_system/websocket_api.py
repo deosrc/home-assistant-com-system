@@ -34,13 +34,13 @@ from .detection import discovery_unique_id
 from .dispatcher import REASON_DISABLED
 from .notify import (
     ATTR_MESSAGE,
-    ATTR_PERSON,
+    ATTR_PEOPLE,
     ATTR_RECEIVERS,
     ATTR_TITLE,
     NOTIFY_DOMAIN,
     SERVICE_NAME,
     resolve_call_targets,
-    validate_person,
+    validate_people,
     validate_receivers,
 )
 from .receiver import Receiver
@@ -234,7 +234,7 @@ def ws_dashboard(
 
 
 _TARGET_FIELDS = {
-    vol.Optional(ATTR_PERSON): validate_person,
+    vol.Optional(ATTR_PEOPLE): validate_people,
     vol.Optional(ATTR_RECEIVERS): validate_receivers,
 }
 
