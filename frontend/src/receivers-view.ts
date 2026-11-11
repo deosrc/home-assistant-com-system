@@ -2,7 +2,6 @@ import { LitElement, css, html } from "lit";
 import { ComSystemApi, errorMessage } from "./api";
 import { sharedStyles } from "./styles";
 import type {
-  Audience,
   DiscoveryInfo,
   HomeAssistant,
   ReceiverInfo,
@@ -124,14 +123,6 @@ export class ComSystemReceivers extends LitElement {
       .checks .problem {
         color: var(--error-color, #db4437);
       }
-      select.audience {
-        font: inherit;
-        color: var(--primary-text-color);
-        background: var(--card-background-color, #fff);
-        border: 1px solid var(--divider-color, #e0e0e0);
-        border-radius: 4px;
-        padding: 4px 8px;
-      }
     `,
   ];
 
@@ -147,7 +138,7 @@ export class ComSystemReceivers extends LitElement {
     if (!this.hass) return;
     // Load once hass is set, then refetch when a switch state changes.
     const signature = Object.entries(this.hass.states)
-      .filter(([id]) => id.startsWith("switch.") || id.startsWith("select."))
+      .filter(([id]) => id.startsWith("switch."))
       .map(([id, s]) => `${id}=${s.state}`)
       .join(",");
     if (signature !== this.lastSignature) {
@@ -167,39 +158,6 @@ export class ComSystemReceivers extends LitElement {
     } catch (err) {
       this.error = errorMessage(err);
     }
-  }
-
-  private async changeAudience(receiver: ReceiverInfo, ev: Event) {
-    const control = ev.target as HTMLSelectElement;
-    try {
-      await new ComSystemApi(this.hass).setAudience(
-        receiver.entry_id,
-        control.value as Audience,
-      );
-      await this.load();
-    } catch (err) {
-      control.value = receiver.audience ?? "";
-      this.error = errorMessage(err);
-    }
-  }
-
-  private renderAudience(r: ReceiverInfo) {
-    if (r.audience === null) {
-      return html`<span class="muted">–</span>`;
-    }
-    return html`<select
-      class="audience"
-      .value=${r.audience}
-      ?disabled=${!r.available}
-      @change=${(ev: Event) => this.changeAudience(r, ev)}
-    >
-      <option value="personal" ?selected=${r.audience === "personal"}>
-        Personal
-      </option>
-      <option value="shared" ?selected=${r.audience === "shared"}>
-        Shared
-      </option>
-    </select>`;
   }
 
   private async toggle(receiver: ReceiverInfo, ev: Event) {
@@ -361,7 +319,6 @@ export class ComSystemReceivers extends LitElement {
           <th class="switch" aria-label="Enabled"></th>
           <th>Name</th>
           <th>Type</th>
-          <th>Use</th>
           <th>Targets</th>
         </tr>
       </thead>
@@ -391,9 +348,6 @@ export class ComSystemReceivers extends LitElement {
               </td>
               <td>${r.name}</td>
               <td>${r.type}</td>
-              <td @click=${(ev: Event) => ev.stopPropagation()}>
-                ${this.renderAudience(r)}
-              </td>
               <td>${this.renderTargets(r)}</td>
             </tr>
           `,

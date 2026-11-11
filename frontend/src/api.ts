@@ -1,5 +1,4 @@
 import type {
-  Audience,
   DashboardData,
   DiscoveryInfo,
   HomeAssistant,
@@ -70,14 +69,6 @@ export class ComSystemApi {
 
   rescanScripts(): Promise<void> {
     return this.hass.callWS({ type: "com_system/scripts/rescan" });
-  }
-
-  setAudience(entryId: string, audience: Audience): Promise<void> {
-    return this.hass.callWS({
-      type: "com_system/receivers/set_audience",
-      entry_id: entryId,
-      audience,
-    });
   }
 
   setEnabled(entryId: string, enabled: boolean): Promise<void> {

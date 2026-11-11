@@ -112,9 +112,8 @@ records the conventions and how things work as built.
   person. `select.py` is the `audience` select (`personal`/`shared`,
   mobile app receivers only, `RestoreEntity`, the source of truth; the
   default is personal if a person is linked, else shared). Until it is loaded
-  `audience_of` infers the default. The `receivers/set_audience` websocket
-  command calls its service. The panel's Use column edits it. Platforms are
-  `PLATFORMS` in `__init__.py`.
+  `audience_of` infers the default. The panel does not show or edit it: it is
+  changed on the entity. Platforms are `PLATFORMS` in `__init__.py`.
 - `detection.py`: `ReceiverDetector` is created by the hub entry's setup
   (`entry.runtime_data`). It detects once Home Assistant has started, after
   device registry changes (debounced) and hourly. For each candidate it

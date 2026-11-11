@@ -35,9 +35,9 @@ configuration entity) on its device, with two options:
   it.
 
 A new receiver starts as personal when a person is linked and as shared
-when not. The choice is kept across restarts. Change it in the
-[receivers view](../ui.md#receivers), on the device page, or with the
-`select.select_option` action:
+when not. The choice is kept across restarts. Change it on the
+device page (under Configuration) or with the `select.select_option`
+action:
 
 ```yaml
 action: select.select_option
