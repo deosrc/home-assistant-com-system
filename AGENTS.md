@@ -207,7 +207,7 @@ records the conventions and how things work as built.
 - `config_flow.py`: the user step creates the hub if none exists, otherwise
   it aborts `receivers_are_discovered` (receivers come from discoveries). One
   hub is enforced there. The options flow of a receiver edits its people; the hub's
-  options flow is a stub. `integration_discovery` aborts with
+  options flow edits the history limits. `integration_discovery` aborts with
   `not_available` without a hub or a known type, otherwise sets the unique
   id, aborts if configured and shows a confirm-only `confirm` step that
   creates the receiver (core's Ignore needs no code). Reconfigure renames a
@@ -272,13 +272,30 @@ records the conventions and how things work as built.
   `ReceiverResult(receiver, type_name, result, reason, warnings)`, ordered by
   name; `result` is one of `RESULTS` (`delivered`, `failed`, `skipped`).
   Conditions are not evaluated yet.
+- `history.py`: `NotificationHistory` (`hass.data[DOMAIN][DATA_HISTORY]`,
+  created in `async_setup`) keeps records newest first in a `Store`
+  (`com_system.history`, saved with a delay). A record is `{id, time,
+  notification, results}`, results being `ReceiverResult.as_dict()`
+  (including warnings). `ResolvedTargets.reasons` (by entry id) and
+  `ReceiverResult.reasons` say why a receiver was included: `everyone` / `all_areas`
+  when those choices matched it, else the receiver's own `person`/`area`
+  that matched, and `receiver` when named; the preview
+  command and the action response carry them, and the panel's `reasons.ts`
+  renders them as badges. `async_dispatch` records every send, after feeding
+  each receiver entity's last attempt. The limits are the hub entry's
+  options `history_max_count` (default 200) and `history_max_age_days`
+  (default 30), read by `limits()` each time, so the hub has no update
+  listener and nothing reloads. Pruning happens on record and on list.
+  `async_last_attempt(entry_id)` finds a receiver's latest result. The hub's
+  options flow edits the limits. Docs: `docs/history.md`.
 - `websocket_api.py`: the commands behind the panel
   (`com_system/ping`, `dashboard`, `receivers/list`, `receivers/set_enabled`,
   `scripts/check` (`_script_checks`: why a script is or
   is not a receiver, built on `notification_script_problems`; `can_rescan`
   is false when registered, ignored or already pending) and
   `scripts/rescan` (calls the hub detector's `async_detect`),
-  `discoveries/list`, `notify/preview`, `notify/test`). Every command must have `@websocket_api.require_admin`;
+  `discoveries/list`, `history/list`, `notify/preview`, `notify/test`).
+  Every command must have `@websocket_api.require_admin`;
   `tests/test_panel.py` checks all of them reject a read-only user. They read
   the registry and config entries (`areas` come from
   `ReceiverRegistry.areas_of`); enabling or disabling calls the receiver's
@@ -287,7 +304,7 @@ records the conventions and how things work as built.
   commands to `async_register_commands` and to `COMMANDS` in the test.
 - `frontend/`: the panel source (Lit 3, TypeScript, Vite 6, Vitest, ESLint).
   `com-system-panel.ts` is the shell and navigation (routes `dashboard`,
-  `receivers` and `test` under `/com-system/`), `api.ts` wraps the websocket
+  `receivers`, `history` and `test` under `/com-system/`), `api.ts` wraps the websocket
   commands (`ComSystemApi`), and each view is its own element
   (`dashboard-view.ts`, `receivers-view.ts`, `test-view.ts`); the first two
   refetch when switch states change. `test-view.ts` is the testing tool: it

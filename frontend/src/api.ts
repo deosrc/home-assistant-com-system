@@ -1,6 +1,7 @@
 import type {
   DashboardData,
   DiscoveryInfo,
+  HistoryRecord,
   HomeAssistant,
   NotifyTargets,
   PreviewEntry,
@@ -58,6 +59,14 @@ export class ComSystemApi {
       ...(title ? { title } : {}),
       ...targets,
     });
+  }
+
+  async history(limit?: number): Promise<HistoryRecord[]> {
+    const result = await this.hass.callWS<{ notifications: HistoryRecord[] }>({
+      type: "com_system/history/list",
+      ...(limit ? { limit } : {}),
+    });
+    return result.notifications;
   }
 
   checkScript(entityId: string): Promise<ScriptCheckResult> {

@@ -61,3 +61,11 @@ DETECTION_DEBOUNCE_SECONDS = 5
 AUDIENCE_PERSONAL = "personal"
 AUDIENCE_SHARED = "shared"
 AUDIENCES = (AUDIENCE_PERSONAL, AUDIENCE_SHARED)
+
+# Notification history (``history.py``), kept in a Home Assistant ``Store``.
+DATA_HISTORY = "history"
+# Hub entry options: how many notifications and how many days are kept.
+CONF_HISTORY_MAX_COUNT = "history_max_count"
+CONF_HISTORY_MAX_AGE_DAYS = "history_max_age_days"
+DEFAULT_HISTORY_MAX_COUNT = 200
+DEFAULT_HISTORY_MAX_AGE_DAYS = 30

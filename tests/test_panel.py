@@ -30,6 +30,7 @@ COMMANDS = [
     {"type": "com_system/scripts/rescan"},
     {"type": "com_system/notify/preview"},
     {"type": "com_system/notify/test", "message": "x"},
+    {"type": "com_system/history/list"},
 ]
 
 
@@ -324,6 +325,7 @@ async def test_notify_preview_and_test(hass: HomeAssistant, hass_ws_client) -> N
             "type": "Script",
             "outcome": "reached",
             "reason": None,
+            "reasons": [{"kind": "receiver", "id": on.entry_id}],
         },
         {
             "entry_id": off.entry_id,
@@ -331,6 +333,7 @@ async def test_notify_preview_and_test(hass: HomeAssistant, hass_ws_client) -> N
             "type": "Script",
             "outcome": "skipped",
             "reason": "Receiver is disabled",
+            "reasons": [{"kind": "receiver", "id": off.entry_id}],
         },
     ]
 

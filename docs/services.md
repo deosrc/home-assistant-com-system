@@ -113,6 +113,9 @@ results:
     result: delivered # delivered, failed or skipped
     reason: null # why it failed or was skipped
     warnings: [] # content the receiver dropped
+    reasons: # why it was included: its area or person, or it was named
+      - kind: person # everyone, all_areas, person, area or receiver
+        id: person.alice # not set for everyone and all_areas
 counts:
   delivered: 1
   failed: 0

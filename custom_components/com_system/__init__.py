@@ -22,6 +22,7 @@ from .const import (
     CONF_ENTRY_TYPE,
     DATA_COMPONENT,
     DATA_ENTITIES,
+    DATA_HISTORY,
     DATA_REGISTRY,
     DOMAIN,
     ENTRY_TYPE_HUB,
@@ -29,6 +30,7 @@ from .const import (
     RECEIVER_ENTRY_TYPES,
 )
 from .detection import ReceiverDetector
+from .history import NotificationHistory
 from .notify import async_register_notify_action
 from .panel import async_register_panel
 from .registry import ReceiverRegistry
@@ -47,6 +49,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.data[DOMAIN] = {
         DATA_REGISTRY: ReceiverRegistry(hass),
         DATA_ENTITIES: {},
+        DATA_HISTORY: NotificationHistory(hass),
         # The notification_receiver domain is provided by this integration.
         DATA_COMPONENT: EntityComponent[EventEntity](
             _LOGGER, NOTIFICATION_RECEIVER_DOMAIN, hass

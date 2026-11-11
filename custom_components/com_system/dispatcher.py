@@ -5,13 +5,14 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from homeassistant.core import HomeAssistant
 
 from .const import (
     DATA_ENTITIES,
+    DATA_HISTORY,
     DOMAIN,
     RESULT_DELIVERED,
     RESULT_FAILED,
@@ -37,6 +38,8 @@ class ReceiverResult:
     result: str
     reason: str | None = None
     warnings: list[str] = field(default_factory=list)
+    # Why the receiver was included; see ``ResolvedTargets.reasons``.
+    reasons: list[dict[str, str]] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
         """Return the result as response data."""
@@ -47,6 +50,7 @@ class ReceiverResult:
             "result": self.result,
             "reason": self.reason,
             "warnings": list(self.warnings),
+            "reasons": [dict(r) for r in self.reasons],
         }
 
 
@@ -104,7 +108,8 @@ async def async_dispatch(
 
     Receivers are delivered to concurrently; one failing or raising never
     affects another. Skipped (disabled) receivers get a skipped result. Every
-    attempt is recorded on the receiver's entity. Results are ordered by
+    attempt is recorded on the receiver's entity and in the history store.
+    Results are ordered by
     receiver name, then entry id.
     """
     registry: ReceiverRegistry = hass.data[DOMAIN]["registry"]
@@ -121,9 +126,13 @@ async def async_dispatch(
         for r in resolved.skipped
     ]
     results = sorted(
-        [*delivered, *skipped],
+        [
+            replace(r, reasons=list(resolved.reasons.get(r.receiver.entry_id, [])))
+            for r in [*delivered, *skipped]
+        ],
         key=lambda x: (x.receiver.name.casefold(), x.receiver.entry_id),
     )
     for result in results:
         _record(hass, result, notification)
+    await hass.data[DOMAIN][DATA_HISTORY].async_record(notification, results)
     return results

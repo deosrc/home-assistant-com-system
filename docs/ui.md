@@ -48,6 +48,15 @@ them; see [receiver discovery](receivers/README.md#automatic-detection). The
 sources are not listed. A receiver with a type that is no longer known stays
 in the list, with the type id as its type.
 
+## Recent
+
+The notifications sent, newest first, each with its title and message, the
+time, and every receiver's result (delivered, failed or skipped) with the
+reason and any warnings. The **Why** column says why the receiver was
+included (see [Why a receiver was included](#why-a-receiver-was-included)).
+**Refresh** reloads the list. Only the most recent notifications are kept;
+see [history](history.md).
+
 ## Test
 
 The testing tool sends a test notification and shows what happens.
@@ -71,6 +80,23 @@ The testing tool sends a test notification and shows what happens.
   skipped) with the reason and any warnings, and the counts.
 - If nothing could be attempted, the error from the action is shown.
 
+## Why a receiver was included
+
+The Test page (both tables) and the Recent page have a **Why** column of
+badges, styled like the targets on the Receivers page. A receiver can have
+several:
+
+- **All Areas** or **Everyone**, when that choice matched it (the receiver's
+  own area or person is then not listed);
+- an **area** badge for the receiver's own area, when an area target
+  matched it;
+- a **person** badge for its own person, when that person matched it;
+- **Named** when the receiver itself was selected, directly or through its
+  device, or a label.
+
+A receiver that matched more than one way shows each badge. Records saved
+before this column existed show **None**.
+
 ## Websocket commands
 
 The panel talks to Home Assistant through these commands. All require an
@@ -88,6 +114,8 @@ admin user.
   `checks` (each `id`, `ok`, `message`) and `can_rescan`.
 - `com_system/scripts/rescan`: runs detection now (needs the hub loaded).
 - `com_system/discoveries/list`: the pending discoveries.
+- `com_system/history/list`: the recent notifications, newest first
+  (optional `limit`). Each has `id`, `time`, `notification` and `results`.
 - `com_system/notify/preview`: the receivers the targets (`people` and
   `receivers`, as in the action) would reach, each `reached` or
   `skipped` with a reason. Sends nothing.

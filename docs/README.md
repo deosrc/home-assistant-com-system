@@ -18,7 +18,7 @@ described in the [repository README](../README.md#development).
 4. To add your own receiver, write a
    [custom receiver script](receivers/custom.md); it is offered the same way.
 
-Hub options are a stub for now and do nothing yet.
+The hub's options set how much [history](history.md) is kept.
 
 ## Contents
 
@@ -30,6 +30,7 @@ Hub options are a stub for now and do nothing yet.
   notification goes.
 - [The notify.com_system action](services.md): sending a notification, its
   fields, delivery and the per-receiver response.
+- [History](history.md): the recent notifications and their limits.
 - [User interface](ui.md): the sidebar panel and its websocket commands.
 
 More documents (rich content, conditions and notification actions) are added as those

@@ -55,6 +55,10 @@ function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
               type: "Custom",
               outcome: "reached",
               reason: null,
+              reasons: [
+                { kind: "area", id: "office" },
+                { kind: "receiver", id: "e1" },
+              ],
             },
             {
               entry_id: "e2",
@@ -78,6 +82,31 @@ function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
             },
           ],
           counts: { delivered: 0, failed: 1, skipped: 0 },
+        };
+      case "com_system/history/list":
+        return {
+          notifications: [
+            {
+              id: "h1",
+              time: "2026-11-11T10:00:00+00:00",
+              notification: { title: "Laundry", message: "Done" },
+              results: [
+                {
+                  entry_id: "e1",
+                  name: "Office",
+                  type: "Custom",
+                  result: "failed",
+                  reason: "Boom",
+                  warnings: ["dropped"],
+                  reasons: [
+                    { kind: "person", id: "person.alice" },
+                    { kind: "area", id: "office" },
+                    { kind: "receiver", id: "e1" },
+                  ],
+                },
+              ],
+            },
+          ],
         };
       default:
         return null;
@@ -138,6 +167,28 @@ describe("panel", () => {
     const panel = await mount("/receivers", hass);
     const active = panel.shadowRoot!.querySelector("nav a.active")!;
     expect(active.textContent).toBe("Receivers");
+  });
+
+  it("shows recent notifications with results and warnings", async () => {
+    const { hass } = makeHass();
+    const panel = await mount("/history", hass);
+    const view = panel.shadowRoot!.querySelector("com-system-history")!;
+    await settle(view);
+    const text = view.shadowRoot!.textContent!;
+    expect(text).toContain("Laundry");
+    expect(text).toContain("Done");
+    expect(text).toContain("Office");
+    expect(text).toContain("failed");
+    expect(text).toContain("Boom");
+    const why = [...view.shadowRoot!.querySelectorAll("td .badge")];
+    expect(why.map((b) => b.textContent!.trim())).toEqual([
+      "Office",
+      "Alice",
+      "Named",
+    ]);
+    const badges = [...view.shadowRoot!.querySelectorAll("summary .count")];
+    expect(badges.map((b) => b.textContent!.trim())).toEqual(["1 failed"]);
+    expect(text).toContain("dropped");
   });
 
   it("lists receivers and discoveries and toggles enabled", async () => {
@@ -323,7 +374,10 @@ describe("testing tool", () => {
     expect(labels).toEqual(["Title (optional)", "Message"]);
     const rows = [...root.querySelectorAll(".preview tbody tr")];
     expect(rows.map((r) => r.textContent!.replace(/\s+/g, " ").trim())).toEqual(
-      ["Office Custom reached", "Den Custom skipped (Receiver is disabled)"],
+      [
+        "Office Custom OfficeNamed reached",
+        "Den Custom None skipped (Receiver is disabled)",
+      ],
     );
 
     const send = root.querySelector<HTMLButtonElement>(".send")!;
