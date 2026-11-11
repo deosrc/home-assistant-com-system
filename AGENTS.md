@@ -76,15 +76,15 @@ records the conventions and how things work as built.
   notification)` returns a list of warnings (content the type dropped) and
   raises to report a failure; the base class raises `NotImplementedError`,
   which the dispatcher reports as a failed result. The custom, persistent
-  notification and mobile app types deliver so far; each other built-in
+  notification, mobile app and Pushover types deliver so far; each other built-in
   type's own feature implements it.
   `associated_people(hass, receiver)` takes `hass` so a type can look people
   up at use time.
 - `builtin_types.py`: the six built-in types (mobile app, Alexa Media
   Player, persistent notification, Pushover, webOS TV, Music Assistant),
   registered in `async_setup`. They have detection; delivery is added by
-  each type's own feature (the persistent notification and mobile app types
-  have it).
+  each type's own feature (the persistent notification, mobile app and
+  Pushover types have it).
   `PersistentNotificationReceiverType.async_deliver` calls
   `persistent_notification.create` (blocking) with `message` and, when
   given, `title`, and never sends `notification_id`: HA then generates one,
@@ -106,6 +106,21 @@ records the conventions and how things work as built.
   The Alexa Media Player and Music Assistant device identifiers are assumed
   to be `(domain, <serial or player id>)` and were not checked against the
   integrations.
+- `pushover.py` and `PushoverReceiverType` (an `EntryReceiverType`, one
+  receiver per `pushover` config entry): delivery calls
+  `notify.<slugify(entry.data["name"])>` with `message` and, when given,
+  `title` (fails if the action is missing). Core registers that action by
+  loading the notify platform with the entry's name, and it takes `message`,
+  `title`, `target` (devices) and `data`. Checked against Home Assistant core
+  source (not run). `data` keys: `priority` (-2 to 2, Pushover's own),
+  `attachment` (a local file path inside `allowlist_external_dirs`, not a
+  URL), `url`, `url_title`, `sound`, `html`, `timestamp`, `ttl`, `retry`,
+  `expire`, `callback_url`, `tags`. Later `priority` should map
+  low/normal/high/critical to -1/0/1/2 (2 needs `retry` and `expire`), and
+  `image` must be downloaded or resolved to a local allowed path for
+  `attachment`; neither is built. The person is chosen manually (people
+  option; `supports_people` is True) and the entities get their own device
+  (no source device), so the area is set on that device.
 - `mobile_app.py` and `MobileAppReceiverType`: delivery calls
   `notify.mobile_app_<slugify(device_name)>` with `message` and `title`
   (fails if the action is missing). The source entry is the `mobile_app`

@@ -202,11 +202,12 @@ Each type needs a receiver-type definition (names provisional) covering:
   later goes missing, the receiver shows as unavailable and deliveries to it
   fail with a clear per-receiver result. Exact action names and data are
   verified against the integration during implementation.
-- **Pushover** – one receiver per Pushover config entry (notify target).
-  Delivery calls the Pushover notify action:
-  `priority` maps to Pushover priority, `image` to an attachment, and other
-  options (e.g. sound, URL) go in `data`. Pushover has no user link, so the
-  person is chosen manually by editing the receiver.
+- **Pushover** – built for message and title (see
+  `docs/receivers/pushover.md`). Still to do: `priority` maps to Pushover
+  priority (-1/0/1/2, with `retry` and `expire` for 2), `image` to the
+  `attachment` data key (a local file path that must be in
+  `allowlist_external_dirs`, so a URL or media reference needs resolving to
+  a file first), and other options (sound, URL) go in `data`.
 - **webOS TV** – one receiver per webostv config entry. Delivery calls the TV's
   notify action (an on-screen toast: message only, with an optional icon in
   `data`). TVs are shared devices with no person; the area comes from the device
@@ -276,7 +277,7 @@ explicit targets.
 
 **Other receiver types:** the mechanism is TBD for each. For example, Alexa
 devices and TVs are likely to be associated by area rather than by person,
-while Pushover could be associated with a person manually.
+while Pushover is associated with a person manually (built).
 
 ## 3. The `notify.com_system` action
 

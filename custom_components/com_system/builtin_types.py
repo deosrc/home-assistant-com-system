@@ -29,6 +29,7 @@ from .mobile_app import (
     linked_person,
     mobile_app_people,
 )
+from .pushover import async_deliver_pushover
 from .receiver import Receiver
 from .receiver_type import (
     DiscoveryCandidate,
@@ -191,8 +192,16 @@ class PushoverReceiverType(EntryReceiverType):
     type_id = RECEIVER_TYPE_PUSHOVER
     name = "Pushover"
     source_domain = "pushover"
-    # Not implemented yet (no delivery), so not offered as a discovery.
-    discoverable = False
+    capabilities = frozenset({"title"})
+    discoverable = True
+    # Pushover has no user link: the person is chosen in the options
+    # (supports_people stays True).
+
+    async def async_deliver(
+        self, hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
+    ) -> list[str]:
+        """Call the entry's ``notify.<name>`` action with message and title."""
+        return await async_deliver_pushover(hass, receiver, notification)
 
 
 class WebOSTVReceiverType(EntryReceiverType):
