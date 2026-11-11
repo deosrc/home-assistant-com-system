@@ -310,21 +310,25 @@ records the conventions and how things work as built.
   refetch when switch states change. `test-view.ts` is the testing tool: it
   previews with `notify/preview` on every target change and sends with
   `notify/test`. The form is Home Assistant's `ha-service-control` with
-  `hide-picker hide-description` and `.value = {action: "notify.com_system",
-  data}`; its `value-changed` `detail.value.data` holds `title`, `message`,
+  `hide-picker hide-description` and `.value` set to
+  `{action: "notify.com_system"}` with no `data` at first, so the form
+  applies the `default` of each field from the action description (as when
+  an action is picked in Developer tools; this relies on the form loading
+  defaults only when the value has no `data` key, so never seed `data`); its
+  `value-changed` `detail.value.data` holds `title`, `message`,
   `people` and `receivers` (choose values: when the user flips the choice
   the other choice's value stays in the object, so read `active_choice`
   first; the Select value is a target with any of `entity_id`, `area_id`,
   `device_id`, `floor_id`, `label_id`, all kept and sent), which are the
-  preview and send fields. The panel defaults to Everyone and All Areas.
-  It reads the fields from `hass.services` (our
+  preview and send fields. The view holds no defaults of its own; they live
+  in `SERVICE_DESCRIPTION`. The form reads the fields from `hass.services`
+  (our
   `async_set_service_schema` description), is an internal element that HA
   loads lazily, and its loading from a custom panel is unverified in a real
-  frontend; the view waits `controlTimeoutMs` for it and otherwise shows a
-  built-in form that edits the same state. Lit in jsdom drops template
-  expressions that are the last thing in a template (the response card, the
-  fallback's target lists), so `test-view.ts` wraps them in a `div`; keep a
-  wrapper if you add a trailing expression. The cards copy Developer tools
+  frontend; the view waits `controlTimeoutMs` for it and otherwise shows an
+  error. Lit in jsdom drops template expressions that are the last thing in
+  a template (the response card), so `test-view.ts` wraps them in a `div`;
+  keep a wrapper if you add a trailing expression. The cards copy Developer tools
   > Actions: `ha-card` with `.card-header` (title and a `.secondary` line),
   `.card-content` and `.card-actions` (button right-aligned, an
   `ha-progress-button raised` when HA has loaded it, else a native button).

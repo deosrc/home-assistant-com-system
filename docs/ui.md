@@ -65,11 +65,11 @@ The testing tool sends a test notification and shows what happens.
   Actions**, without the action picker. Enter an optional **title** and a
   **message**, and choose the targets: **Individuals** (one or more
   people) or **Everyone**, and **Select** (receivers, areas and so on) or
-  **All Areas**. Everyone and All Areas are what it starts with; untick a
-  field (or choose None in the simple form) to leave that group out, so it
-  is not targeted. The groups are combined as in the
-  [action](services.md#people). If Home Assistant has not loaded
-  that form, a simple form with the same fields is shown instead.
+  **All Areas**. It starts with the defaults of the action (Everyone and All
+  Areas), which Home Assistant reads from the action itself; untick a
+  field to leave that group out, so it is not targeted. The groups are
+  combined as in the [action](services.md#people). If Home Assistant has
+  not loaded that form, the page says so.
 - **Receivers reached** updates as you change the targets, without sending
   anything. Each matching receiver is `reached`, or `skipped` with the
   reason (it is disabled).
