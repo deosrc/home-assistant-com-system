@@ -35,6 +35,11 @@ class ReceiverEnabledSwitch(ReceiverEntity, SwitchEntity, RestoreEntity):
         if (last := await self.async_get_last_state()) is not None:
             self._attr_is_on = last.state != "off"
 
+    @property
+    def icon(self) -> str:
+        """Return a bell, crossed out while notifications are off."""
+        return "mdi:bell" if self.is_on else "mdi:bell-off"
+
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Enable the receiver."""
         self._attr_is_on = True
