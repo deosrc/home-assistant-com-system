@@ -149,6 +149,8 @@ class AlexaMediaReceiverType(DeviceReceiverType):
     type_id = RECEIVER_TYPE_ALEXA_MEDIA
     name = "Alexa Media Player"
     source_domain = "alexa_media"
+    # Not implemented yet (no delivery), so not offered as a discovery.
+    discoverable = False
 
 
 class PersistentNotificationReceiverType(ReceiverType):
@@ -189,6 +191,8 @@ class PushoverReceiverType(EntryReceiverType):
     type_id = RECEIVER_TYPE_PUSHOVER
     name = "Pushover"
     source_domain = "pushover"
+    # Not implemented yet (no delivery), so not offered as a discovery.
+    discoverable = False
 
 
 class WebOSTVReceiverType(EntryReceiverType):
@@ -197,6 +201,8 @@ class WebOSTVReceiverType(EntryReceiverType):
     type_id = RECEIVER_TYPE_WEBOSTV
     name = "webOS TV"
     source_domain = "webostv"
+    # Not implemented yet (no delivery), so not offered as a discovery.
+    discoverable = False
 
 
 class MusicAssistantReceiverType(DeviceReceiverType):
@@ -205,6 +211,8 @@ class MusicAssistantReceiverType(DeviceReceiverType):
     type_id = RECEIVER_TYPE_MUSIC_ASSISTANT
     name = "Music Assistant"
     source_domain = "music_assistant"
+    # Not implemented yet (no delivery), so not offered as a discovery.
+    discoverable = False
 
 
 BUILTIN_RECEIVER_TYPES: tuple[type[ReceiverType], ...] = (
