@@ -30,13 +30,14 @@ detected:
 | Mobile app | registered mobile app device |
 | Alexa Media Player | Echo device (only if the integration is installed) |
 | Persistent notification | Home Assistant (a single receiver) |
-| Pushover | Pushover config entry |
+| Pushover | device (target) of a Pushover account |
 | webOS TV | webOS TV config entry |
 | Music Assistant | Music Assistant player |
 
 Detection offers receivers. Sending is added as each type is built. So far
 [Persistent notification](persistent-notification.md),
-[mobile app](mobile-app.md) and [webOS TV](webostv.md) receivers send.
+[mobile app](mobile-app.md), [Pushover](pushover.md) and
+[webOS TV](webostv.md) receivers send.
 
 ### Deleting, disabling and removed devices
 
@@ -60,8 +61,9 @@ Choose **Configure** on a receiver to set the people it relates to (not
 offered for receiver types that cannot relate to a person, such as
 Persistent notification and webOS TV, or whose person is worked out for
 them, such as
-[mobile app](mobile-app.md#which-person-a-device-belongs-to)). Com System
-uses this to find the receivers for a person. Leave it empty if the
+[mobile app](mobile-app.md#which-person-a-device-belongs-to)). Pushover has
+no user link, so its person is [chosen here](pushover.md#person-and-area).
+Com System uses this to find the receivers for a person. Leave it empty if the
 receiver is not tied to anyone.
 
 A receiver's area is not set here. It is the area of the receiver's device
