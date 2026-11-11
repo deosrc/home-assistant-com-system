@@ -7,25 +7,21 @@ import type {
   NotifyTargets,
   SelectedTarget,
   PreviewEntry,
-  ReceiverInfo,
   SendResponse,
 } from "./types";
 
-/** The people field is a choice: everyone, or individual people. */
+/** The choices of the people and receivers fields. */
 const EVERYONE = "Everyone";
 const INDIVIDUALS = "Individuals";
-type PersonChoice = typeof EVERYONE | typeof INDIVIDUALS;
-
-/** The receivers field is a choice: a selection, or all areas. */
-const NONE = "None";
 const SELECT = "Select";
 const ALL_AREAS = "All Areas";
-type ReceiversChoice = typeof SELECT | typeof ALL_AREAS;
-
-/** The lists the built-in form edits. */
-type TargetKey = "people" | "area_id" | "entity_id";
 
 const ACTION = "notify.com_system";
+
+interface ActionValue {
+  action: string;
+  data?: Record<string, unknown>;
+}
 
 /** Home Assistant's own Actions form; loaded lazily, so it may be absent. */
 const CONTROL = "ha-service-control";
@@ -36,28 +32,21 @@ function ensureList(value: unknown): string[] {
 }
 
 /**
- * The testing tool: choose targets, preview which receivers they reach, and
- * send a test through the `notify.com_system` action.
+ * The testing tool: fill in the `notify.com_system` action, preview which
+ * receivers it reaches, and send a test through it.
  *
  * The form is Home Assistant's `ha-service-control` with its action picker
- * hidden, so it matches Developer tools > Actions. The element is loaded
- * lazily by Home Assistant, so if it is not defined shortly after the view
- * opens, a built-in form with the same fields is used instead. Both edit the
- * same state, which feeds the preview and the send.
+ * hidden, so it matches Developer tools > Actions. It starts from the action
+ * alone, with no data, so Home Assistant fills in the defaults from the
+ * action's description as it does when an action is picked. The page keeps
+ * no defaults of its own; it only follows what the form reports. The element
+ * is loaded lazily by Home Assistant, so if it is not defined shortly after
+ * the view opens, an error is shown.
  */
 export class ComSystemTest extends LitElement {
   declare hass: HomeAssistant;
-  declare private receivers: ReceiverInfo[];
-  declare private message: string;
-  declare private subject: string;
-  /** The individuals chosen when `personChoice` is Individuals. */
-  declare private people: string[];
-  /** Undefined: the field is not given, so people are not targeted. */
-  declare private personChoice?: PersonChoice;
-  /** The selection (area_id, entity_id, ...) when `receiversChoice` is Select. */
-  declare private selection: SelectedTarget;
-  /** Undefined: the field is not given, so receivers are not targeted. */
-  declare private receiversChoice?: ReceiversChoice;
+  /** The form's value; without data until the form has applied defaults. */
+  declare private value: ActionValue;
   declare private preview?: PreviewEntry[];
   declare private response?: SendResponse;
   declare private sending: boolean;
@@ -70,13 +59,7 @@ export class ComSystemTest extends LitElement {
 
   static properties = {
     hass: { attribute: false },
-    receivers: { state: true },
-    message: { state: true },
-    subject: { state: true },
-    people: { state: true },
-    personChoice: { state: true },
-    selection: { state: true },
-    receiversChoice: { state: true },
+    value: { state: true },
     preview: { state: true },
     response: { state: true },
     sending: { state: true },
@@ -123,40 +106,6 @@ export class ComSystemTest extends LitElement {
         align-items: center;
         gap: 8px;
       }
-      label.field {
-        display: block;
-        margin: 8px 0;
-      }
-      label.field span {
-        display: block;
-        font-size: 12px;
-        color: var(--secondary-text-color);
-      }
-      input[type="text"],
-      textarea {
-        box-sizing: border-box;
-        width: 100%;
-        font: inherit;
-        padding: 8px;
-        color: var(--primary-text-color);
-        background: var(--card-background-color, #fff);
-        border: 1px solid var(--divider-color, #e0e0e0);
-        border-radius: 4px;
-      }
-      fieldset {
-        margin: 8px 0;
-        border: 1px solid var(--divider-color, #e0e0e0);
-        border-radius: 4px;
-      }
-      legend {
-        font-size: 12px;
-        color: var(--secondary-text-color);
-      }
-      fieldset label {
-        display: inline-block;
-        margin-inline-end: 16px;
-        white-space: nowrap;
-      }
       table {
         width: 100%;
         border-collapse: collapse;
@@ -197,13 +146,7 @@ export class ComSystemTest extends LitElement {
 
   constructor() {
     super();
-    this.receivers = [];
-    this.message = "";
-    this.subject = "";
-    this.people = [];
-    this.personChoice = EVERYONE;
-    this.selection = {};
-    this.receiversChoice = ALL_AREAS;
+    this.value = { action: ACTION };
     this.sending = false;
   }
 
@@ -229,82 +172,56 @@ export class ComSystemTest extends LitElement {
     void Promise.race([defined, timeout]).then((ok) => (this.haControl = ok));
   }
 
-  /** The action call the form edits: only the fields with a value. */
-  private get actionValue() {
-    const data: Record<string, unknown> = {};
-    if (this.subject) data.title = this.subject;
-    if (this.message) data.message = this.message;
-    // A field that is not given is left out, which unticks it in the form.
-    if (this.personChoice === EVERYONE) {
-      data.people = { active_choice: EVERYONE, [EVERYONE]: true };
-    } else if (this.personChoice === INDIVIDUALS) {
-      data.people = { active_choice: INDIVIDUALS, [INDIVIDUALS]: this.people };
-    }
-    if (this.receiversChoice === ALL_AREAS) {
-      data.receivers = { active_choice: ALL_AREAS, [ALL_AREAS]: true };
-    } else if (this.receiversChoice === SELECT) {
-      data.receivers = { active_choice: SELECT, [SELECT]: this.selection };
-    }
-    return { action: ACTION, data };
+  /** The action data the form reports (empty until it has any). */
+  private get data(): Record<string, unknown> {
+    return this.value.data ?? {};
   }
 
-  private controlChanged(ev: CustomEvent<{ value: { data?: object } }>): void {
+  private get message(): string {
+    const message = this.data.message;
+    return message === undefined ? "" : String(message);
+  }
+
+  private get subject(): string {
+    const title = this.data.title;
+    return title === undefined ? "" : String(title);
+  }
+
+  private controlChanged(ev: CustomEvent<{ value: ActionValue }>): void {
     ev.stopPropagation();
-    const data = (ev.detail.value.data ?? {}) as Record<string, unknown>;
-    this.message = data.message === undefined ? "" : String(data.message);
-    this.subject = data.title === undefined ? "" : String(data.title);
-    const person = (data.people ?? {}) as Record<string, unknown>;
-    this.personChoice =
-      data.people === undefined
-        ? undefined
-        : person.active_choice === INDIVIDUALS
-          ? INDIVIDUALS
-          : EVERYONE;
-    this.people = ensureList(person[INDIVIDUALS]);
-    const receivers = (data.receivers ?? {}) as Record<string, unknown>;
-    this.receiversChoice =
-      data.receivers === undefined
-        ? undefined
-        : receivers.active_choice === SELECT
-          ? SELECT
-          : ALL_AREAS;
-    // Keep every key of the target selector (areas, devices, floors, ...).
-    const selection: SelectedTarget = {};
-    for (const [key, value] of Object.entries(
-      (receivers[SELECT] ?? {}) as Record<string, unknown>,
-    )) {
-      if (ensureList(value).length) selection[key] = ensureList(value);
-    }
-    this.selection = selection;
+    this.value = ev.detail.value;
     // The previous send no longer describes the selection.
     this.response = undefined;
     void this.refreshPreview();
   }
 
   private async init(): Promise<void> {
-    try {
-      this.receivers = await new ComSystemApi(this.hass).receivers();
-    } catch (err) {
-      this.error = errorMessage(err);
-    }
     await this.refreshPreview();
   }
 
-  /** Only the fields with a selection are sent. */
+  /** Only the fields the form gives are sent. */
   private get targets(): NotifyTargets {
     const targets: NotifyTargets = {};
-    if (this.personChoice === EVERYONE) {
+    const people = this.data.people as Record<string, unknown> | undefined;
+    if (people?.active_choice === EVERYONE) {
       targets.people = { active_choice: EVERYONE, [EVERYONE]: true };
-    } else if (this.people.length) {
-      targets.people = this.people;
+    } else if (ensureList(people?.[INDIVIDUALS]).length) {
+      targets.people = ensureList(people?.[INDIVIDUALS]);
     }
-    if (this.receiversChoice === ALL_AREAS) {
+    const receivers = this.data.receivers as
+      Record<string, unknown> | undefined;
+    if (receivers?.active_choice === ALL_AREAS) {
       targets.receivers = { active_choice: ALL_AREAS, [ALL_AREAS]: true };
-    } else if (
-      this.receiversChoice === SELECT &&
-      Object.keys(this.selection).length
-    ) {
-      targets.receivers = { active_choice: SELECT, [SELECT]: this.selection };
+    } else if (receivers?.active_choice === SELECT) {
+      const selection: SelectedTarget = {};
+      for (const [key, v] of Object.entries(
+        (receivers[SELECT] ?? {}) as Record<string, unknown>,
+      )) {
+        if (ensureList(v).length) selection[key] = ensureList(v);
+      }
+      if (Object.keys(selection).length) {
+        targets.receivers = { active_choice: SELECT, [SELECT]: selection };
+      }
     }
     return targets;
   }
@@ -318,25 +235,6 @@ export class ComSystemTest extends LitElement {
     } catch (err) {
       this.error = errorMessage(err);
     }
-  }
-
-  private chosen(key: TargetKey): string[] {
-    return key === "people" ? this.people : (this.selection[key] ?? []);
-  }
-
-  private toggle(key: TargetKey, id: string, checked: boolean): void {
-    const current = this.chosen(key).filter((x) => x !== id);
-    const next = checked ? [...current, id] : current;
-    if (key === "people") {
-      this.people = next;
-    } else {
-      const selection = { ...this.selection, [key]: next };
-      if (!next.length) delete selection[key];
-      this.selection = selection;
-    }
-    // The previous send no longer describes the selection.
-    this.response = undefined;
-    void this.refreshPreview();
   }
 
   private async send(): Promise<void> {
@@ -354,126 +252,6 @@ export class ComSystemTest extends LitElement {
     } finally {
       this.sending = false;
     }
-  }
-
-  private options(key: TargetKey): { id: string; name: string }[] {
-    const byName = (a: { name: string }, b: { name: string }) =>
-      a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
-    if (key === "area_id") {
-      return Object.entries(this.hass.areas ?? {})
-        .map(([id, a]) => ({ id, name: a.name }))
-        .sort(byName);
-    }
-    if (key === "people") {
-      return Object.entries(this.hass.states)
-        .filter(([id]) => id.startsWith("person."))
-        .map(([id, s]) => ({ id, name: s.attributes?.friendly_name ?? id }))
-        .sort(byName);
-    }
-    return this.receivers
-      .filter((r) => r.receiver_entity_id)
-      .map((r) => ({ id: r.receiver_entity_id!, name: r.name }))
-      .sort(byName);
-  }
-
-  private setPersonChoice(choice: PersonChoice | undefined): void {
-    this.personChoice = choice;
-    this.response = undefined;
-    void this.refreshPreview();
-  }
-
-  /** People: everyone, or individuals (listed only when chosen). */
-  private renderPeople() {
-    return html`<div class="people">
-      <fieldset>
-        <legend>People</legend>
-        ${[INDIVIDUALS, EVERYONE, NONE].map(
-          (choice) =>
-            html`<label
-              ><input
-                type="radio"
-                name="people"
-                .checked=${(this.personChoice ?? NONE) === choice}
-                @change=${() =>
-                  this.setPersonChoice(
-                    choice === NONE ? undefined : (choice as PersonChoice),
-                  )}
-              />
-              ${choice}</label
-            >`,
-        )}
-      </fieldset>
-      ${
-        this.personChoice === INDIVIDUALS
-          ? this.renderTargets("people", "Individuals")
-          : ""
-      }
-    </div>`;
-  }
-
-  private setReceiversChoice(choice: ReceiversChoice | undefined): void {
-    this.receiversChoice = choice;
-    this.response = undefined;
-    void this.refreshPreview();
-  }
-
-  /** Receivers: a selection (listed only when chosen), or all areas. */
-  private renderReceivers() {
-    return html`<div class="receivers">
-      <fieldset>
-        <legend>Receivers</legend>
-        ${[SELECT, ALL_AREAS, NONE].map(
-          (choice) =>
-            html`<label
-              ><input
-                type="radio"
-                name="receivers"
-                .checked=${(this.receiversChoice ?? NONE) === choice}
-                @change=${() =>
-                  this.setReceiversChoice(
-                    choice === NONE ? undefined : (choice as ReceiversChoice),
-                  )}
-              />
-              ${choice}</label
-            >`,
-        )}
-      </fieldset>
-      ${
-        this.receiversChoice === SELECT
-          ? html`<div class="select">
-              ${this.renderTargets("entity_id", "Receivers")}
-              ${this.renderTargets("area_id", "Areas")}
-            </div>`
-          : ""
-      }
-    </div>`;
-  }
-
-  private renderTargets(key: TargetKey, legend: string) {
-    const options = this.options(key);
-    return html`<fieldset>
-      <legend>${legend}</legend>
-      ${
-        options.length
-          ? options.map(
-              (o) =>
-                html`<label
-                  ><input
-                    type="checkbox"
-                    .checked=${this.chosen(key).includes(o.id)}
-                    @change=${(ev: Event) =>
-                      this.toggle(
-                        key,
-                        o.id,
-                        (ev.target as HTMLInputElement).checked,
-                      )}
-                  />
-                  ${o.name}</label
-                >`,
-            )
-          : html`<span class="muted">None available</span>`
-      }
-    </fieldset>`;
   }
 
   private renderPreview() {
@@ -549,31 +327,6 @@ export class ComSystemTest extends LitElement {
     </ha-card>`;
   }
 
-  private renderFallbackForm() {
-    return html`
-      <label class="field"
-        ><span>Title (optional)</span
-        ><input
-          type="text"
-          .value=${this.subject}
-          @input=${(ev: Event) =>
-            (this.subject = (ev.target as HTMLInputElement).value)}
-      /></label>
-      <label class="field"
-        ><span>Message</span
-        ><textarea
-          rows="2"
-          .value=${this.message}
-          @input=${(ev: Event) =>
-            (this.message = (ev.target as HTMLTextAreaElement).value)}
-        ></textarea>
-      </label>
-      <div class="targets">
-        ${this.renderPeople()} ${this.renderReceivers()}
-      </div>
-    `;
-  }
-
   /** HA's raised button when it is loaded, otherwise a styled native one. */
   private renderSendButton(canSend: boolean) {
     return customElements.get("ha-progress-button")
@@ -614,13 +367,14 @@ export class ComSystemTest extends LitElement {
                   hide-picker
                   hide-description
                   .hass=${this.hass}
-                  .value=${this.actionValue}
-                  @value-changed=${(
-                    ev: CustomEvent<{ value: { data?: object } }>,
-                  ) => this.controlChanged(ev)}
+                  .value=${this.value}
+                  @value-changed=${(ev: CustomEvent<{ value: ActionValue }>) =>
+                    this.controlChanged(ev)}
                 ></ha-service-control>`
               : this.haControl === false
-                ? this.renderFallbackForm()
+                ? html`<p class="error">
+                    Home Assistant's action form is not available.
+                  </p>`
                 : html`<p class="muted">Loading…</p>`
           }
           ${this.error ? html`<p class="error">${this.error}</p>` : ""}
