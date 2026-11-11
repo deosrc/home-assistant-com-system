@@ -119,6 +119,8 @@ class MobileAppReceiverType(DeviceReceiverType):
     name = "Mobile app"
     source_domain = "mobile_app"
     capabilities = frozenset({"title"})
+    # The person comes from the registering user, not from the options.
+    supports_people = False
 
     async def async_deliver(
         self, hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
@@ -133,7 +135,7 @@ class MobileAppReceiverType(DeviceReceiverType):
     def associated_people(
         self, hass: HomeAssistant, receiver: Receiver
     ) -> tuple[str, ...]:
-        """Return no one for a shared device, else the manual or linked person."""
+        """Return no one for a shared device, else the linked person."""
         return mobile_app_people(hass, receiver)
 
     def audience(self, hass: HomeAssistant, receiver: Receiver) -> str:

@@ -80,17 +80,18 @@ def audience_of(hass: HomeAssistant, receiver: Receiver) -> str:
 
 def default_audience(hass: HomeAssistant, receiver: Receiver) -> str:
     """Personal when a person is linked, otherwise shared."""
-    if receiver.people or linked_person(hass, receiver):
+    if linked_person(hass, receiver):
         return AUDIENCE_PERSONAL
     return AUDIENCE_SHARED
 
 
 def mobile_app_people(hass: HomeAssistant, receiver: Receiver) -> tuple[str, ...]:
-    """Return the receiver's person: none if shared, else manual, else linked."""
+    """Return the receiver's person: none if shared, else the linked one.
+
+    A mobile app receiver has no people option, so any stored one is ignored.
+    """
     if audience_of(hass, receiver) == AUDIENCE_SHARED:
         return ()
-    if receiver.people:
-        return receiver.people
     person = linked_person(hass, receiver)
     return (person,) if person else ()
 

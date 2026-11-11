@@ -108,8 +108,9 @@ records the conventions and how things work as built.
   `linked_person` resolves the person at each call: the `person.*` state
   whose `user_id` is the entry's `user_id`, else
   `persons_with_entity` for the tracker (first by entity id). People are
-  none when shared, else the receiver's manual people, else the linked
-  person. `select.py` is the `audience` select (`personal`/`shared`,
+  none when shared, else the linked person (the type has
+  `supports_people = False`, so there is no people option and a stored one
+  is ignored). `select.py` is the `audience` select (`personal`/`shared`,
   mobile app receivers only, `RestoreEntity`, the source of truth; the
   default is personal if a person is linked, else shared). Until it is loaded
   `audience_of` infers the default. The panel does not show or edit it: it is

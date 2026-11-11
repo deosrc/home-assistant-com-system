@@ -22,7 +22,9 @@ later changes to people are picked up:
    tracker.
 3. Otherwise, no person.
 
-A person set on the receiver with **Configure** overrides this link.
+The person cannot be chosen: there is no people option for a mobile app
+receiver. To change it, link the person to the right Home Assistant user or
+device tracker.
 
 ## Personal or shared
 

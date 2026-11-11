@@ -148,13 +148,23 @@ async def test_shared_hides_person_and_personal_restores(hass: HomeAssistant) ->
     assert _people(hass, entry) == ("person.alice",)
 
 
-async def test_manual_person_overrides_link(hass: HomeAssistant) -> None:
-    """A person set on the receiver wins over the link, unless shared."""
+async def test_stored_people_are_ignored(hass: HomeAssistant) -> None:
+    """The person comes from the link; a stored people option does nothing."""
     await _setup_hub(hass)
     _phone(hass)
     hass.states.async_set("person.alice", "home", {"user_id": USER})
     entry = await _receiver(hass, **{CONF_PEOPLE: ["person.bob"]})
-    assert _people(hass, entry) == ("person.bob",)
+    assert _people(hass, entry) == ("person.alice",)
+
+
+async def test_options_flow_has_no_people_field(hass: HomeAssistant) -> None:
+    """The options form of a mobile app receiver does not offer people."""
+    await _setup_hub(hass)
+    _phone(hass)
+    entry = await _receiver(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["step_id"] == "no_options"
+    assert not result.get("data_schema")
 
 
 async def test_audience_is_restored(hass: HomeAssistant) -> None:

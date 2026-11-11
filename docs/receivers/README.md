@@ -58,7 +58,8 @@ A custom receiver is a script that takes a `notification` object; see
 
 Choose **Configure** on a receiver to set the people it relates to (not
 offered for receiver types that cannot relate to a person, such as
-Persistent notification). Com
+Persistent notification, or whose person is worked out for them, such as
+[mobile app](mobile-app.md#which-person-a-device-belongs-to)). Com
 System uses this to find the receivers for a person. Leave it empty if the
 receiver is not tied to anyone.
 
