@@ -31,6 +31,7 @@ from .mobile_app import (
     mobile_app_people,
 )
 from .pushover import (
+    PUSHOVER_DATA_KEYS,
     PUSHOVER_DOMAIN,
     async_deliver_pushover,
     async_entry_devices,
@@ -131,7 +132,7 @@ class MobileAppReceiverType(DeviceReceiverType):
     type_id = RECEIVER_TYPE_MOBILE_APP
     name = "Mobile app"
     source_domain = "mobile_app"
-    capabilities = frozenset({"title"})
+    capabilities = frozenset({"title", "priority", "image", "data"})
     # The person comes from the registering user, not from the options.
     supports_people = False
 
@@ -201,6 +202,7 @@ class PersistentNotificationReceiverType(ReceiverType):
     type_id = RECEIVER_TYPE_PERSISTENT_NOTIFICATION
     name = "Persistent notification"
     discoverable = True
+    capabilities = frozenset({"title"})
     # Every user sees the same notifications, so there is no person.
     supports_people = False
     SOURCE_ID = "persistent_notification"
@@ -232,7 +234,9 @@ class PushoverReceiverType(ReceiverType):
 
     type_id = RECEIVER_TYPE_PUSHOVER
     name = "Pushover"
-    capabilities = frozenset({"title"})
+    capabilities = frozenset(
+        {"title", "priority", "image"} | {f"data.{key}" for key in PUSHOVER_DATA_KEYS}
+    )
     discoverable = True
     # Pushover has no user link: the person is chosen in the options
     # (supports_people stays True).
@@ -266,6 +270,8 @@ class WebOSTVReceiverType(EntryReceiverType):
     type_id = RECEIVER_TYPE_WEBOSTV
     name = "webOS TV"
     source_domain = "webostv"
+    # The toast shows the message and an icon; nothing else is read.
+    capabilities = frozenset({"data.icon"})
     # A TV is shared, so it has no person (and no people option).
     supports_people = False
 

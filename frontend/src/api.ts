@@ -3,6 +3,7 @@ import type {
   DiscoveryInfo,
   HistoryRecord,
   HomeAssistant,
+  NotifyContent,
   NotifyTargets,
   PreviewEntry,
   ReceiverInfo,
@@ -52,11 +53,13 @@ export class ComSystemApi {
     message: string,
     title: string | undefined,
     targets: NotifyTargets,
+    content: NotifyContent = {},
   ): Promise<SendResponse> {
     return this.hass.callWS({
       type: "com_system/notify/test",
       message,
       ...(title ? { title } : {}),
+      ...content,
       ...targets,
     });
   }

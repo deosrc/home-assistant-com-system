@@ -11,12 +11,40 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.util import slugify
 
+from .content import (
+    PRIORITY_CRITICAL,
+    PRIORITY_HIGH,
+    PRIORITY_LOW,
+    async_existing_local_image,
+)
 from .receiver import Receiver
 
 _LOGGER = logging.getLogger(__name__)
 
 PUSHOVER_DOMAIN = "pushover"
 NOTIFY_DOMAIN = "notify"
+# The ``data`` keys the notify action accepts.
+PUSHOVER_DATA_KEYS = (
+    "priority",
+    "attachment",
+    "url",
+    "url_title",
+    "sound",
+    "html",
+    "timestamp",
+    "ttl",
+    "retry",
+    "expire",
+    "callback_url",
+    "tags",
+)
+
+# The normalised priority as Pushover's -2 to 2. Normal (0) is the default
+# and is not sent. Critical (2) needs ``retry`` and ``expire``.
+PRIORITY_VALUES = {PRIORITY_LOW: -1, PRIORITY_HIGH: 1, PRIORITY_CRITICAL: 2}
+CRITICAL_RETRY = 60
+CRITICAL_EXPIRE = 3600
+
 # Separates the entry key from the device name in a source id. Pushover
 # device names only use letters, digits, underscores and hyphens.
 SEPARATOR = ":"
@@ -84,7 +112,13 @@ def notify_service_name(entry: ConfigEntry) -> str:
 async def async_deliver_pushover(
     hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
 ) -> list[str]:
-    """Send the message and title to the device through the entry's action."""
+    """Send the notification to the device through the entry's action.
+
+    ``priority`` maps to Pushover's (critical also sets ``retry`` and
+    ``expire``), ``image`` becomes ``attachment`` when it is a local file the
+    integration may read, and the ``pushover`` data block is merged last so
+    it overrides these.
+    """
     entry = source_entry(hass, receiver)
     parts = split_source_id(receiver.source_id)
     if entry is None or parts is None:
@@ -98,5 +132,23 @@ async def async_deliver_pushover(
     }
     if notification.get("title"):
         data["title"] = notification["title"]
+    warnings: list[str] = []
+    extra: dict[str, Any] = {}
+    priority = PRIORITY_VALUES.get(notification.get("priority"))
+    if priority is not None:
+        extra["priority"] = priority
+        if priority == 2:
+            extra["retry"] = CRITICAL_RETRY
+            extra["expire"] = CRITICAL_EXPIRE
+    if notification.get("image"):
+        try:
+            extra["attachment"] = await async_existing_local_image(
+                hass, notification["image"]
+            )
+        except HomeAssistantError as err:
+            warnings.append(f"The image was dropped: {err}")
+    extra.update(notification.get("data") or {})
+    if extra:
+        data["data"] = extra
     await hass.services.async_call(NOTIFY_DOMAIN, service, data, blocking=True)
-    return []
+    return warnings

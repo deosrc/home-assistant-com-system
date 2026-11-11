@@ -51,10 +51,12 @@ added, as the alert at the top of the view shows.
 ## What the script receives
 
 The whole notification is passed in the `notification` field, as a mapping:
-`message` and, when given, `title`. Fields added to the action later are
-passed the same way, so a script should read what it needs and ignore the
-rest. Custom receivers declare no capabilities, so no unsupported-content
-warnings are reported.
+`message` and, when given, `title`, `priority` and `image`. `data` is the
+block keyed `custom` in the action's `data`, if there is one (the other
+types' blocks are not passed). Fields added to the action later are passed
+the same way, so a script should read what it needs and ignore the rest.
+A script accepts any content, so nothing is dropped and no
+unsupported-content warnings are reported. See [content](../content.md).
 
 ## Editing and removing
 

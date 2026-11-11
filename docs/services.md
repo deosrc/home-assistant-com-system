@@ -10,6 +10,9 @@ send a notification to the receivers that match its [targets](targets.md).
 | --- | --- | --- |
 | `title` | no | A title; folded into the message where there is none. |
 | `message` | yes | The message to send. |
+| `priority` | no | `low`, `normal` (default), `high` or `critical`. |
+| `image` | no | An http(s) URL, `/local/` path or media source ID. |
+| `data` | no | Receiver-specific content, keyed by receiver type. |
 | `people` | no | Individual people, or everyone (see below). |
 | `receivers` | no | Selected receivers, or all areas (see below). |
 
@@ -70,8 +73,9 @@ is also accepted and means Select. An `entity_id` that is not a Com System
 receiver matches nothing. See [targets](targets.md) for which receivers
 people and areas reach.
 
-Priority, images and receiver-specific `data` are not supported yet. Input
-that does not fit the fields is rejected before anything is sent.
+Priority, image and `data` are described in [content](content.md); a
+receiver that does not support some of it drops it and reports a warning.
+Input that does not fit the fields is rejected before anything is sent.
 
 ```yaml
 action: notify.com_system

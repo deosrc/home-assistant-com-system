@@ -22,7 +22,12 @@ To change the area, change it on the TV's device. See
 | --- | --- |
 | `message` | Yes |
 | `title` | No: dropped, with a warning in the result |
+| `priority` | No: dropped, with a warning |
+| `image` | No: dropped, with a warning (use `data.icon`) |
 | `data.icon` | Yes: path or URL of an icon shown in the toast |
+
+`data` is the `webostv` block, for example `data: {webostv: {icon: ...}}`.
+Other keys are dropped with a warning. See [content](../content.md).
 
 ## Behaviour
 

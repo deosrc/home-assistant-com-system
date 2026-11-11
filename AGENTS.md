@@ -72,8 +72,12 @@ records the conventions and how things work as built.
   capabilities, `async_deliver`, association hooks, `async_detect`,
   `is_source_available`, `discoverable`). Subclass it and call
   `register_receiver_type()` to add a type; ids are unique.
-  `CustomReceiverType` is the generic type. `async_deliver(hass, receiver,
-  notification)` returns a list of warnings (content the type dropped) and
+  `CustomReceiverType` is the generic type. `capabilities` lists what a type
+  supports beyond the message (`title`, `priority`, `image`, `data`, and
+  `data.<key>`); `accepts_any_content` (scripts) skips filtering. See the
+  content bullet below. `async_deliver(hass, receiver,
+  notification)` gets the notification already filtered, returns a list of
+  warnings (content it could not use) and
   raises to report a failure; the base class raises `NotImplementedError`,
   which the dispatcher reports as a failed result. The custom, persistent
   notification, mobile app, Pushover, webOS TV and Alexa Media Player types
@@ -133,9 +137,12 @@ records the conventions and how things work as built.
   `priority` (-2 to 2, Pushover's own), `attachment` (a local file path
   inside `allowlist_external_dirs`, not a URL), `url`, `url_title`, `sound`,
   `html`, `timestamp`, `ttl`, `retry`, `expire`, `callback_url`, `tags`.
-  Later `priority` should map low/normal/high/critical to -1/0/1/2 (2 needs
-  `retry` and `expire`), and `image` must be resolved to a local allowed
-  path for `attachment`; neither is built. The person is chosen manually
+  `priority` maps to -1/(none)/1/2 (2 adds `retry: 60`, `expire: 3600`),
+  and `image` becomes `attachment` only if it is a local file
+  (`content.local_image_path`: `/local/` or a local media source, inside
+  `allowlist_external_dirs`, existing); otherwise a warning. The `pushover`
+  data block is merged last and its keys are `PUSHOVER_DATA_KEYS`.
+  The person is chosen manually
   (people option; `supports_people` is True). Entities get their own device
   (no source device), so the area is set on that device.
 - `mobile_app.py` and `MobileAppReceiverType`: delivery calls
@@ -156,8 +163,9 @@ records the conventions and how things work as built.
   calls `notify.<slugify(config entry title)>` (the legacy notify platform
   the integration loads by discovery, named from the title at setup time)
   with `message` and, if `notification["data"]["icon"]` is set,
-  `data: {icon}`; those are the only keys the integration reads (checked
-  against HA 2025.1 source), so the title is dropped with a warning. The
+  `data: {icon}` (from the `webostv` data block); those are the only keys
+  the integration reads (checked against HA 2025.1 source), so the type's
+  capabilities are just `data.icon` and the dispatcher drops the rest. The
   integration logs rather than raises when the TV is unreachable, so that is
   reported as delivered. The source id is the entry's unique id, which is
   also the TV's device identifier `(webostv, id)`, so
@@ -262,6 +270,23 @@ records the conventions and how things work as built.
   raises `ServiceValidationError` only when no enabled receiver matched
   (none, or all disabled). The websocket test send calls the action through
   `hass.services`, so UI and automations share one path.
+- `content.py`: the content parameters. `priority` (`low`, `normal`,
+  `high`, `critical`), `image` (http(s) URL, `/local/` path or
+  `media-source://` ID) and `data` (an object of objects) are validated in
+  the action schema. `data` is keyed by receiver type id
+  (`data: {mobile_app: {...}}`; settled, documented in `docs/content.md`).
+  `apply_capabilities(type, notification)` builds what a type receives: its
+  own data block as `data`, and drops unsupported fields and block keys with
+  warnings (`The <field> is not supported by <type> and was dropped`);
+  `normal` priority is never reported and other types' blocks are ignored
+  silently. The dispatcher calls it before `async_deliver` and records the
+  original notification on the entity. `async_image_url` resolves a media
+  source to a URL; `merge` deep-merges. Mobile app maps priority through
+  `PRIORITY_DATA` (Android `importance`/`ttl`/`priority`, iOS
+  `push.interruption-level`) and `image` to `data.image`, then merges its
+  block over them. Alexa, persistent notification and webOS drop priority
+  and image. The panel is not told what a type does with content beyond its
+  capabilities.
 - `dispatcher.py`: `async_dispatch(hass, resolved, notification)` delivers
   to the enabled receivers concurrently (`asyncio.gather`); `_deliver`
   never raises, so one failure cannot affect another (unknown type,
@@ -309,7 +334,14 @@ records the conventions and how things work as built.
   (`dashboard-view.ts`, `receivers-view.ts`, `test-view.ts`); the first two
   refetch when switch states change. `test-view.ts` is the testing tool: it
   previews with `notify/preview` on every target change and sends with
-  `notify/test`. The form is Home Assistant's `ha-service-control` with
+  `notify/test`. Priority, image and data are not in the form: `formHass`
+  gives it a copy of `hass` whose `notify.com_system` fields are only
+  title, message, people and receivers (the other fields' defaults are
+  unaffected), and the "Receiver-specific content" card shows priority,
+  image and one JSON `data` box per reached type that supports them (from
+  the preview's capabilities), with a note of which reached types drop
+  each; invalid JSON disables send. The form is Home Assistant's
+  `ha-service-control` with
   `hide-picker hide-description` and `.value` set to
   `{action: "notify.com_system"}` with no `data` at first, so the form
   applies the `default` of each field from the action description (as when

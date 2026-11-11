@@ -31,6 +31,14 @@ from .const import (
     RECEIVER_ENTRY_TYPES,
     RECEIVER_TYPE_CUSTOM,
 )
+from .content import (
+    ATTR_DATA,
+    ATTR_IMAGE,
+    ATTR_PRIORITY,
+    validate_data,
+    validate_image,
+    validate_priority,
+)
 from .detection import discovery_unique_id
 from .dispatcher import REASON_DISABLED
 from .notify import (
@@ -268,6 +276,11 @@ def ws_notify_preview(
             "outcome": outcome,
             "reason": reason,
             "reasons": list(resolved.reasons.get(receiver.entry_id, [])),
+            "type_id": receiver.type_id,
+            "capabilities": sorted(receiver_type.capabilities) if receiver_type else [],
+            "accepts_any_content": bool(
+                receiver_type and receiver_type.accepts_any_content
+            ),
         }
 
     entries = [describe(r, "reached", None) for r in resolved.receivers] + [
@@ -283,6 +296,9 @@ def ws_notify_preview(
         vol.Required("type"): "com_system/notify/test",
         vol.Required(ATTR_MESSAGE): str,
         vol.Optional(ATTR_TITLE): str,
+        vol.Optional(ATTR_PRIORITY): validate_priority,
+        vol.Optional(ATTR_IMAGE): validate_image,
+        vol.Optional(ATTR_DATA): validate_data,
         **_TARGET_FIELDS,
     }
 )

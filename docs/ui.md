@@ -70,6 +70,12 @@ The testing tool sends a test notification and shows what happens.
   field to leave that group out, so it is not targeted. The groups are
   combined as in the [action](services.md#people). If Home Assistant has
   not loaded that form, the page says so.
+- **Receiver-specific content** appears below the form when a receiver that
+  would be reached supports it: a **Priority** choice, an **Image** field
+  and, for each reached type that takes `data`, a JSON box for that type's
+  block (with its keys, where it lists them). A field is shown only if some
+  reached type supports it, and says which reached types would drop it.
+  Invalid JSON disables **Send test**. See [content](content.md).
 - **Receivers reached** updates as you change the targets, without sending
   anything. Each matching receiver is `reached`, or `skipped` with the
   reason (it is disabled).
@@ -77,7 +83,8 @@ The testing tool sends a test notification and shows what happens.
   behaves exactly as an automation does, and may send real notifications.
   It is enabled once there is a message and at least one receiver would be
   reached. The result shows each receiver's outcome (delivered, failed or
-  skipped) with the reason and any warnings, and the counts.
+  skipped) with the reason and any warnings (content a receiver dropped),
+  and the counts.
 - If nothing could be attempted, the error from the action is shown.
 
 ## Why a receiver was included
@@ -118,9 +125,11 @@ admin user.
   (optional `limit`). Each has `id`, `time`, `notification` and `results`.
 - `com_system/notify/preview`: the receivers the targets (`people` and
   `receivers`, as in the action) would reach, each `reached` or
-  `skipped` with a reason. Sends nothing.
+  `skipped` with a reason, plus the type id and its capabilities. Sends
+  nothing.
 - `com_system/notify/test`: sends through the `notify.com_system` action
-  (`message`, optional `title`, and the targets) and returns its response.
+  (`message`, optional `title`, `priority`, `image`, `data` and the targets)
+  and returns its response.
   A failure to send is the error `send_failed`.
 
 ## Installing the panel

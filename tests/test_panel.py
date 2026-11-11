@@ -326,6 +326,9 @@ async def test_notify_preview_and_test(hass: HomeAssistant, hass_ws_client) -> N
             "outcome": "reached",
             "reason": None,
             "reasons": [{"kind": "receiver", "id": on.entry_id}],
+            "type_id": "custom",
+            "capabilities": [],
+            "accepts_any_content": True,
         },
         {
             "entry_id": off.entry_id,
@@ -334,6 +337,9 @@ async def test_notify_preview_and_test(hass: HomeAssistant, hass_ws_client) -> N
             "outcome": "skipped",
             "reason": "Receiver is disabled",
             "reasons": [{"kind": "receiver", "id": off.entry_id}],
+            "type_id": "custom",
+            "capabilities": [],
+            "accepts_any_content": True,
         },
     ]
 

@@ -24,14 +24,34 @@ receiver only, with the reason in the result.
 | --- | --- |
 | `message` | Yes |
 | `title` | Yes |
-| `priority` | Not yet |
-| `image` | Not yet |
-| `data` | Not yet |
+| `priority` | Yes, mapped (below) |
+| `image` | Yes, as an attachment, if it is an allowed local file |
+| `data` | Yes: the keys below, from the `pushover` block |
 
-Priority will map to Pushover's priority and an image to its attachment.
-Pushover's attachment must be a file in a folder listed in
-`allowlist_external_dirs`, so an image given as a URL will need fetching
-first.
+`priority` maps `low` to -1, `normal` to 0 (nothing is sent), `high` to 1
+and `critical` to 2. Critical also sends `retry: 60` and `expire: 3600`,
+which Pushover requires.
+
+`image` becomes the `attachment` key, which must be a file in a folder
+listed in `allowlist_external_dirs`. A `/local/...` path (the `www` folder)
+and a local media source (`media-source://media_source/local/...`) are
+files. A URL is not fetched: the image is dropped with a warning, as is a
+file that is missing or not allowed.
+
+The `pushover` block of `data` is passed to the action and overrides the
+mapped values. Its keys are `priority`, `attachment`, `url`, `url_title`,
+`sound`, `html`, `timestamp`, `ttl`, `retry`, `expire`, `callback_url` and
+`tags`; others are dropped with a warning.
+
+```yaml
+action: notify.com_system
+data:
+  message: Door open
+  priority: critical
+  data:
+    pushover:
+      sound: siren
+```
 
 ## Person and area
 

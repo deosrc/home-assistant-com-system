@@ -4,6 +4,7 @@ import { renderReasons, reasonStyles } from "./reasons";
 import { sharedStyles } from "./styles";
 import type {
   HomeAssistant,
+  NotifyContent,
   NotifyTargets,
   SelectedTarget,
   PreviewEntry,
@@ -25,6 +26,20 @@ interface ActionValue {
 
 /** Home Assistant's own Actions form; loaded lazily, so it may be absent. */
 const CONTROL = "ha-service-control";
+
+const PRIORITIES = ["low", "normal", "high", "critical"] as const;
+
+/** The action fields the form edits; the content card edits the others. */
+const FORM_FIELDS = ["title", "message", "people", "receivers"];
+
+/** Whether a receiver type supports a typed field or any `data` key. */
+function supports(entry: PreviewEntry, field: string): boolean {
+  if (entry.accepts_any_content) return true;
+  const caps = entry.capabilities ?? [];
+  return field === "data"
+    ? caps.some((c) => c === "data" || c.startsWith("data."))
+    : caps.includes(field);
+}
 
 function ensureList(value: unknown): string[] {
   if (value === undefined || value === null || value === "") return [];
@@ -48,6 +63,10 @@ export class ComSystemTest extends LitElement {
   /** The form's value; without data until the form has applied defaults. */
   declare private value: ActionValue;
   declare private preview?: PreviewEntry[];
+  declare private priority: string;
+  declare private image: string;
+  /** JSON text of each receiver type's data block, by type id. */
+  declare private dataText: Record<string, string>;
   declare private response?: SendResponse;
   declare private sending: boolean;
   declare private error?: string;
@@ -61,6 +80,9 @@ export class ComSystemTest extends LitElement {
     hass: { attribute: false },
     value: { state: true },
     preview: { state: true },
+    priority: { state: true },
+    image: { state: true },
+    dataText: { state: true },
     response: { state: true },
     sending: { state: true },
     error: { state: true },
@@ -147,6 +169,9 @@ export class ComSystemTest extends LitElement {
   constructor() {
     super();
     this.value = { action: ACTION };
+    this.priority = "";
+    this.image = "";
+    this.dataText = {};
     this.sending = false;
   }
 
@@ -199,6 +224,75 @@ export class ComSystemTest extends LitElement {
     await this.refreshPreview();
   }
 
+  /**
+   * `hass` as the form sees it: the action without the content fields, which
+   * the content card shows only for the receivers they apply to. Cached.
+   */
+  private formHassSource?: HomeAssistant;
+  private formHassValue?: HomeAssistant;
+  private get formHass(): HomeAssistant {
+    if (this.formHassSource === this.hass) return this.formHassValue!;
+    this.formHassSource = this.hass;
+    const services = this.hass?.services as
+      | Record<string, Record<string, { fields?: Record<string, unknown> }>>
+      | undefined;
+    const action = services?.notify?.com_system;
+    if (!action?.fields) {
+      this.formHassValue = this.hass;
+      return this.hass;
+    }
+    const fields = Object.fromEntries(
+      Object.entries(action.fields).filter(([k]) => FORM_FIELDS.includes(k)),
+    );
+    this.formHassValue = {
+      ...this.hass,
+      services: {
+        ...services,
+        notify: { ...services!.notify, com_system: { ...action, fields } },
+      },
+    } as HomeAssistant;
+    return this.formHassValue;
+  }
+
+  /** The distinct types of the receivers that would be reached. */
+  private get reachedTypes(): PreviewEntry[] {
+    const seen = new Map<string, PreviewEntry>();
+    for (const p of this.preview ?? []) {
+      if (p.outcome === "reached" && !seen.has(p.type_id ?? p.type)) {
+        seen.set(p.type_id ?? p.type, p);
+      }
+    }
+    return [...seen.values()];
+  }
+
+  /** The content fields that apply, parsed; `error` when a block is invalid. */
+  private get content(): { content: NotifyContent; error?: string } {
+    const content: NotifyContent = {};
+    const types = this.reachedTypes;
+    if (this.priority && types.some((t) => supports(t, "priority"))) {
+      content.priority = this.priority as NotifyContent["priority"];
+    }
+    if (this.image.trim() && types.some((t) => supports(t, "image"))) {
+      content.image = this.image.trim();
+    }
+    const data: Record<string, Record<string, unknown>> = {};
+    for (const t of types) {
+      const text = (this.dataText[t.type_id ?? ""] ?? "").trim();
+      if (!text || !supports(t, "data")) continue;
+      try {
+        const value = JSON.parse(text);
+        if (!value || typeof value !== "object" || Array.isArray(value)) {
+          throw new Error("not an object");
+        }
+        data[t.type_id!] = value;
+      } catch {
+        return { content, error: `The ${t.type} data is not a JSON object` };
+      }
+    }
+    if (Object.keys(data).length) content.data = data;
+    return { content };
+  }
+
   /** Only the fields the form gives are sent. */
   private get targets(): NotifyTargets {
     const targets: NotifyTargets = {};
@@ -245,6 +339,7 @@ export class ComSystemTest extends LitElement {
         this.message,
         this.subject,
         this.targets,
+        this.content.content,
       );
       this.error = undefined;
     } catch (err) {
@@ -282,6 +377,114 @@ export class ComSystemTest extends LitElement {
         )}
       </tbody>
     </table>`;
+  }
+
+  private setContent(change: () => void): void {
+    change();
+    this.response = undefined;
+  }
+
+  /** Names of the reached receiver types that lack a capability. */
+  private lacking(field: string) {
+    const names = this.reachedTypes
+      .filter((t) => !supports(t, field))
+      .map((t) => t.type);
+    return names.length
+      ? html`<span class="muted"
+          >Not supported by ${names.join(", ")}: it is dropped, with a
+          warning.</span
+        >`
+      : "";
+  }
+
+  /**
+   * The designer's receiver-specific options. Each field is shown only when
+   * a receiver that would be reached supports it.
+   */
+  private renderContent() {
+    const types = this.reachedTypes;
+    const priority = types.some((t) => supports(t, "priority"));
+    const image = types.some((t) => supports(t, "image"));
+    const dataTypes = types.filter((t) => supports(t, "data"));
+    if (!priority && !image && !dataTypes.length) return "";
+    const { error } = this.content;
+    return html`<ha-card class="content">
+      <div class="card-header">
+        Receiver-specific content
+        <p class="secondary">
+          Shown for the receiver types that would be reached.
+        </p>
+      </div>
+      <div class="card-content">
+        ${
+          priority
+            ? html`<label class="field priority"
+                ><span>Priority</span
+                ><select
+                  @change=${(ev: Event) =>
+                    this.setContent(
+                      () =>
+                        (this.priority = (
+                          ev.target as HTMLSelectElement
+                        ).value),
+                    )}
+                >
+                  <option value="">Default (normal)</option>
+                  ${PRIORITIES.map(
+                    (p) =>
+                      html`<option value=${p} ?selected=${this.priority === p}>
+                        ${p}
+                      </option>`,
+                  )}
+                </select>
+                ${this.lacking("priority")}</label
+              >`
+            : ""
+        }
+        ${
+          image
+            ? html`<label class="field image"
+                ><span>Image (URL, /local/ path or media source ID)</span
+                ><input
+                  type="text"
+                  .value=${this.image}
+                  @input=${(ev: Event) =>
+                    this.setContent(
+                      () =>
+                        (this.image = (ev.target as HTMLInputElement).value),
+                    )}
+                />
+                ${this.lacking("image")}</label
+              >`
+            : ""
+        }
+        ${dataTypes.map((t) => {
+          const keys = (t.capabilities ?? [])
+            .filter((c) => c.startsWith("data."))
+            .map((c) => c.slice(5));
+          return html`<label class="field data"
+            ><span
+              >${t.type} data
+              (JSON${keys.length ? `; keys: ${keys.join(", ")}` : ""})</span
+            ><textarea
+              rows="3"
+              data-type=${t.type_id}
+              .value=${this.dataText[t.type_id ?? ""] ?? ""}
+              @input=${(ev: Event) =>
+                this.setContent(
+                  () =>
+                    (this.dataText = {
+                      ...this.dataText,
+                      [t.type_id ?? ""]: (ev.target as HTMLTextAreaElement)
+                        .value,
+                    }),
+                )}
+            ></textarea>
+          </label>`;
+        })}
+        ${error ? html`<p class="error content-error">${error}</p>` : ""}
+      </div>
+    </ha-card>`;
   }
 
   private renderResponse() {
@@ -349,6 +552,7 @@ export class ComSystemTest extends LitElement {
   protected render() {
     const canSend =
       !this.sending &&
+      !this.content.error &&
       this.message.trim() !== "" &&
       (this.preview?.some((p) => p.outcome === "reached") ?? false);
     return html`
@@ -366,7 +570,7 @@ export class ComSystemTest extends LitElement {
               ? html`<ha-service-control
                   hide-picker
                   hide-description
-                  .hass=${this.hass}
+                  .hass=${this.formHass}
                   .value=${this.value}
                   @value-changed=${(ev: CustomEvent<{ value: ActionValue }>) =>
                     this.controlChanged(ev)}
@@ -381,6 +585,7 @@ export class ComSystemTest extends LitElement {
         </div>
         <div class="card-actions">${this.renderSendButton(canSend)}</div>
       </ha-card>
+      <div class="content-options">${this.renderContent()}</div>
       <ha-card>
         <div class="card-header">Receivers reached</div>
         <div class="card-content">${this.renderPreview()}</div>

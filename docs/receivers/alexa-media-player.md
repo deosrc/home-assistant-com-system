@@ -13,7 +13,8 @@ A notification is delivered by calling the integration's `notify.alexa_media`
 action with `type: announce`, the Echo's serial number as the target, the
 message and, when given, the title. The Echo speaks the message and devices
 with a screen also show the title. Priority, images and `data` are not
-supported.
+supported and are dropped, with a warning in the result (see
+[content](../content.md)).
 
 If the action does not exist (the integration is not installed or not yet
 loaded) the delivery fails for that receiver only, with the reason in the

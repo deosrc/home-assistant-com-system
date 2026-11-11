@@ -18,6 +18,7 @@ from .const import (
     RESULT_FAILED,
     RESULT_SKIPPED,
 )
+from .content import apply_capabilities
 from .receiver import Receiver
 from .registry import ReceiverRegistry
 from .targets import ResolvedTargets
@@ -78,8 +79,9 @@ async def _deliver(
         return ReceiverResult(
             receiver, receiver.type_id, RESULT_FAILED, REASON_UNKNOWN_TYPE
         )
+    content, warnings = apply_capabilities(receiver_type, notification)
     try:
-        warnings = await receiver_type.async_deliver(hass, receiver, notification)
+        warnings += await receiver_type.async_deliver(hass, receiver, content)
     except NotImplementedError:
         _LOGGER.warning(
             "Delivery to %s failed: %s", receiver.name, REASON_NOT_IMPLEMENTED

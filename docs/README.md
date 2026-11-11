@@ -31,7 +31,9 @@ The hub's options set how much [history](history.md) is kept.
 - [The notify.com_system action](services.md): sending a notification, its
   fields, delivery and the per-receiver response.
 - [History](history.md): the recent notifications and their limits.
+- [Content](content.md): priority, images, per-type `data`, capabilities
+  and dropped content.
 - [User interface](ui.md): the sidebar panel and its websocket commands.
 
-More documents (rich content, conditions and notification actions) are added as those
+More documents (conditions and notification actions) are added as those
 features are built.
