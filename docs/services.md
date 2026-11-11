@@ -99,9 +99,6 @@ Every outcome is recorded on the receiver's `notification_receiver` entity
 attempts, together with the notification's content and any warnings.
 Failures are also logged.
 
-A receiver type whose delivery is not built yet reports `failed` with the
-reason "Delivery is not implemented for this receiver type".
-
 ## Response
 
 The action supports a response (`response_variable` in an automation). It
