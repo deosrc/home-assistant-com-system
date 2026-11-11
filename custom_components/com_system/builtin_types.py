@@ -50,11 +50,11 @@ ALEXA_NOTIFY_SERVICE = "alexa_media"
 
 
 def _source_entries(hass: HomeAssistant, domain: str) -> list[ConfigEntry]:
-    """Return the config entries of an integration, ignoring ignored ones."""
+    """Return the config entries of an integration, skipping ignored and disabled."""
     return [
         entry
         for entry in hass.config_entries.async_entries(domain)
-        if entry.source != SOURCE_IGNORE
+        if entry.source != SOURCE_IGNORE and entry.disabled_by is None
     ]
 
 
@@ -75,6 +75,8 @@ class DeviceReceiverType(ReceiverType):
             for device in dr.async_entries_for_config_entry(
                 device_registry, entry.entry_id
             ):
+                if device.disabled:
+                    continue
                 for domain, identifier in device.identifiers:
                     if domain == self.source_domain:
                         name = device.name_by_user or device.name or identifier
