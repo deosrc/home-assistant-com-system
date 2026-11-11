@@ -39,14 +39,28 @@ export class ComSystemHistory extends LitElement {
         justify-content: space-between;
         gap: 8px;
       }
-      ul {
-        margin: 8px 0 0;
-        padding-left: 20px;
+      hr {
+        border: none;
+        border-top: 1px solid var(--divider-color, #e0e0e0);
+        margin: 16px 0 8px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 8px;
+        border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      }
+      .delivered {
+        color: var(--success-color, #43a047);
       }
       .failed {
         color: var(--error-color, #db4437);
       }
-      .warning {
+      .skipped {
         color: var(--warning-color, #ffa600);
       }
     `,
@@ -106,20 +120,35 @@ export class ComSystemHistory extends LitElement {
                   ? html`<div>${r.notification.message}</div>`
                   : ""
               }
-              <ul>
-                ${r.results.map(
-                  (x) =>
-                    html`<li>
-                      ${x.name}:
-                      <span class=${x.result === "failed" ? "failed" : ""}
-                        >${x.result}</span
-                      >${x.reason ? html`<span> (${x.reason})</span>` : ""}
-                      ${x.warnings.map(
-                        (w) => html`<div class="warning">${w}</div>`,
-                      )}
-                    </li>`,
-                )}
-              </ul>
+              <hr />
+              <table>
+                <thead>
+                  <tr>
+                    <th>Receiver</th>
+                    <th>Type</th>
+                    <th>Outcome</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${r.results.map(
+                    (x) =>
+                      html`<tr>
+                        <td>${x.name}</td>
+                        <td>${x.type}</td>
+                        <td class=${x.result}>${x.result}</td>
+                        <td>
+                          ${[
+                            x.reason,
+                            ...x.warnings.map((w) => `Warning: ${w}`),
+                          ]
+                            .filter(Boolean)
+                            .join("; ")}
+                        </td>
+                      </tr>`,
+                  )}
+                </tbody>
+              </table>
             </div>
           `,
         )}
