@@ -82,20 +82,14 @@ async def test_nothing_offered_without_sources(hass: HomeAssistant) -> None:
 
 async def test_unimplemented_types_not_offered(hass: HomeAssistant) -> None:
     """Types without delivery yet are not offered, even with sources present."""
+    MockConfigEntry(domain="pushover", title="Phone", unique_id="user1").add_to_hass(
+        hass
+    )
     MockConfigEntry(domain="webostv", title="TV", unique_id="tv1").add_to_hass(hass)
     _add_device(hass, "alexa_media", "echo1", "Echo")
     _add_device(hass, "music_assistant", "player1", "Player")
     await _setup_hub(hass)
     assert set(_flows(hass)) == {"persistent_notification_persistent_notification"}
-
-
-async def test_pushover_entry_offered(hass: HomeAssistant) -> None:
-    """Each Pushover config entry is offered as a receiver."""
-    MockConfigEntry(domain="pushover", title="Phone", unique_id="user1").add_to_hass(
-        hass
-    )
-    await _setup_hub(hass)
-    assert "pushover_user1" in _flows(hass)
 
 
 async def test_confirm_creates_enabled_receiver(hass: HomeAssistant) -> None:

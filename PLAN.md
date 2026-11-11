@@ -202,7 +202,8 @@ Each type needs a receiver-type definition (names provisional) covering:
   later goes missing, the receiver shows as unavailable and deliveries to it
   fail with a clear per-receiver result. Exact action names and data are
   verified against the integration during implementation.
-- **Pushover** – built for message and title (see
+- **Pushover** – one receiver per device (target) of each Pushover entry;
+  built for message and title (see
   `docs/receivers/pushover.md`). Still to do: `priority` maps to Pushover
   priority (-1/0/1/2, with `retry` and `expire` for 2), `image` to the
   `attachment` data key (a local file path that must be in

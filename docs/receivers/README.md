@@ -30,7 +30,7 @@ detected:
 | Mobile app | registered mobile app device |
 | Alexa Media Player | Echo device (only if the integration is installed) |
 | Persistent notification | Home Assistant (a single receiver) |
-| Pushover | Pushover config entry |
+| Pushover | device (target) of a Pushover account |
 | webOS TV | webOS TV config entry |
 | Music Assistant | Music Assistant player |
 
