@@ -38,6 +38,7 @@ export class ComSystemHistory extends LitElement {
         display: flex;
         justify-content: space-between;
         gap: 8px;
+        padding-bottom: 12px;
       }
       summary {
         display: flex;
@@ -163,16 +164,14 @@ export class ComSystemHistory extends LitElement {
           (r) => html`
             <div class="card entry">
               <div class="head">
-                <strong
-                  >${r.notification.title ?? r.notification.message}</strong
-                >
+                ${
+                  r.notification.title
+                    ? html`<strong>${r.notification.title}</strong>`
+                    : html`<span class="muted">(No title)</span>`
+                }
                 <span class="muted">${new Date(r.time).toLocaleString()}</span>
               </div>
-              ${
-                r.notification.title
-                  ? html`<div>${r.notification.message}</div>`
-                  : ""
-              }
+              <div class="body">${r.notification.message}</div>
               <hr />
               <details>
                 <summary>
