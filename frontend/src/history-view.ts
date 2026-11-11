@@ -46,6 +46,21 @@ export class ComSystemHistory extends LitElement {
         cursor: pointer;
         padding: 4px 0;
       }
+      summary::-webkit-details-marker {
+        display: none;
+      }
+      summary::marker {
+        content: "";
+      }
+      .chevron {
+        display: inline-flex;
+        color: var(--secondary-text-color);
+        transition: transform 0.2s;
+        transform: rotate(-90deg);
+      }
+      details[open] .chevron {
+        transform: none;
+      }
       .badges {
         display: inline-flex;
         gap: 4px;
@@ -121,9 +136,9 @@ export class ComSystemHistory extends LitElement {
   }
 
   private renderCounts(r: HistoryRecord) {
-    const counts = (["delivered", "failed", "skipped"] as const).map(
-      (k) => [k, r.results.filter((x) => x.result === k).length] as const,
-    );
+    const counts = (["delivered", "failed", "skipped"] as const)
+      .map((k) => [k, r.results.filter((x) => x.result === k).length] as const)
+      .filter(([, n]) => n > 0);
     return html`<span class="badges"
       >${counts.map(
         ([k, n]) => html`<span class="badge ${k}" title=${k}>${n} ${k}</span>`,
@@ -161,6 +176,7 @@ export class ComSystemHistory extends LitElement {
               <hr />
               <details>
                 <summary>
+                  <ha-icon class="chevron" icon="mdi:chevron-down"></ha-icon>
                   <span>Receivers (${r.results.length})</span>
                   ${this.renderCounts(r)}
                 </summary>
