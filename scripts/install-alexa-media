@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Installs the Alexa Media Player custom integration into the dev config dir,
+# so the Alexa Media Player receiver can be tried. Re-run to switch version.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+VERSION="${ALEXA_MEDIA_VERSION:-v5.20.0}"
+target=config/custom_components/alexa_media
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+curl -fsSL \
+  "https://github.com/alandtse/alexa_media_player/releases/download/${VERSION}/alexa_media.zip" \
+  -o "$tmp/alexa_media.zip"
+mkdir -p config/custom_components
+rm -rf "$target"
+unzip -q "$tmp/alexa_media.zip" -d "$target"
+echo "Installed Alexa Media Player ${VERSION}. Restart Home Assistant."

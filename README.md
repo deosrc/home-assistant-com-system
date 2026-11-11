@@ -16,7 +16,10 @@ choose **Reopen in Container**. The container provides:
 
 `scripts/setup` runs after the container is created. It installs the
 dependencies and links `custom_components/com_system` into the dev config
-directory `config/`.
+directory `config/`. It also installs the Alexa Media Player custom
+integration there (`scripts/install-alexa-media`; set `ALEXA_MEDIA_VERSION`
+to change the version), so Alexa receivers can be tried. Add it under
+**Settings > Devices & services** with your Amazon account.
 
 ### Start Home Assistant
 

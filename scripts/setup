@@ -12,3 +12,6 @@ npm --prefix frontend run build
 # Mount the integration into the dev config directory.
 mkdir -p custom_components/com_system config/custom_components
 ln -sfn ../../custom_components/com_system config/custom_components/com_system
+
+# Alexa Media Player (custom integration) for trying its receiver.
+bash scripts/install-alexa-media
