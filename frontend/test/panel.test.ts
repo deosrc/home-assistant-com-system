@@ -408,6 +408,8 @@ describe("testing tool", () => {
     await change({
       message: "Hello",
       title: "Hi",
+      priority: "high",
+      data: { pushover: { sound: "siren" } },
       people: {
         active_choice: "Individuals",
         Individuals: ["person.alice"],
@@ -428,12 +430,26 @@ describe("testing tool", () => {
 
     send().click();
     await settle(view);
+    // The action's data goes through exactly as the form built it, so a
+    // field added to the action needs no change in the panel.
     expect(callWS).toHaveBeenCalledWith({
       type: "com_system/notify/test",
-      message: "Hello",
-      title: "Hi",
-      people: ["person.alice"],
-      receivers: selected,
+      service_data: {
+        message: "Hello",
+        title: "Hi",
+        priority: "high",
+        data: { pushover: { sound: "siren" } },
+        people: {
+          active_choice: "Individuals",
+          Individuals: ["person.alice"],
+          Everyone: true,
+        },
+        receivers: {
+          active_choice: "Select",
+          Select: { area_id: ["office"], device_id: ["d1"], entity_id: [] },
+          "All Areas": true,
+        },
+      },
     });
     await settle(view);
     const result = root.querySelector(".results")!.textContent!;

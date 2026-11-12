@@ -182,11 +182,6 @@ export class ComSystemTest extends LitElement {
     return message === undefined ? "" : String(message);
   }
 
-  private get subject(): string {
-    const title = this.data.title;
-    return title === undefined ? "" : String(title);
-  }
-
   private controlChanged(ev: CustomEvent<{ value: ActionValue }>): void {
     ev.stopPropagation();
     this.value = ev.detail.value;
@@ -241,11 +236,7 @@ export class ComSystemTest extends LitElement {
     this.sending = true;
     this.response = undefined;
     try {
-      this.response = await new ComSystemApi(this.hass).sendTest(
-        this.message,
-        this.subject,
-        this.targets,
-      );
+      this.response = await new ComSystemApi(this.hass).sendTest(this.data);
       this.error = undefined;
     } catch (err) {
       this.error = errorMessage(err);

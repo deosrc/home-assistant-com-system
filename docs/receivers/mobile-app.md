@@ -10,7 +10,45 @@ A notification is delivered by calling the device's own
 `notify.mobile_app_<device name>` action with the message and, when given,
 the title. If that action does not exist (for example the device has no push
 support or was removed) the delivery fails for that receiver only, with the
-reason in the result. Priority, images and `data` are not supported yet.
+reason in the result.
+
+## Supported content
+
+| Content | Supported |
+| --- | --- |
+| `message`, `title` | Yes |
+| `priority` | Yes, mapped to `data` keys (below) |
+| `image` | Yes, as `data.image` |
+| `data` | Yes: the `mobile_app` block, any key |
+
+`priority` is mapped to the companion app's keys; each platform ignores the
+other's:
+
+- `low`: Android `importance: low`; iOS `passive`.
+- `normal`: nothing.
+- `high`: Android `importance: high`, `ttl: 0`, `priority: high`; iOS
+  `time-sensitive`.
+- `critical`: Android `importance: max`, `ttl: 0`, `priority: high`; iOS
+  `critical` with a critical sound at full volume.
+
+`image` is passed as `data.image`; an `image` or `camera` entity becomes its
+current picture path, and a media source ID is resolved to a URL first (if
+it cannot be, the image is dropped with a warning). The `mobile_app`
+block of `data` is merged over these, so it can override them and add
+keys such as `actions`, `tag` or `channel`:
+
+```yaml
+action: notify.com_system
+data:
+  message: Someone is at the door
+  priority: high
+  image: /local/doorbell.jpg
+  data:
+    mobile_app:
+      tag: door
+```
+
+Responses to notification actions are not supported yet.
 
 ## Which person a device belongs to
 

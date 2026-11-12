@@ -34,10 +34,8 @@ from .const import (
 from .detection import discovery_unique_id
 from .dispatcher import REASON_DISABLED
 from .notify import (
-    ATTR_MESSAGE,
     ATTR_PEOPLE,
     ATTR_RECEIVERS,
-    ATTR_TITLE,
     NOTIFY_DOMAIN,
     SERVICE_NAME,
     resolve_call_targets,
@@ -281,9 +279,7 @@ def ws_notify_preview(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "com_system/notify/test",
-        vol.Required(ATTR_MESSAGE): str,
-        vol.Optional(ATTR_TITLE): str,
-        **_TARGET_FIELDS,
+        vol.Required("service_data"): dict,
     }
 )
 @websocket_api.async_response
@@ -297,7 +293,7 @@ async def ws_notify_test(
     It goes through the action itself, so it behaves exactly as an
     automation's call does and returns the same response data.
     """
-    data = {k: v for k, v in msg.items() if k not in ("id", "type")}
+    data = msg["service_data"]
     try:
         response = await hass.services.async_call(
             NOTIFY_DOMAIN,

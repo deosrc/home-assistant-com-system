@@ -112,35 +112,9 @@ The `notify.com_system` action parameters fall into two groups:
 2. **Content parameters** – describe what the notification says and how it
    behaves once delivered.
 
-Content parameters are split into two tiers:
-
-- **Common content** – supported by every receiver type: **`message`**
-  (required) and **`title`** (optional). Receivers that have no title
-  concept fold it into the message. Everything else, including priority and
-  images, is receiver-specific.
-- **Receiver-specific content** – only meaningful for certain receiver
-  types, e.g. actions (buttons) on mobile app notifications. It is expressed
-  in two ways:
-  - **Typed fields** – commonly used parameters (used by several receiver
-    types, or common in notification content) are explicit, validated
-    top-level fields in the action schema. Receivers that do not support a
-    typed field handle it as described under unsupported content below.
-    Initially the typed fields are **`priority`** (a normalised urgency
-    level that each receiver type maps to its own mechanism) and **`image`**
-    (an image URL or media reference).
-    - `priority` accepts `low`, `normal` (the default), `high` and
-      `critical`. How each receiver type maps them is documented per type.
-    - `image` accepts an http(s) URL, a local `/local/...` path or a media
-      source ID. Camera entities are deferred.
-
-    Others such as actions and sounds start in `data` and can be promoted
-    to typed fields later if they prove widely used.
-  - **Free-form `data`** – anything Com System does not support explicitly
-    goes in a `data` object keyed by receiver type, e.g.
-    `data: {mobile_app: {...}, pushover: {...}}`. Each receiver reads only
-    its own block, so one notification can carry settings for several
-    types. (Keying by type is an assumption from "mixed per-type blocks and
-    typed fields"; to be confirmed.)
+Content parameters (`message`, `title`, `priority`, `image` and per-type
+`data`) and how unsupported content is dropped with warnings are built; see
+[docs/content.md](docs/content.md) and `AGENTS.md`.
 
 **Action responses:** each Com System notification is given an ID. When a
 user responds to a notification action (e.g. presses a button on a mobile
@@ -151,14 +125,6 @@ against the notification in history, so the UI can show which receiver or
 person responded. How each receiver type's native response event is mapped
 to this event is documented per type. Responses from a type that has no
 native response mechanism are not possible.
-
-**Unsupported content:** when a notification carries content that a
-resolved receiver does not support (e.g. mobile app actions sent to a
-persistent notification), the notification is still delivered with the
-content the receiver does support. The unsupported content is dropped and a
-**warning is logged**. Warnings are recorded with the notification's
-delivery result so they can be shown in the Com System UI (recent
-notifications and the testing tool). Delivery is not treated as a failure.
 
 ### 2.4 Receiver entities and enabled state
 
@@ -192,16 +158,10 @@ Each type needs a receiver-type definition (names provisional) covering:
 
 **Delivery per type:**
 
-- **Mobile app** – built for message and title (see
-  `docs/receivers/mobile-app.md`). Still to do: data (actions, image,
-  channel and so on).
-- **Pushover** – one receiver per device (target) of each Pushover entry;
-  built for message and title (see
-  `docs/receivers/pushover.md`). Still to do: `priority` maps to Pushover
-  priority (-1/0/1/2, with `retry` and `expire` for 2), `image` to the
-  `attachment` data key (a local file path that must be in
-  `allowlist_external_dirs`, so a URL or media reference needs resolving to
-  a file first), and other options (sound, URL) go in `data`.
+- **Mobile app** – built, including priority, image and `data` (see
+  `docs/receivers/mobile-app.md`). Still to do: notification actions and
+  their responses.
+- **Pushover** – built (see `docs/receivers/pushover.md`).
 - **Music Assistant** – one receiver per Music Assistant player. Delivery calls
   Music Assistant's announcement action rather than a notify action (the message
   is spoken; options such as an announcement URL or volume go in `data`). How a
@@ -277,8 +237,6 @@ The action, dispatcher and per-receiver response are built; see
 
 - Resolved receivers whose **conditions** do not pass are dropped before
   delivery and reported as skipped (section 2.6).
-- The content parameters of section 2.3 (`priority`, `image`, `data`) are
-  added to the schema, and unsupported content produces warnings.
 - Not verified: how the action renders in a real frontend (only the
   websocket description was checked).
 
@@ -321,26 +279,23 @@ scope is:
 | View | Purpose |
 | --- | --- |
 | Receivers (extend) | Conditions editor (add, edit and remove are built) |
-| Notification designer | Compose a notification (targets and content) |
 | Dashboard (extend) | Recent activity (the history store is built) |
-| Testing tool (extend) | Conditions in the preview; rich content |
+| Testing tool (extend) | Conditions in the preview |
 
 Notes:
 
 - The panel is admin-only and the websocket commands behind it require an
   admin user. It will expose notification contents and conditions and send
   notifications, so this must stay.
-- The designer must build on the `notify.com_system` action, as the
-  testing tool does, so it exercises the same code path as automations.
 - Warnings about unsupported content are shown in recent notifications (built);
-  the testing tool already shows the warnings an action returns.
+  the testing tool (which is also the notification designer, with content
+  options per receiver type) already shows the warnings an action returns.
 - The testing tool (built, see [docs/ui.md](docs/ui.md)) must also show
   receivers skipped because a condition did not pass, once conditions
   exist.
 - The receiver editor needs a conditions editor. Home Assistant's condition
   selector can likely be reused.
-- The designer must account for receiver-specific content (section 2.3),
-  e.g. showing mobile app action options only when relevant.
+- Mobile app action options in the designer come with notification actions.
 - The pending discoveries list links to Devices & services to add or
   ignore. Doing that inside the panel is not done.
 - The release flow (`release.yml`, `zip_release` in `hacs.json`) has not run

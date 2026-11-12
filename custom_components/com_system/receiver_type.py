@@ -31,9 +31,14 @@ class ReceiverType:
 
     type_id: str
     name: str
-    # Typed fields and ``data`` keys the type supports. Empty means the type
-    # declares none (no unsupported-content warnings).
+    # Content beyond the message the type supports: ``title``, ``priority``,
+    # ``image``, ``data`` (any key of its data block) and ``data.<key>``
+    # (that key only). Anything else is dropped with a warning before
+    # delivery (see ``content.py``).
     capabilities: frozenset[str] = frozenset()
+    # Whether the type takes whatever content it is given (scripts do), so
+    # nothing is dropped.
+    accepts_any_content: bool = False
     # Whether receivers of the type are created from discoveries (built-in
     # types) and so need a source to detect. Custom receivers are manual.
     discoverable: bool = False
@@ -46,7 +51,10 @@ class ReceiverType:
     ) -> list[str]:
         """Deliver a notification to a receiver of this type.
 
-        ``notification`` has ``message`` and, when given, ``title``. Return
+        ``notification`` has ``message`` and, when given and supported,
+        ``title``, ``priority``, ``image`` and ``data``, which is this type's
+        own block of the action's data. Unsupported content has already been
+        dropped. Return
         warnings for content the type dropped (empty when none). Raise to
         report a failure; the dispatcher records it and carries on with the
         other receivers. The default raises ``NotImplementedError``, which
@@ -125,6 +133,7 @@ class CustomReceiverType(ReceiverType):
     type_id = RECEIVER_TYPE_CUSTOM
     name = "Script"
     discoverable = True
+    accepts_any_content = True
 
     async def async_detect(self, hass: HomeAssistant) -> list[DiscoveryCandidate]:
         """Return a candidate for each script that takes a notification."""

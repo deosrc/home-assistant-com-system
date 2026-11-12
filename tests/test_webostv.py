@@ -113,19 +113,17 @@ async def test_delivers_message(hass: HomeAssistant) -> None:
     assert [c.data for c in calls] == [{"message": "Dinner"}]
 
 
-async def test_title_dropped_with_warning_and_icon_passed(
-    hass: HomeAssistant,
-) -> None:
-    """The title is not shown; the icon goes in data."""
+async def test_icon_passed_in_data(hass: HomeAssistant) -> None:
+    """The icon goes in data; other keys are not read."""
     entry, _ = await _setup_tv(hass)
     calls = _calls(hass)
     receiver = hass.data[DOMAIN]["registry"].get(entry.entry_id)
     warnings = await async_deliver_webostv(
         hass,
         receiver,
-        {"message": "Hi", "title": "T", "data": {"icon": "/a.png", "other": 1}},
+        {"message": "Hi", "data": {"icon": "/a.png", "other": 1}},
     )
-    assert warnings == ["The title is not shown on a webOS TV"]
+    assert warnings == []
     assert calls[0].data == {"message": "Hi", "data": {"icon": "/a.png"}}
 
 

@@ -24,6 +24,18 @@ from homeassistant.helpers.target import (
 )
 
 from .const import DOMAIN, NOTIFICATION_RECEIVER_DOMAIN, RESULTS
+from .content import (
+    ATTR_DATA,
+    ATTR_IMAGE,
+    ATTR_PRIORITY,
+    CHOICE_ENTITY,
+    CHOICE_URL,
+    IMAGE_ENTITY_DOMAINS,
+    PRIORITIES,
+    validate_data,
+    validate_image,
+    validate_priority,
+)
 from .dispatcher import ReceiverResult, async_dispatch
 from .targets import ResolvedTargets, resolve_targets
 
@@ -107,6 +119,9 @@ SERVICE_SCHEMA = vol.Schema(
         vol.Required(ATTR_MESSAGE): cv.string,
         vol.Optional(ATTR_PEOPLE): validate_people,
         vol.Optional(ATTR_RECEIVERS): validate_receivers,
+        vol.Optional(ATTR_PRIORITY): validate_priority,
+        vol.Optional(ATTR_IMAGE): validate_image,
+        vol.Optional(ATTR_DATA): validate_data,
     }
 )
 
@@ -117,19 +132,6 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
         "A target that is not given is not used."
     ),
     "fields": {
-        ATTR_TITLE: {
-            "name": "Title",
-            "description": "An optional title.",
-            "example": "Laundry",
-            "selector": {"text": None},
-        },
-        ATTR_MESSAGE: {
-            "name": "Message",
-            "description": "The message to send.",
-            "required": True,
-            "example": "The washing has finished",
-            "selector": {"text": {"multiline": True}},
-        },
         ATTR_PEOPLE: {
             "name": "People",
             "default": {"active_choice": CHOICE_EVERYONE, CHOICE_EVERYONE: True},
@@ -184,6 +186,62 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
                     }
                 }
             },
+        },
+        ATTR_TITLE: {
+            "name": "Title",
+            "description": "An optional title.",
+            "example": "Laundry",
+            "selector": {"text": None},
+        },
+        ATTR_MESSAGE: {
+            "name": "Message",
+            "description": "The message to send.",
+            "required": True,
+            "example": "The washing has finished",
+            "selector": {"text": {"multiline": True}},
+        },
+        ATTR_PRIORITY: {
+            "name": "Priority",
+            "description": (
+                "How urgent the notification is. Each receiver type maps it "
+                "to its own mechanism; types without one drop it."
+            ),
+            "example": "high",
+            "selector": {
+                "select": {
+                    "options": [{"value": p, "label": p.title()} for p in PRIORITIES],
+                    "mode": "dropdown",
+                }
+            },
+        },
+        ATTR_IMAGE: {
+            "name": "Image",
+            "description": (
+                "An image: a URL (http(s), a /local/ path or a media source "
+                "ID), or an image or camera entity."
+            ),
+            "selector": {
+                "choose": {
+                    "choices": {
+                        CHOICE_ENTITY: {
+                            "selector": {
+                                "entity": {"domain": list(IMAGE_ENTITY_DOMAINS)}
+                            }
+                        },
+                        CHOICE_URL: {"selector": {"text": None}},
+                    }
+                }
+            },
+        },
+        ATTR_DATA: {
+            "name": "Data",
+            "description": (
+                "Receiver-specific content, keyed by receiver type, for "
+                "example {mobile_app: {...}, pushover: {...}}. Each receiver "
+                "reads only its own block."
+            ),
+            "example": "{pushover: {sound: bike}}",
+            "selector": {"object": None},
         },
     },
 }
@@ -255,8 +313,12 @@ def resolve_call_targets(hass: HomeAssistant, data: dict[str, Any]) -> ResolvedT
 
 
 def notification_from(data: dict[str, Any]) -> dict[str, Any]:
-    """Return the content of an action call: message and optional title."""
-    return {k: data[k] for k in (ATTR_TITLE, ATTR_MESSAGE) if k in data}
+    """Return the content of an action call.
+
+    The message and any of title, priority, image and data that were given.
+    """
+    keys = (ATTR_TITLE, ATTR_MESSAGE, ATTR_PRIORITY, ATTR_IMAGE, ATTR_DATA)
+    return {k: data[k] for k in keys if k in data}
 
 
 def response_data(results: list[ReceiverResult]) -> dict[str, Any]:

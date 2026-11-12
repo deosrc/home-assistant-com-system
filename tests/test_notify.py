@@ -33,6 +33,7 @@ from homeassistant.setup import async_setup_component
 class _OkType(ReceiverType):
     type_id = "test_ok"
     name = "Test OK"
+    accepts_any_content = True
 
     def __init__(self) -> None:
         self.deliver = AsyncMock(return_value=[])
@@ -109,7 +110,11 @@ async def test_invalid_input_rejected(hass: HomeAssistant) -> None:
     with pytest.raises(vol.Invalid):
         await _send(hass, message="hi", people=["light.nope"])
     with pytest.raises(vol.Invalid):
-        await _send(hass, message="hi", priority="high")
+        await _send(hass, message="hi", priority="urgent")
+    with pytest.raises(vol.Invalid):
+        await _send(hass, message="hi", image="ftp://x/y.png")
+    with pytest.raises(vol.Invalid):
+        await _send(hass, message="hi", data={"pushover": "loud"})
 
 
 async def test_delivers_to_each_receiver(hass: HomeAssistant, types) -> None:
@@ -334,7 +339,20 @@ async def test_description_order_and_people_selector(hass: HomeAssistant) -> Non
     """Title comes first and people are a choose selector."""
     assert await async_setup_component(hass, DOMAIN, {})
     fields = (await async_get_all_descriptions(hass))["notify"]["com_system"]["fields"]
-    assert list(fields) == ["title", "message", "people", "receivers"]
+    assert list(fields) == [
+        "people",
+        "receivers",
+        "title",
+        "message",
+        "priority",
+        "image",
+        "data",
+    ]
+    options = fields["priority"]["selector"]["select"]["options"]
+    assert [o["label"] for o in options] == ["Low", "Normal", "High", "Critical"]
+    image = fields["image"]["selector"]["choose"]["choices"]
+    assert list(image) == ["Entity", "URL"]
+    assert image["Entity"]["selector"]["entity"] == {"domain": ["image", "camera"]}
     # The form starts with Everyone and All Areas, as the Test page does.
     assert fields["people"]["default"] == {
         "active_choice": "Everyone",

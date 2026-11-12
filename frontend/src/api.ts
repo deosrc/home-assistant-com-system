@@ -47,17 +47,15 @@ export class ComSystemApi {
     return result.receivers;
   }
 
-  /** Sends through the `notify.com_system` action itself. */
-  sendTest(
-    message: string,
-    title: string | undefined,
-    targets: NotifyTargets,
-  ): Promise<SendResponse> {
+  /**
+   * Sends through the `notify.com_system` action itself. `data` is the
+   * action's data exactly as the form built it, so a field added to the
+   * action needs no change here.
+   */
+  sendTest(data: Record<string, unknown>): Promise<SendResponse> {
     return this.hass.callWS({
       type: "com_system/notify/test",
-      message,
-      ...(title ? { title } : {}),
-      ...targets,
+      service_data: data,
     });
   }
 

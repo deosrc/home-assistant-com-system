@@ -30,9 +30,10 @@ async def async_deliver_webostv(
     """Send the message (and an optional icon) as a toast on the TV.
 
     The integration registers ``notify.<slugified config entry title>`` and
-    reads only ``message`` and ``data.icon``, so the title is dropped with a
-    warning. The integration logs, rather than raises, when the TV is
-    unreachable, so such a failure cannot be reported here.
+    reads only ``message`` and ``data.icon``; the dispatcher has already
+    dropped everything else (with warnings). ``data`` is the type's block.
+    The integration logs, rather than raises, when the TV is unreachable, so
+    such a failure cannot be reported here.
     """
     entry = source_entry(hass, receiver)
     if entry is None:
@@ -44,8 +45,5 @@ async def async_deliver_webostv(
     extra = notification.get("data")
     if isinstance(extra, Mapping) and extra.get("icon"):
         data["data"] = {"icon": extra["icon"]}
-    warnings = []
-    if notification.get("title"):
-        warnings.append("The title is not shown on a webOS TV")
     await hass.services.async_call(NOTIFY_DOMAIN, service, data, blocking=True)
-    return warnings
+    return []

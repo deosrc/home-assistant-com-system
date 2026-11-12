@@ -22,6 +22,7 @@ reach it like any other receiver. See [Targets](../targets.md).
 | --- | --- |
 | `message` | Yes |
 | `title` | Yes |
+| `priority`, `image`, `data` | No: dropped, with a warning |
 
 ## Behaviour
 

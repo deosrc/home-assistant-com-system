@@ -14,6 +14,13 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.util import slugify
 
 from .const import AUDIENCE_PERSONAL, AUDIENCE_SHARED, DATA_ENTITIES, DOMAIN
+from .content import (
+    PRIORITY_CRITICAL,
+    PRIORITY_HIGH,
+    PRIORITY_LOW,
+    async_image_url,
+    merge,
+)
 from .receiver import Receiver
 
 _LOGGER = logging.getLogger(__name__)
@@ -96,10 +103,39 @@ def mobile_app_people(hass: HomeAssistant, receiver: Receiver) -> tuple[str, ...
     return (person,) if person else ()
 
 
+# How the normalised priority maps to the companion app's ``data`` keys.
+# Android reads ``importance``, ``ttl`` and ``priority``; iOS reads
+# ``push.interruption-level`` (and ``push.sound`` for critical alerts). Each
+# platform ignores the other's keys.
+PRIORITY_DATA: dict[str, dict[str, Any]] = {
+    PRIORITY_LOW: {"importance": "low", "push": {"interruption-level": "passive"}},
+    PRIORITY_HIGH: {
+        "importance": "high",
+        "ttl": 0,
+        "priority": "high",
+        "push": {"interruption-level": "time-sensitive"},
+    },
+    PRIORITY_CRITICAL: {
+        "importance": "max",
+        "ttl": 0,
+        "priority": "high",
+        "push": {
+            "interruption-level": "critical",
+            "sound": {"name": "default", "critical": 1, "volume": 1.0},
+        },
+    },
+}
+
+
 async def async_deliver_mobile_app(
     hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
 ) -> list[str]:
-    """Send the message and title through the device's notify action."""
+    """Send the notification through the device's notify action.
+
+    ``priority`` maps through ``PRIORITY_DATA``, ``image`` is ``data.image``
+    (a media source is resolved to a URL), and the ``mobile_app`` data block
+    is merged over both, so it can override them.
+    """
     entry = source_entry(hass, receiver)
     if entry is None:
         raise HomeAssistantError("The mobile app device is no longer registered")
@@ -109,5 +145,15 @@ async def async_deliver_mobile_app(
     data = {"message": notification["message"]}
     if notification.get("title") is not None:
         data["title"] = notification["title"]
+    warnings: list[str] = []
+    extra: dict[str, Any] = dict(PRIORITY_DATA.get(notification.get("priority"), {}))
+    if notification.get("image"):
+        try:
+            extra["image"] = await async_image_url(hass, notification["image"])
+        except HomeAssistantError as err:
+            warnings.append(f"The image was dropped: {err}")
+    extra = merge(extra, notification.get("data") or {})
+    if extra:
+        data["data"] = extra
     await hass.services.async_call(NOTIFY_DOMAIN, service, data, blocking=True)
-    return []
+    return warnings
