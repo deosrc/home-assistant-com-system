@@ -408,6 +408,8 @@ describe("testing tool", () => {
     await change({
       message: "Hello",
       title: "Hi",
+      priority: "high",
+      data: { pushover: { sound: "siren" } },
       people: {
         active_choice: "Individuals",
         Individuals: ["person.alice"],
@@ -428,12 +430,26 @@ describe("testing tool", () => {
 
     send().click();
     await settle(view);
+    // The action's data goes through exactly as the form built it, so a
+    // field added to the action needs no change in the panel.
     expect(callWS).toHaveBeenCalledWith({
       type: "com_system/notify/test",
-      message: "Hello",
-      title: "Hi",
-      people: ["person.alice"],
-      receivers: selected,
+      service_data: {
+        message: "Hello",
+        title: "Hi",
+        priority: "high",
+        data: { pushover: { sound: "siren" } },
+        people: {
+          active_choice: "Individuals",
+          Individuals: ["person.alice"],
+          Everyone: true,
+        },
+        receivers: {
+          active_choice: "Select",
+          Select: { area_id: ["office"], device_id: ["d1"], entity_id: [] },
+          "All Areas": true,
+        },
+      },
     });
     await settle(view);
     const result = root.querySelector(".results")!.textContent!;
@@ -484,98 +500,6 @@ describe("testing tool", () => {
     await settle(view);
     expect(root.querySelector(".error")!.textContent).toContain(
       "No receiver matches the targets",
-    );
-  });
-});
-
-describe("testing tool content options", () => {
-  it("shows options only for the reached types and sends them", async () => {
-    // ha-service-control is defined by the tests above.
-    const { hass, callWS } = makeHass();
-    const impl = callWS.getMockImplementation()!;
-    callWS.mockImplementation(async (msg: { type: string }) => {
-      if (msg.type === "com_system/notify/preview") {
-        return {
-          receivers: [
-            {
-              entry_id: "e1",
-              name: "Phone",
-              type: "Pushover",
-              type_id: "pushover",
-              outcome: "reached",
-              reason: null,
-              capabilities: ["title", "priority", "data.sound"],
-            },
-            {
-              entry_id: "e2",
-              name: "TV",
-              type: "webOS TV",
-              type_id: "webostv",
-              outcome: "reached",
-              reason: null,
-              capabilities: ["data.icon"],
-            },
-          ],
-        };
-      }
-      return impl(msg);
-    });
-    const panel = await mount("/test", hass);
-    const view = panel.shadowRoot!.querySelector("com-system-test")!;
-    await settle(view);
-    const root = view.shadowRoot!;
-    // Priority is offered (Pushover), the image is not (nobody supports it).
-    expect(root.querySelector(".priority")).not.toBeNull();
-    expect(root.querySelector(".priority")!.textContent).toContain(
-      "Not supported by webOS TV",
-    );
-    expect(root.querySelector(".image")).toBeNull();
-    // Each type with data keys gets a block.
-    const blocks = [...root.querySelectorAll("textarea[data-type]")].map((e) =>
-      e.getAttribute("data-type"),
-    );
-    expect(blocks).toEqual(["pushover", "webostv"]);
-
-    root.querySelector("ha-service-control")!.dispatchEvent(
-      new CustomEvent("value-changed", {
-        detail: {
-          value: {
-            action: "notify.com_system",
-            data: {
-              message: "Hello",
-              people: { active_choice: "Everyone", Everyone: true },
-            },
-          },
-        },
-      }),
-    );
-    const select = root.querySelector<HTMLSelectElement>(".priority select")!;
-    select.value = "high";
-    select.dispatchEvent(new Event("change"));
-    const pushover = root.querySelector<HTMLTextAreaElement>(
-      "textarea[data-type=pushover]",
-    )!;
-    pushover.value = "{bad";
-    pushover.dispatchEvent(new Event("input"));
-    await settle(view);
-    expect(root.querySelector(".content-error")!.textContent).toContain(
-      "Pushover data is not a JSON object",
-    );
-    expect(root.querySelector<HTMLButtonElement>(".send")!.disabled).toBe(true);
-
-    pushover.value = '{"sound": "siren"}';
-    pushover.dispatchEvent(new Event("input"));
-    await settle(view);
-    callWS.mockClear();
-    root.querySelector<HTMLButtonElement>(".send")!.click();
-    await settle(view);
-    expect(callWS).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: "com_system/notify/test",
-        message: "Hello",
-        priority: "high",
-        data: { pushover: { sound: "siren" } },
-      }),
     );
   });
 });

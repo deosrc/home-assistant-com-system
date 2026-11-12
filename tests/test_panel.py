@@ -29,7 +29,7 @@ COMMANDS = [
     {"type": "com_system/scripts/check", "entity_id": "script.x"},
     {"type": "com_system/scripts/rescan"},
     {"type": "com_system/notify/preview"},
-    {"type": "com_system/notify/test", "message": "x"},
+    {"type": "com_system/notify/test", "service_data": {"message": "x"}},
     {"type": "com_system/history/list"},
 ]
 
@@ -326,9 +326,6 @@ async def test_notify_preview_and_test(hass: HomeAssistant, hass_ws_client) -> N
             "outcome": "reached",
             "reason": None,
             "reasons": [{"kind": "receiver", "id": on.entry_id}],
-            "type_id": "custom",
-            "capabilities": [],
-            "accepts_any_content": True,
         },
         {
             "entry_id": off.entry_id,
@@ -337,20 +334,23 @@ async def test_notify_preview_and_test(hass: HomeAssistant, hass_ws_client) -> N
             "outcome": "skipped",
             "reason": "Receiver is disabled",
             "reasons": [{"kind": "receiver", "id": off.entry_id}],
-            "type_id": "custom",
-            "capabilities": [],
-            "accepts_any_content": True,
         },
     ]
 
     msg = await _call(
-        client, {"type": "com_system/notify/test", "message": "hi", **targets}
+        client,
+        {
+            "type": "com_system/notify/test",
+            "service_data": {"message": "hi", "priority": "high", **targets},
+        },
     )
     assert msg["success"]
     # Alpha's script runs; Beta is skipped.
     assert msg["result"]["counts"] == {"delivered": 1, "failed": 0, "skipped": 1}
 
-    msg = await _call(client, {"type": "com_system/notify/test", "message": "hi"})
+    msg = await _call(
+        client, {"type": "com_system/notify/test", "service_data": {"message": "hi"}}
+    )
     assert not msg["success"]
     assert msg["error"]["code"] == "send_failed"
 

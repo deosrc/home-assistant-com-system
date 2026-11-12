@@ -48,10 +48,10 @@ describe("ComSystemApi", () => {
       type: "com_system/notify/preview",
       receivers: { active_choice: "Select", Select: { area_id: ["kitchen"] } },
     });
-    await new ComSystemApi(hass).sendTest("Hi", "", {});
+    await new ComSystemApi(hass).sendTest({ message: "Hi", priority: "high" });
     expect(callWS).toHaveBeenLastCalledWith({
       type: "com_system/notify/test",
-      message: "Hi",
+      service_data: { message: "Hi", priority: "high" },
     });
   });
 

@@ -70,12 +70,11 @@ The testing tool sends a test notification and shows what happens.
   field to leave that group out, so it is not targeted. The groups are
   combined as in the [action](services.md#people). If Home Assistant has
   not loaded that form, the page says so.
-- **Receiver-specific content** appears below the form when a receiver that
-  would be reached supports it: a **Priority** choice, an **Image** field
-  and, for each reached type that takes `data`, a JSON box for that type's
-  block (with its keys, where it lists them). A field is shown only if some
-  reached type supports it, and says which reached types would drop it.
-  Invalid JSON disables **Send test**. See [content](content.md).
+- Every field of the action is in the form, including priority, image and
+  `data`, because the form is built from the action itself: a field added
+  to the action appears here with no change to the panel. What a receiver
+  type does with content is in [content](content.md); content it drops is
+  shown as a warning in the result.
 - **Receivers reached** updates as you change the targets, without sending
   anything. Each matching receiver is `reached`, or `skipped` with the
   reason (it is disabled).
@@ -125,11 +124,10 @@ admin user.
   (optional `limit`). Each has `id`, `time`, `notification` and `results`.
 - `com_system/notify/preview`: the receivers the targets (`people` and
   `receivers`, as in the action) would reach, each `reached` or
-  `skipped` with a reason, plus the type id and its capabilities. Sends
+  `skipped` with a reason. Sends
   nothing.
 - `com_system/notify/test`: sends through the `notify.com_system` action
-  (`message`, optional `title`, `priority`, `image`, `data` and the targets)
-  and returns its response.
+  (`service_data`, the action's data) and returns its response.
   A failure to send is the error `send_failed`.
 
 ## Installing the panel

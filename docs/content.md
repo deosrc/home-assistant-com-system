@@ -73,6 +73,6 @@ too.
 
 ## Designing a notification
 
-The **Test** page of the [panel](ui.md#test) shows the content options that
-apply to the receivers the targets would reach: priority, image and one
-data block per type, each listing which of the reached types would drop it.
+The **Test** page of the [panel](ui.md#test) builds its form from the
+action, so it offers priority, image and `data` as well as the targets, and
+shows any warnings about dropped content in the result.

@@ -6,7 +6,6 @@ export interface HomeAssistant {
     { state: string; attributes?: { friendly_name?: string } }
   >;
   areas?: Record<string, { name: string }>;
-  services?: Record<string, unknown>;
   user?: { is_admin: boolean };
 }
 
@@ -80,19 +79,6 @@ export interface PreviewEntry {
   outcome: "reached" | "skipped";
   reason: string | null;
   reasons?: MatchReason[];
-  /** The receiver type id, the key of its block in `data`. */
-  type_id?: string;
-  /** What the type supports: title, priority, image, data, data.<key>. */
-  capabilities?: string[];
-  accepts_any_content?: boolean;
-}
-
-/** Content beyond the message and title. */
-export interface NotifyContent {
-  priority?: "low" | "normal" | "high" | "critical";
-  image?: string;
-  /** Objects keyed by receiver type id. */
-  data?: Record<string, Record<string, unknown>>;
 }
 
 export interface SendResult {

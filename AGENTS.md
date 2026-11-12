@@ -334,27 +334,26 @@ records the conventions and how things work as built.
   (`dashboard-view.ts`, `receivers-view.ts`, `test-view.ts`); the first two
   refetch when switch states change. `test-view.ts` is the testing tool: it
   previews with `notify/preview` on every target change and sends with
-  `notify/test`. Priority, image and data are not in the form: `formHass`
-  gives it a copy of `hass` whose `notify.com_system` fields are only
-  title, message, people and receivers (the other fields' defaults are
-  unaffected), and the "Receiver-specific content" card shows priority,
-  image and one JSON `data` box per reached type that supports them (from
-  the preview's capabilities), with a note of which reached types drop
-  each; invalid JSON disables send. The form is Home Assistant's
+  `notify/test`. The form is Home Assistant's
   `ha-service-control` with
   `hide-picker hide-description` and `.value` set to
   `{action: "notify.com_system"}` with no `data` at first, so the form
   applies the `default` of each field from the action description (as when
   an action is picked in Developer tools; this relies on the form loading
   defaults only when the value has no `data` key, so never seed `data`); its
-  `value-changed` `detail.value.data` holds `title`, `message`,
-  `people` and `receivers` (choose values: when the user flips the choice
-  the other choice's value stays in the object, so read `active_choice`
-  first; the Select value is a target with any of `entity_id`, `area_id`,
-  `device_id`, `floor_id`, `label_id`, all kept and sent), which are the
-  preview and send fields. The view holds no defaults of its own; they live
-  in `SERVICE_DESCRIPTION`. The form reads the fields from `hass.services`
-  (our
+  `value-changed` `detail.value.data` is the whole action data. The view
+  reads only `message`, `title` and the target fields (`people` and
+  `receivers`) from it, for the preview and the send button; the send passes
+  the whole data to `notify/test` as `service_data`, so a field added to the
+  action description (such as `priority`, `image` or `data`) appears in the
+  form and is sent with no change to the panel. The target values are choose
+  values (when the user flips the
+  choice the other choice's value stays in the object, so read
+  `active_choice` first; the Select value is a target with any of
+  `entity_id`, `area_id`, `device_id`, `floor_id`, `label_id`, all kept).
+  The view holds no defaults of its own; they live in
+  `SERVICE_DESCRIPTION`.
+  The form reads the fields from `hass.services` (our
   `async_set_service_schema` description), is an internal element that HA
   loads lazily, and its loading from a custom panel is unverified in a real
   frontend; the view waits `controlTimeoutMs` for it and otherwise shows an
