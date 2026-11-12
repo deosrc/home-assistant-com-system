@@ -19,8 +19,8 @@ Two typed fields are validated by the action:
 - `image` is a choice of **Entity** (the form's first choice) or **URL**.
   An entity is an `image` or `camera` entity, sent as its current picture
   path (with its access token). A URL is an http(s) URL, a `/local/...`
-  path or a media source ID (`media-source://...`). In YAML give the plain string (a URL or an
-  entity id) or the form's `{active_choice: Entity, Entity: camera.door}`.
+  path or a media source ID (`media-source://...`). In YAML give the plain
+  string (a URL or an entity id) or the form's `{active_choice: Entity, Entity: camera.door}`.
 
 How each type handles them:
 
