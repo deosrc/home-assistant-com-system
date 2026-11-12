@@ -31,10 +31,11 @@ other's:
 - `critical`: Android `importance: max`, `ttl: 0`, `priority: high`; iOS
   `critical` with a critical sound at full volume.
 
-`image` is passed as `data.image`; a media source ID is resolved to a URL
-first (if it cannot be, the image is dropped with a warning). The
-`mobile_app` block of `data` is merged over these, so it can override them
-and add keys such as `actions`, `tag` or `channel`:
+`image` is passed as `data.image`; an `image` or `camera` entity becomes its
+current picture path, and a media source ID is resolved to a URL first (if
+it cannot be, the image is dropped with a warning). The `mobile_app`
+block of `data` is merged over these, so it can override them and add
+keys such as `actions`, `tag` or `channel`:
 
 ```yaml
 action: notify.com_system

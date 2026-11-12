@@ -48,6 +48,7 @@ class _Type(ReceiverType):
 def test_validators() -> None:
     """Priority, image and data accept only documented forms."""
     assert validate_priority("critical") == "critical"
+    assert validate_priority("High") == "high"
     with pytest.raises(vol.Invalid):
         validate_priority("urgent")
     for image in (
@@ -56,7 +57,21 @@ def test_validators() -> None:
         "media-source://media_source/local/a.png",
     ):
         assert validate_image(image) == image
-    for image in ("ftp://x", "a.png", "/local/", "/config/a.png"):
+    # The form's choose values and entity ids are accepted too.
+    assert validate_image({"active_choice": "URL", "URL": "/local/a.png"}) == (
+        "/local/a.png"
+    )
+    assert validate_image({"active_choice": "Entity", "Entity": "camera.door"}) == (
+        "camera.door"
+    )
+    assert validate_image("image.front") == "image.front"
+    for bad in (
+        {"active_choice": "Entity", "Entity": "light.lamp"},
+        {"active_choice": "Other"},
+    ):
+        with pytest.raises(vol.Invalid):
+            validate_image(bad)
+    for image in ("ftp://x", "a.png", "/local/", "/config/a.png", "light.lamp"):
         with pytest.raises(vol.Invalid):
             validate_image(image)
     assert validate_data({"pushover": {"sound": "x"}}) == {"pushover": {"sound": "x"}}
@@ -390,3 +405,38 @@ async def test_alexa_drops_everything_but_title(hass: HomeAssistant) -> None:
         "data": {"type": "announce"},
     }
     assert len(response["results"][0]["warnings"]) == 2
+
+
+async def test_mobile_app_image_entity_uses_entity_picture(
+    hass: HomeAssistant,
+) -> None:
+    """An image or camera entity becomes its entity_picture path."""
+    calls = await _mobile(hass)
+    hass.states.async_set(
+        "camera.door",
+        "idle",
+        {"entity_picture": "/api/camera_proxy/camera.door?token=t"},
+    )
+
+    await _send(
+        hass, message="a", image={"active_choice": "Entity", "Entity": "camera.door"}
+    )
+    await _send(hass, message="b", image="image.plain")  # missing: dropped
+    hass.states.async_set("image.plain", "x")
+    await _send(hass, message="c", image="image.plain")
+
+    assert calls[0].data["data"]["image"] == "/api/camera_proxy/camera.door?token=t"
+    assert "data" not in calls[1].data
+    assert calls[2].data["data"]["image"] == "/api/image_proxy/image.plain"
+
+
+async def test_pushover_cannot_attach_an_entity(hass: HomeAssistant) -> None:
+    """Pushover needs a file, so an entity image is dropped with a warning."""
+    calls = await _pushover(hass)
+
+    response = await _send(hass, message="m", image="camera.door")
+
+    assert "data" not in calls[0].data
+    assert response["results"][0]["warnings"] == [
+        "The image was dropped: An entity is not a local file"
+    ]

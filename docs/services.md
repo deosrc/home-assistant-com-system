@@ -8,13 +8,13 @@ send a notification to the receivers that match its [targets](targets.md).
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `title` | no | A title; folded into the message where there is none. |
-| `message` | yes | The message to send. |
-| `priority` | no | `low`, `normal` (default), `high` or `critical`. |
-| `image` | no | An http(s) URL, `/local/` path or media source ID. |
-| `data` | no | Receiver-specific content, keyed by receiver type. |
 | `people` | no | Individual people, or everyone (see below). |
 | `receivers` | no | Selected receivers, or all areas (see below). |
+| `title` | no | A title; folded into the message where there is none. |
+| `message` | yes | The message to send. |
+| `priority` | no | Low, Normal (default), High or Critical. |
+| `image` | no | A URL, or an image or camera entity. |
+| `data` | no | Receiver-specific content, keyed by receiver type. |
 
 `people` and `receivers` are the targets. They are combined as a union;
 see [targets](targets.md). A field that is not given is not targeted, so

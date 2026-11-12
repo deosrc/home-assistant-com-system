@@ -272,7 +272,9 @@ records the conventions and how things work as built.
   `hass.services`, so UI and automations share one path.
 - `content.py`: the content parameters. `priority` (`low`, `normal`,
   `high`, `critical`), `image` (http(s) URL, `/local/` path or
-  `media-source://` ID) and `data` (an object of objects) are validated in
+  `media-source://` ID, or an `image`/`camera` entity id; the field is a
+  `choose` selector, URL or Entity, normalised to a string by
+  `validate_image`) and `data` (an object of objects) are validated in
   the action schema. `data` is keyed by receiver type id
   (`data: {mobile_app: {...}}`; settled, documented in `docs/content.md`).
   `apply_capabilities(type, notification)` builds what a type receives: its
@@ -281,7 +283,8 @@ records the conventions and how things work as built.
   `normal` priority is never reported and other types' blocks are ignored
   silently. The dispatcher calls it before `async_deliver` and records the
   original notification on the entity. `async_image_url` resolves a media
-  source to a URL; `merge` deep-merges. Mobile app maps priority through
+  source, or an entity's `entity_picture`, to a URL (Pushover cannot attach
+  an entity); `merge` deep-merges. Mobile app maps priority through
   `PRIORITY_DATA` (Android `importance`/`ttl`/`priority`, iOS
   `push.interruption-level`) and `image` to `data.image`, then merges its
   block over them. Alexa, persistent notification and webOS drop priority

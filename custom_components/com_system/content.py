@@ -52,13 +52,37 @@ LOCAL_PREFIX = "/local/"
 
 
 def validate_priority(value: Any) -> str:
-    """Validate a priority: low, normal, high or critical."""
-    return vol.In(PRIORITIES)(value)
+    """Validate a priority: low, normal, high or critical (any case)."""
+    return vol.In(PRIORITIES)(cv.string(value).strip().lower())
+
+
+# The image field is a choose selector: a URL, or an image or camera entity.
+CHOICE_URL = "URL"
+CHOICE_ENTITY = "Entity"
+IMAGE_ENTITY_DOMAINS = ("image", "camera")
+_PROXY_PATHS = {"image": "/api/image_proxy/", "camera": "/api/camera_proxy/"}
 
 
 def validate_image(value: Any) -> str:
-    """Validate an image: an http(s) URL, a /local/ path or a media source ID."""
+    """Validate an image and return it as a string.
+
+    The value is ``{active_choice: URL, URL: ...}`` or ``{active_choice:
+    Entity, Entity: ...}`` (what the form sends), or a plain string that is
+    either an image or camera entity id or a URL: http(s), a ``/local/`` path
+    or a media source ID.
+    """
+    if isinstance(value, dict):
+        choice = value.get("active_choice")
+        if choice == CHOICE_ENTITY:
+            return cv.entity_domain(list(IMAGE_ENTITY_DOMAINS))(
+                value.get(CHOICE_ENTITY)
+            )
+        if choice != CHOICE_URL:
+            raise vol.Invalid(f"active_choice must be {CHOICE_URL} or {CHOICE_ENTITY}")
+        value = value.get(CHOICE_URL)
     image = cv.string(value).strip()
+    if image.split(".", 1)[0] in IMAGE_ENTITY_DOMAINS and "/" not in image:
+        return cv.entity_domain(list(IMAGE_ENTITY_DOMAINS))(image)
     if image.startswith(("http://", "https://")):
         return cv.url(image)
     if image.startswith(LOCAL_PREFIX) and len(image) > len(LOCAL_PREFIX):
@@ -66,8 +90,14 @@ def validate_image(value: Any) -> str:
     if image.startswith(MEDIA_SOURCE_PREFIX) and len(image) > len(MEDIA_SOURCE_PREFIX):
         return image
     raise vol.Invalid(
-        "image must be an http(s) URL, a /local/ path or a media-source:// ID"
+        "image must be an http(s) URL, a /local/ path, a media-source:// ID "
+        "or an image or camera entity"
     )
+
+
+def is_image_entity(image: str) -> bool:
+    """Return whether an image is an image or camera entity id."""
+    return image.split(".", 1)[0] in IMAGE_ENTITY_DOMAINS and "/" not in image
 
 
 def validate_data(value: Any) -> dict[str, dict[str, Any]]:
@@ -136,8 +166,17 @@ async def async_image_url(hass: HomeAssistant, image: str) -> str:
     """Return a URL a device can fetch for an image.
 
     URLs and ``/local/`` paths are returned as they are; a media source ID is
-    resolved. Raises ``HomeAssistantError`` when it cannot be resolved.
+    resolved; an image or camera entity becomes its current ``entity_picture``
+    (a path with an access token, which the companion app can fetch). Raises
+    ``HomeAssistantError`` when it cannot be resolved.
     """
+    if is_image_entity(image):
+        state = hass.states.get(image)
+        if state is None:
+            raise HomeAssistantError(f"The entity {image} does not exist")
+        return state.attributes.get("entity_picture") or (
+            _PROXY_PATHS[image.split(".", 1)[0]] + image
+        )
     if not image.startswith(MEDIA_SOURCE_PREFIX):
         return image
     try:
@@ -165,6 +204,8 @@ def local_image_path(hass: HomeAssistant, image: str) -> str:
     files; a URL is not. The file must be in ``allowlist_external_dirs``.
     Raises ``HomeAssistantError`` otherwise. Does not check it exists.
     """
+    if is_image_entity(image):
+        raise HomeAssistantError("An entity is not a local file")
     if image.startswith(LOCAL_PREFIX):
         base = hass.config.path("www")
         relative = image[len(LOCAL_PREFIX) :]

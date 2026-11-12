@@ -35,8 +35,8 @@ which Pushover requires.
 `image` becomes the `attachment` key, which must be a file in a folder
 listed in `allowlist_external_dirs`. A `/local/...` path (the `www` folder)
 and a local media source (`media-source://media_source/local/...`) are
-files. A URL is not fetched: the image is dropped with a warning, as is a
-file that is missing or not allowed.
+files. A URL or an entity is not fetched: the image is dropped with a warning,
+as is a file that is missing or not allowed.
 
 The `pushover` block of `data` is passed to the action and overrides the
 mapped values. Its keys are `priority`, `attachment`, `url`, `url_title`,

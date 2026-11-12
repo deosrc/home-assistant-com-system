@@ -13,17 +13,21 @@ the fields below. See [the action](services.md) for the target fields.
 
 Two typed fields are validated by the action:
 
-- `priority` is `low`, `normal` (the default), `high` or `critical`. Each
+- `priority` is Low, Normal (the default), High or Critical. In YAML use
+  `low`, `normal`, `high` or `critical`; the case does not matter. Each
   receiver type maps it to its own mechanism, described in its page.
-- `image` is an http(s) URL, a `/local/...` path or a media source ID
-  (`media-source://...`). Camera entities are not supported.
+- `image` is a choice of **URL** or **Entity**. A URL is an http(s) URL, a
+  `/local/...` path or a media source ID (`media-source://...`). An entity
+  is an `image` or `camera` entity, sent as its current picture path (with
+  its access token). In YAML give the plain string (a URL or an entity id)
+  or the form's `{active_choice: Entity, Entity: camera.door}`.
 
 How each type handles them:
 
 | Type | `priority` | `image` |
 | --- | --- | --- |
 | [Mobile app](receivers/mobile-app.md) | Mapped | `data.image` |
-| [Pushover](receivers/pushover.md) | -1, 1 or 2 | Attachment (local file) |
+| [Pushover](receivers/pushover.md) | -1, 1 or 2 | Attachment (local file, not an entity) |
 | [webOS TV](receivers/webostv.md) | No | No (use `data.icon`) |
 | [Alexa Media Player](receivers/alexa-media-player.md) | No | No |
 | [Persistent notification](receivers/persistent-notification.md) | No | No |
