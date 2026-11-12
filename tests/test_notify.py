@@ -351,7 +351,7 @@ async def test_description_order_and_people_selector(hass: HomeAssistant) -> Non
     options = fields["priority"]["selector"]["select"]["options"]
     assert [o["label"] for o in options] == ["Low", "Normal", "High", "Critical"]
     image = fields["image"]["selector"]["choose"]["choices"]
-    assert list(image) == ["URL", "Entity"]
+    assert list(image) == ["Entity", "URL"]
     assert image["Entity"]["selector"]["entity"] == {"domain": ["image", "camera"]}
     # The form starts with Everyone and All Areas, as the Test page does.
     assert fields["people"]["default"] == {

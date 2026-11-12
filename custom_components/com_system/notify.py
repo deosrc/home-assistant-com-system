@@ -225,12 +225,12 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
             "selector": {
                 "choose": {
                     "choices": {
-                        CHOICE_URL: {"selector": {"text": None}},
                         CHOICE_ENTITY: {
                             "selector": {
                                 "entity": {"domain": list(IMAGE_ENTITY_DOMAINS)}
                             }
                         },
+                        CHOICE_URL: {"selector": {"text": None}},
                     }
                 }
             },
