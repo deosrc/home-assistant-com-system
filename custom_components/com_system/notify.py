@@ -32,7 +32,6 @@ from .content import (
     CHOICE_URL,
     IMAGE_ENTITY_DOMAINS,
     PRIORITIES,
-    PRIORITY_NORMAL,
     validate_data,
     validate_image,
     validate_priority,
@@ -207,7 +206,6 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
                 "How urgent the notification is. Each receiver type maps it "
                 "to its own mechanism; types without one drop it."
             ),
-            "default": PRIORITY_NORMAL,
             "example": "high",
             "selector": {
                 "select": {
