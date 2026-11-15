@@ -253,3 +253,114 @@ async def test_notify_by_person_reaches_personal_only(hass: HomeAssistant) -> No
             "notify", "com_system", data, blocking=True, return_response=True
         )
     assert len(calls) == 1
+
+
+ACTIONS = [{"action": "OPEN", "title": "Open"}, {"action": "SHUT", "title": "Shut"}]
+
+
+async def _send_with_actions(hass: HomeAssistant) -> tuple[dict, list[ServiceCall]]:
+    await _setup_hub(hass)
+    _phone(hass)
+    hass.states.async_set("person.alice", "home", {"user_id": USER})
+    calls: list[ServiceCall] = []
+    hass.services.async_register("notify", "mobile_app_pixel", calls.append)
+    await _receiver(hass)
+    response = await hass.services.async_call(
+        "notify",
+        "com_system",
+        {
+            "message": "Door",
+            "people": ["person.alice"],
+            "data": {"mobile_app": {"actions": ACTIONS, "action_data": {"x": 1}}},
+        },
+        blocking=True,
+        return_response=True,
+    )
+    return response, calls
+
+
+async def test_actions_carry_notification_id(hass: HomeAssistant) -> None:
+    """Actions are sent with action_data naming the notification and receiver."""
+    response, calls = await _send_with_actions(hass)
+    sent = calls[0].data["data"]
+    assert sent["actions"] == ACTIONS
+    assert sent["action_data"]["x"] == 1
+    assert sent["action_data"]["com_system_notification_id"] == response["id"]
+    assert (
+        sent["action_data"]["com_system_receiver_id"]
+        == (response["results"][0]["entry_id"])
+    )
+
+
+async def test_no_action_data_without_actions(hass: HomeAssistant) -> None:
+    """A notification with no actions is sent without action_data."""
+    await _setup_hub(hass)
+    _phone(hass)
+    calls: list[ServiceCall] = []
+    hass.services.async_register("notify", "mobile_app_pixel", calls.append)
+    entry = await _receiver(hass)
+    receiver = _registry(hass).get(entry.entry_id)
+    await (
+        _registry(hass)
+        .type_of(receiver)
+        .async_deliver(hass, receiver, {"id": "n1", "message": "Hi"})
+    )
+    assert "data" not in calls[0].data
+
+
+async def test_action_response_fires_event_and_is_stored(hass: HomeAssistant) -> None:
+    """Pressing an action fires com_system_action and is stored in history."""
+    response, calls = await _send_with_actions(hass)
+    events = []
+    hass.bus.async_listen("com_system_action", events.append)
+    hass.bus.async_fire(
+        "mobile_app_notification_action",
+        {
+            "action": "OPEN",
+            "reply_text": "ok",
+            "action_data": calls[0].data["data"]["action_data"],
+        },
+    )
+    await hass.async_block_till_done()
+    assert len(events) == 1
+    assert events[0].data == {
+        "notification_id": response["id"],
+        "receiver_id": response["results"][0]["entry_id"],
+        "receiver": "Pixel",
+        "person": "person.alice",
+        "action": "OPEN",
+        "reply_text": "ok",
+    }
+    records = await hass.data[DOMAIN]["history"].async_list()
+    assert records[0]["id"] == response["id"]
+    stored = records[0]["responses"]
+    assert len(stored) == 1
+    assert stored[0]["action"] == "OPEN"
+    assert stored[0]["person"] == "person.alice"
+    assert "time" in stored[0]
+
+
+async def test_foreign_action_events_are_ignored(hass: HomeAssistant) -> None:
+    """An action event from a notification Com System did not send is ignored."""
+    await _setup_hub(hass)
+    events = []
+    hass.bus.async_listen("com_system_action", events.append)
+    hass.bus.async_fire("mobile_app_notification_action", {"action": "OPEN"})
+    await hass.async_block_till_done()
+    assert not events
+
+
+async def test_response_to_pruned_notification_still_fires(
+    hass: HomeAssistant,
+) -> None:
+    """A response whose notification left history is fired but not stored."""
+    await _setup_hub(hass)
+    events = []
+    hass.bus.async_listen("com_system_action", events.append)
+    hass.bus.async_fire(
+        "mobile_app_notification_action",
+        {"action": "OPEN", "action_data": {"com_system_notification_id": "gone"}},
+    )
+    await hass.async_block_till_done()
+    assert events[0].data["notification_id"] == "gone"
+    assert events[0].data["receiver"] is None

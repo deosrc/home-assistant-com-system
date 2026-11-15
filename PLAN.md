@@ -116,16 +116,6 @@ Content parameters (`message`, `title`, `priority`, `image` and per-type
 `data`) and how unsupported content is dropped with warnings are built; see
 [docs/content.md](docs/content.md) and `AGENTS.md`.
 
-**Action responses:** each Com System notification is given an ID. When a
-user responds to a notification action (e.g. presses a button on a mobile
-app notification), Com System fires a `com_system_action` event (name
-provisional) containing the notification ID, the receiver and the chosen
-action, so automations can trigger on it. The response is also stored
-against the notification in history, so the UI can show which receiver or
-person responded. How each receiver type's native response event is mapped
-to this event is documented per type. Responses from a type that has no
-native response mechanism are not possible.
-
 ### 2.4 Receiver entities and enabled state
 
 The entities themselves are built (see `AGENTS.md` and
@@ -159,8 +149,8 @@ Each type needs a receiver-type definition (names provisional) covering:
 **Delivery per type:**
 
 - **Mobile app** – built, including priority, image and `data` (see
-  `docs/receivers/mobile-app.md`). Still to do: notification actions and
-  their responses.
+  `docs/receivers/mobile-app.md`), including actions and their responses
+  (`com_system_action`).
 - **Pushover** – built (see `docs/receivers/pushover.md`).
 - **Music Assistant** – one receiver per Music Assistant player. Delivery calls
   Music Assistant's announcement action rather than a notify action (the message
@@ -295,7 +285,6 @@ Notes:
   exist.
 - The receiver editor needs a conditions editor. Home Assistant's condition
   selector can likely be reused.
-- Mobile app action options in the designer come with notification actions.
 - The pending discoveries list links to Devices & services to add or
   ignore. Doing that inside the panel is not done.
 - The release flow (`release.yml`, `zip_release` in `hacs.json`) has not run

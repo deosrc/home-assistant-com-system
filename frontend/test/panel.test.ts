@@ -90,6 +90,16 @@ function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
               id: "h1",
               time: "2026-11-11T10:00:00+00:00",
               notification: { title: "Laundry", message: "Done" },
+              responses: [
+                {
+                  time: "2026-11-11T10:05:00+00:00",
+                  receiver_id: "e1",
+                  receiver: "Office",
+                  person: "person.alice",
+                  action: "OPEN",
+                  reply_text: null,
+                },
+              ],
               results: [
                 {
                   entry_id: "e1",
@@ -189,6 +199,10 @@ describe("panel", () => {
     const badges = [...view.shadowRoot!.querySelectorAll("summary .count")];
     expect(badges.map((b) => b.textContent!.trim())).toEqual(["1 failed"]);
     expect(text).toContain("dropped");
+    const response = view.shadowRoot!.querySelector(".responses")!;
+    expect(response.textContent!.replace(/\s+/g, " ")).toContain(
+      "OPEN from Alice",
+    );
   });
 
   it("lists receivers and discoveries and toggles enabled", async () => {
@@ -501,5 +515,65 @@ describe("testing tool", () => {
     expect(root.querySelector(".error")!.textContent).toContain(
       "No receiver matches the targets",
     );
+  });
+
+  it("edits mobile app actions when a mobile app receiver is reached", async () => {
+    const { hass, callWS } = makeHass();
+    const original = callWS.getMockImplementation()!;
+    callWS.mockImplementation(async (msg: { type: string }) =>
+      msg.type === "com_system/notify/preview"
+        ? {
+            receivers: [
+              {
+                entry_id: "e3",
+                name: "Pixel",
+                type: "Mobile app",
+                outcome: "reached",
+                reason: null,
+                reasons: [],
+              },
+            ],
+          }
+        : original(msg),
+    );
+    const panel = await mount("/test", hass);
+    const view = panel.shadowRoot!.querySelector("com-system-test")!;
+    await settle(view);
+    const root = view.shadowRoot!;
+    const control = root.querySelector("ha-service-control")!;
+    control.dispatchEvent(
+      new CustomEvent("value-changed", {
+        detail: {
+          value: {
+            action: "notify.com_system",
+            data: { message: "Door", data: { pushover: { sound: "x" } } },
+          },
+        },
+      }),
+    );
+    await settle(view);
+    root.querySelector<HTMLButtonElement>(".action-add")!.click();
+    await settle(view);
+    const set = async (sel: string, value: string) => {
+      const input = root.querySelector<HTMLInputElement>(sel)!;
+      input.value = value;
+      input.dispatchEvent(new Event("change"));
+      await settle(view);
+    };
+    await set(".action-id", "OPEN");
+    await set(".action-title", "Open");
+    await set(".action-uri", "/lovelace/0");
+    const value = () =>
+      (control as unknown as { value: { data: Record<string, unknown> } }).value
+        .data;
+    expect(value().data).toEqual({
+      pushover: { sound: "x" },
+      mobile_app: {
+        actions: [{ action: "OPEN", title: "Open", uri: "/lovelace/0" }],
+      },
+    });
+    root.querySelector<HTMLButtonElement>(".action-remove")!.click();
+    await settle(view);
+    expect(value().data).toEqual({ pushover: { sound: "x" } });
   });
 });

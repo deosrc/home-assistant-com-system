@@ -20,6 +20,7 @@ reason in the result.
 | `priority` | Yes, mapped to `data` keys (below) |
 | `image` | Yes, as `data.image` |
 | `data` | Yes: the `mobile_app` block, any key |
+| Actions | Yes, with [responses](#actions-and-responses) |
 
 `priority` is mapped to the companion app's keys; each platform ignores the
 other's:
@@ -48,7 +49,60 @@ data:
       tag: door
 ```
 
-Responses to notification actions are not supported yet.
+## Actions and responses
+
+Buttons on the notification are the `actions` list of the `mobile_app`
+block, as the companion app defines them (`action`, `title`, and optionally
+`uri`, `behavior`). `channel`, `tag` and the other app keys go in the same
+block.
+
+```yaml
+action: notify.com_system
+data:
+  message: Someone is at the door
+  data:
+    mobile_app:
+      channel: doorbell
+      actions:
+        - action: OPEN
+          title: Open the gate
+        - action: IGNORE
+          title: Ignore
+```
+
+Each notification has an ID, returned as `id` in the action's response.
+When the notification has actions, Com System adds its notification ID and
+the receiver to the `action_data` the app sends back (any `action_data` you
+give is kept). When someone presses an action, Com System fires a
+`com_system_action` event:
+
+| Key | Value |
+| --- | --- |
+| `notification_id` | The `id` of the notification |
+| `receiver_id` | The receiver's config entry ID |
+| `receiver` | The receiver's name |
+| `person` | The device's person (`person.*`), none for a shared device |
+| `action` | The action that was pressed |
+| `reply_text` | The text typed, for an action that asks for a reply |
+
+```yaml
+triggers:
+  - trigger: event
+    event_type: com_system_action
+    event_data:
+      action: OPEN
+```
+
+The response is also stored with the notification in
+[history](../history.md) and shown under Recent. If the notification has
+already left history the event is still fired. Actions with a `uri` open it
+and send no response. Responses to notifications that Com System did not
+send are ignored. The matching of a response relies on the app returning
+`action_data` in `mobile_app_notification_action`; this has not been checked
+on a real device.
+
+In the [testing tool](../ui.md#test), a **Mobile app actions** editor
+appears when a mobile app receiver would be reached.
 
 ## Which person a device belongs to
 

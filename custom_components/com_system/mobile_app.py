@@ -8,12 +8,21 @@ from typing import Any
 
 from homeassistant.components.person import persons_with_entity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
+from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify
 
-from .const import AUDIENCE_PERSONAL, AUDIENCE_SHARED, DATA_ENTITIES, DOMAIN
+from .const import (
+    AUDIENCE_PERSONAL,
+    AUDIENCE_SHARED,
+    DATA_ENTITIES,
+    DATA_HISTORY,
+    DATA_REGISTRY,
+    DOMAIN,
+    EVENT_ACTION,
+)
 from .content import (
     PRIORITY_CRITICAL,
     PRIORITY_HIGH,
@@ -28,6 +37,12 @@ _LOGGER = logging.getLogger(__name__)
 MOBILE_APP_DOMAIN = "mobile_app"
 NOTIFY_DOMAIN = "notify"
 AUDIENCE_KEY = "audience"
+
+# The app's event for a pressed notification action, and the keys Com System
+# adds to ``action_data`` so a response can be matched to its notification.
+MOBILE_APP_ACTION_EVENT = "mobile_app_notification_action"
+KEY_NOTIFICATION_ID = "com_system_notification_id"
+KEY_RECEIVER_ID = "com_system_receiver_id"
 
 
 def source_entry(hass: HomeAssistant, receiver: Receiver) -> ConfigEntry | None:
@@ -153,7 +168,55 @@ async def async_deliver_mobile_app(
         except HomeAssistantError as err:
             warnings.append(f"The image was dropped: {err}")
     extra = merge(extra, notification.get("data") or {})
+    if extra.get("actions") and notification.get("id"):
+        # The app returns action_data in its response event; that is how a
+        # response is tied back to this notification and receiver.
+        action_data = dict(extra.get("action_data") or {})
+        action_data[KEY_NOTIFICATION_ID] = notification["id"]
+        action_data[KEY_RECEIVER_ID] = receiver.entry_id
+        extra["action_data"] = action_data
     if extra:
         data["data"] = extra
     await hass.services.async_call(NOTIFY_DOMAIN, service, data, blocking=True)
     return warnings
+
+
+async def _async_handle_action(hass: HomeAssistant, event: Event) -> None:
+    """Turn the app's action event into ``com_system_action`` and history."""
+    data = event.data
+    nested = data.get("action_data")
+    sources = [nested] if isinstance(nested, Mapping) else []
+    sources.append(data)  # iOS may put action_data keys at the top level
+    found = next((s for s in sources if KEY_NOTIFICATION_ID in s), None)
+    if found is None or "action" not in data:
+        return  # not a Com System notification
+    receiver = hass.data[DOMAIN][DATA_REGISTRY].get(found.get(KEY_RECEIVER_ID))
+    person = None
+    if receiver is not None:
+        people = mobile_app_people(hass, receiver)
+        person = people[0] if people else None
+    response = {
+        "notification_id": found[KEY_NOTIFICATION_ID],
+        "receiver_id": found.get(KEY_RECEIVER_ID),
+        "receiver": receiver.name if receiver else None,
+        "person": person,
+        "action": data["action"],
+        "reply_text": data.get("reply_text"),
+    }
+    stored = await hass.data[DOMAIN][DATA_HISTORY].async_add_response(
+        response["notification_id"],
+        {**response, "time": dt_util.utcnow().isoformat()},
+    )
+    if not stored:
+        _LOGGER.debug("Response to %s: not in history", response["notification_id"])
+    hass.bus.async_fire(EVENT_ACTION, response, context=event.context)
+
+
+@callback
+def async_setup_action_responses(hass: HomeAssistant) -> None:
+    """Listen for pressed notification actions (once, from ``async_setup``)."""
+
+    async def _listener(event: Event) -> None:
+        await _async_handle_action(hass, event)
+
+    hass.bus.async_listen(MOBILE_APP_ACTION_EVENT, _listener)

@@ -31,6 +31,7 @@ from .const import (
 )
 from .detection import ReceiverDetector
 from .history import NotificationHistory
+from .mobile_app import async_setup_action_responses
 from .notify import async_register_notify_action
 from .panel import async_register_panel
 from .registry import ReceiverRegistry
@@ -57,6 +58,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     }
     async_register_notify_action(hass)
     async_register_commands(hass)
+    async_setup_action_responses(hass)
     await async_register_panel(hass)
     return True
 

@@ -290,6 +290,22 @@ records the conventions and how things work as built.
   block over them. Alexa, persistent notification and webOS drop priority
   and image. The panel is not told what a type does with content beyond its
   capabilities.
+- Notification IDs and action responses: `async_send` gives each
+  notification a uuid `id` (in the notification passed to dispatch, so
+  receivers and scripts see it, in the action response as `id`, and as the
+  history record id). The mobile app delivery, when `data.mobile_app.actions`
+  is set, merges `com_system_notification_id` and `com_system_receiver_id`
+  into `action_data` (keeping the user's keys). `async_setup_action_responses`
+  (called from `async_setup`) listens for `mobile_app_notification_action`;
+  `_async_handle_action` ignores events without those keys, stores the
+  response with `NotificationHistory.async_add_response` (record
+  `responses`, newest last; skipped if the record was pruned) and fires
+  `com_system_action` (`EVENT_ACTION`). The app returning `action_data`
+  nested in the event (or flattened, handled too) is from the companion app's
+  documentation and was not checked on a device. Other receiver types have no
+  response mechanism. The panel's Test page has a mobile app actions editor
+  (`renderActionEditor`) writing `data.mobile_app.actions` into the form
+  value; Recent lists `responses`.
 - `dispatcher.py`: `async_dispatch(hass, resolved, notification)` delivers
   to the enabled receivers concurrently (`asyncio.gather`); `_deliver`
   never raises, so one failure cannot affect another (unknown type,

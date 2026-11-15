@@ -2,7 +2,7 @@ import { LitElement, css, html } from "lit";
 import { ComSystemApi, errorMessage } from "./api";
 import { renderReasons, reasonStyles } from "./reasons";
 import { sharedStyles } from "./styles";
-import type { HistoryRecord, HomeAssistant } from "./types";
+import type { ActionResponse, HistoryRecord, HomeAssistant } from "./types";
 
 /** The recent notifications, newest first, with each receiver's result. */
 export class ComSystemHistory extends LitElement {
@@ -84,6 +84,10 @@ export class ComSystemHistory extends LitElement {
       .count.skipped {
         color: var(--warning-color, #ffa600);
       }
+      .responses {
+        margin: 8px 0 0;
+        padding-left: 20px;
+      }
       hr {
         border: none;
         border-top: 1px solid var(--divider-color, #e0e0e0);
@@ -138,6 +142,13 @@ export class ComSystemHistory extends LitElement {
         </button>`;
   }
 
+  /** Who responded: the person's name if known, else the receiver. */
+  private responder(x: ActionResponse): string {
+    const person = x.person ? this.hass.states?.[x.person] : undefined;
+    const name = person?.attributes?.friendly_name ?? x.person;
+    return name ?? x.receiver ?? "an unknown receiver";
+  }
+
   private renderCounts(r: HistoryRecord) {
     const counts = (["delivered", "failed", "skipped"] as const)
       .map((k) => [k, r.results.filter((x) => x.result === k).length] as const)
@@ -174,6 +185,23 @@ export class ComSystemHistory extends LitElement {
                 <span class="muted">${new Date(r.time).toLocaleString()}</span>
               </div>
               <div class="body">${r.notification.message}</div>
+              ${
+                r.responses?.length
+                  ? html`<ul class="responses">
+                      ${r.responses.map(
+                        (x) =>
+                          html`<li>
+                            <strong>${x.action}</strong>
+                            ${x.reply_text ? html`“${x.reply_text}”` : ""} from
+                            ${this.responder(x)}
+                            <span class="muted"
+                              >${new Date(x.time).toLocaleString()}</span
+                            >
+                          </li>`,
+                      )}
+                    </ul>`
+                  : ""
+              }
               <hr />
               <details>
                 <summary>

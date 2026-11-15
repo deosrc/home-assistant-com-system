@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from collections.abc import Iterable
 from typing import Any
 
@@ -321,9 +322,12 @@ def notification_from(data: dict[str, Any]) -> dict[str, Any]:
     return {k: data[k] for k in keys if k in data}
 
 
-def response_data(results: list[ReceiverResult]) -> dict[str, Any]:
+def response_data(
+    results: list[ReceiverResult], notification_id: str | None = None
+) -> dict[str, Any]:
     """Build the action's response data from per-receiver results."""
     return {
+        "id": notification_id,
         "results": [r.as_dict() for r in results],
         "counts": {k: sum(r.result == k for r in results) for k in RESULTS},
     }
@@ -347,8 +351,9 @@ async def async_send(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any
                 f"No receiver could be notified, they are disabled: {names}"
             )
         raise ServiceValidationError("No receiver matches the targets")
-    results = await async_dispatch(hass, resolved, notification_from(data))
-    return response_data(results)
+    notification = {"id": uuid.uuid4().hex, **notification_from(data)}
+    results = await async_dispatch(hass, resolved, notification)
+    return response_data(results, notification["id"])
 
 
 async def _handle(call: ServiceCall) -> ServiceResponse:
