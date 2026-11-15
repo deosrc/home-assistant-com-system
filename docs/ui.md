@@ -76,10 +76,6 @@ The testing tool sends a test notification and shows what happens.
   to the action appears here with no change to the panel. What a receiver
   type does with content is in [content](content.md); content it drops is
   shown as a warning in the result.
-- A **Mobile app actions** editor appears under the form when a mobile app
-  receiver would be reached. It adds, edits and removes the buttons (action
-  ID, title and optional URI) in `data.mobile_app.actions`, so the form and
-  the editor show the same data.
 - **Receivers reached** updates as you change the targets, without sending
   anything. Each matching receiver is `reached`, or `skipped` with the
   reason (it is disabled).

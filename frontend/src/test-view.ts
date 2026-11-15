@@ -23,13 +23,6 @@ interface ActionValue {
   data?: Record<string, unknown>;
 }
 
-/** A button on a mobile app notification. */
-interface MobileAction {
-  action: string;
-  title: string;
-  uri?: string;
-}
-
 /** Home Assistant's own Actions form; loaded lazily, so it may be absent. */
 const CONTROL = "ha-service-control";
 
@@ -113,15 +106,6 @@ export class ComSystemTest extends LitElement {
         align-items: center;
         gap: 8px;
       }
-      .action-row {
-        display: flex;
-        gap: 8px;
-        margin-top: 8px;
-      }
-      .action-row input {
-        flex: 1;
-        min-width: 0;
-      }
       table {
         width: 100%;
         border-collapse: collapse;
@@ -204,95 +188,6 @@ export class ComSystemTest extends LitElement {
     // The previous send no longer describes the selection.
     this.response = undefined;
     void this.refreshPreview();
-  }
-
-  /** The mobile app actions in the form's data. */
-  private get actions(): MobileAction[] {
-    const data = this.data.data as
-      { mobile_app?: { actions?: MobileAction[] } } | undefined;
-    return data?.mobile_app?.actions ?? [];
-  }
-
-  /** Writes the actions into `data.mobile_app.actions`, dropping empties. */
-  private setActions(actions: MobileAction[]): void {
-    const data = { ...(this.data.data as Record<string, unknown> | undefined) };
-    const mobile = {
-      ...(data.mobile_app as Record<string, unknown> | undefined),
-    };
-    if (actions.length) mobile.actions = actions;
-    else delete mobile.actions;
-    if (Object.keys(mobile).length) data.mobile_app = mobile;
-    else delete data.mobile_app;
-    const next = { ...this.data };
-    if (Object.keys(data).length) next.data = data;
-    else delete next.data;
-    this.value = { ...this.value, data: next };
-    this.response = undefined;
-  }
-
-  private editAction(i: number, change: Partial<MobileAction>): void {
-    const actions = this.actions.map((a, j) =>
-      j === i ? { ...a, ...change } : a,
-    );
-    for (const a of actions) if (!a.uri) delete a.uri;
-    this.setActions(actions);
-  }
-
-  /** Shown only when a mobile app receiver would be reached. */
-  private renderActionEditor() {
-    if (!this.preview?.some((p) => p.type === "Mobile app")) return "";
-    const actions = this.actions;
-    return html`<div class="actions-editor">
-      <strong>Mobile app actions</strong>
-      <p class="secondary">
-        Buttons on the notification. Pressing one fires com_system_action and is
-        shown under Recent. An action with a URI opens it instead.
-      </p>
-      ${actions.map(
-        (a, i) =>
-          html`<div class="action-row">
-            <input
-              class="action-id"
-              placeholder="Action ID"
-              .value=${a.action}
-              @change=${(e: Event) =>
-                this.editAction(i, {
-                  action: (e.target as HTMLInputElement).value,
-                })}
-            />
-            <input
-              class="action-title"
-              placeholder="Title"
-              .value=${a.title}
-              @change=${(e: Event) =>
-                this.editAction(i, {
-                  title: (e.target as HTMLInputElement).value,
-                })}
-            />
-            <input
-              class="action-uri"
-              placeholder="URI (optional)"
-              .value=${a.uri ?? ""}
-              @change=${(e: Event) =>
-                this.editAction(i, {
-                  uri: (e.target as HTMLInputElement).value,
-                })}
-            />
-            <button
-              class="action-remove"
-              @click=${() => this.setActions(actions.filter((_, j) => j !== i))}
-            >
-              Remove
-            </button>
-          </div>`,
-      )}
-      <button
-        class="action-add"
-        @click=${() => this.setActions([...actions, { action: "", title: "" }])}
-      >
-        Add action
-      </button>
-    </div>`;
   }
 
   private async init(): Promise<void> {
@@ -473,7 +368,6 @@ export class ComSystemTest extends LitElement {
                   </p>`
                 : html`<p class="muted">Loading…</p>`
           }
-          ${this.renderActionEditor()}
           ${this.error ? html`<p class="error">${this.error}</p>` : ""}
         </div>
         <div class="card-actions">${this.renderSendButton(canSend)}</div>

@@ -101,8 +101,8 @@ send are ignored. The matching of a response relies on the app returning
 `action_data` in `mobile_app_notification_action`; this has not been checked
 on a real device.
 
-In the [testing tool](../ui.md#test), a **Mobile app actions** editor
-appears when a mobile app receiver would be reached.
+In the [testing tool](../ui.md#test), enter the actions in the `data` field
+like any other receiver content; the form has no action editor of its own.
 
 ## Which person a device belongs to
 
