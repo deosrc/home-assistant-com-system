@@ -80,7 +80,8 @@ people and areas reach.
 
 Priority, image, the mobile app fields and `data` are described in
 [content](content.md); a receiver that does not support some of it drops
-it and reports a warning. Input that does not fit the fields is rejected before anything is sent.
+it and reports a warning. Input that does not fit the fields is rejected
+before anything is sent.
 
 ```yaml
 action: notify.com_system
