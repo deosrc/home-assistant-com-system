@@ -29,6 +29,10 @@ CONTENT_ATTRIBUTES = (
     ATTR_MESSAGE,
     ATTR_PRIORITY,
     ATTR_IMAGE,
+    "click_action",
+    "actions",
+    "tag",
+    "car_ui",
     ATTR_DATA,
     ATTR_CHANNEL,
 )

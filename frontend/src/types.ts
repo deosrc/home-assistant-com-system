@@ -118,6 +118,10 @@ export interface ChannelDefaults {
   title?: string;
   priority?: string;
   image?: string;
+  click_action?: string;
+  actions?: { action: string; title: string; uri?: string }[];
+  tag?: string;
+  car_ui?: boolean;
   data?: Record<string, unknown>;
 }
 

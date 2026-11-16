@@ -32,16 +32,23 @@ from .const import (
     RESULTS,
 )
 from .content import (
+    ATTR_ACTIONS,
+    ATTR_CAR_UI,
+    ATTR_CLICK_ACTION,
     ATTR_DATA,
     ATTR_IMAGE,
     ATTR_PRIORITY,
+    ATTR_TAG,
     CHOICE_ENTITY,
     CHOICE_URL,
     IMAGE_ENTITY_DOMAINS,
     PRIORITIES,
+    validate_actions,
+    validate_click_action,
     validate_data,
     validate_image,
     validate_priority,
+    validate_tag,
 )
 from .dispatcher import ReceiverResult, async_dispatch
 from .targets import ResolvedTargets, resolve_targets
@@ -128,6 +135,10 @@ SERVICE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_RECEIVERS): validate_receivers,
         vol.Optional(ATTR_PRIORITY): validate_priority,
         vol.Optional(ATTR_IMAGE): validate_image,
+        vol.Optional(ATTR_CLICK_ACTION): validate_click_action,
+        vol.Optional(ATTR_ACTIONS): validate_actions,
+        vol.Optional(ATTR_TAG): validate_tag,
+        vol.Optional(ATTR_CAR_UI): cv.boolean,
         vol.Optional(ATTR_DATA): validate_data,
         vol.Optional(ATTR_CHANNEL): validate_channel,
     }
@@ -256,6 +267,61 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
                 }
             },
         },
+        ATTR_CLICK_ACTION: {
+            "name": "Click action",
+            "description": (
+                "What happens when the notification is tapped: a URL or a "
+                "Home Assistant path such as /lovelace/cameras. Mobile apps "
+                "only."
+            ),
+            "example": "/lovelace/cameras",
+            "selector": {"text": None},
+        },
+        ATTR_ACTIONS: {
+            "name": "Actions",
+            "description": (
+                "Buttons on the notification. Pressing one fires the "
+                "com_system_action event. An action with a URI opens it "
+                "instead. Mobile apps only."
+            ),
+            "selector": {
+                "object": {
+                    "multiple": True,
+                    "label_field": "title",
+                    "description_field": "action",
+                    "fields": {
+                        "action": {
+                            "label": "Action",
+                            "required": True,
+                            "selector": {"text": None},
+                        },
+                        "title": {
+                            "label": "Title",
+                            "required": True,
+                            "selector": {"text": None},
+                        },
+                        "uri": {
+                            "label": "URI",
+                            "selector": {"text": None},
+                        },
+                    },
+                }
+            },
+        },
+        ATTR_TAG: {
+            "name": "Tag",
+            "description": (
+                "Notifications with the same tag replace each other. The tag "
+                "can also be used to clear a notification. Mobile apps only."
+            ),
+            "example": "front-door",
+            "selector": {"text": None},
+        },
+        ATTR_CAR_UI: {
+            "name": "Car UI",
+            "description": ("Show the notification in Android Auto. Mobile apps only."),
+            "selector": {"boolean": None},
+        },
         ATTR_DATA: {
             "name": "Data",
             "description": (
@@ -346,6 +412,10 @@ def notification_from(data: dict[str, Any]) -> dict[str, Any]:
         ATTR_MESSAGE,
         ATTR_PRIORITY,
         ATTR_IMAGE,
+        ATTR_CLICK_ACTION,
+        ATTR_ACTIONS,
+        ATTR_TAG,
+        ATTR_CAR_UI,
         ATTR_DATA,
         ATTR_CHANNEL,
     )

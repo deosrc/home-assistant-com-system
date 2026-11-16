@@ -19,7 +19,8 @@ records the conventions and how things work as built.
   for reading state.
 - Keep the content parameters of the channel actions (`create_channel`,
   `update_channel`) in sync with `notify.com_system`: `title`, `priority`,
-  `image` and `data` use the same selector, options, name, description and
+  `image`, `click_action`, `actions`, `tag`, `car_ui` and `data` use the
+  same selector, options, name, description and
   example (the notify ones are in `SERVICE_DESCRIPTION` in `notify.py`, the
   channel ones in `services.yaml` and `strings.json`). Change both together.
   `channel` and `message` are excluded.
@@ -303,6 +304,15 @@ records the conventions and how things work as built.
   block over them. Alexa, persistent notification and webOS drop priority
   and image. The panel is not told what a type does with content beyond its
   capabilities.
+- Mobile app typed fields `click_action`, `actions`, `tag` and `car_ui` are
+  in the action schema (`content.py` validators, `SERVICE_DESCRIPTION`;
+  `actions` uses an `object` selector with `multiple` and `fields`, so the
+  form is a list editor with no panel code), the mobile app capabilities,
+  `CONTENT_KEYS` in `history.py`, the receiver entity attributes and the
+  channel defaults (`DEFAULT_KEYS`, `services.yaml`, `strings.json` and its
+  `translations/en.json` copy; `test_channel_actions_match_notify_content_fields`
+  checks the selectors agree). Delivery maps them to `clickAction`/`url`,
+  `actions`, `tag` and `car_ui` before merging the `mobile_app` data block.
 - Notification IDs and action responses: `async_send` gives each
   notification a uuid `id` (in the notification passed to dispatch, so
   receivers and scripts see it, in the action response as `id`, and as the

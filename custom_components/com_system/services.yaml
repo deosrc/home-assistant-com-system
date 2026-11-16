@@ -33,6 +33,38 @@ create_channel:
             URL:
               selector:
                 text:
+    click_action:
+      example: /lovelace/cameras
+      selector:
+        text:
+    actions:
+      selector:
+        object:
+          multiple: true
+          label_field: title
+          description_field: action
+          fields:
+            action:
+              label: Action
+              required: true
+              selector:
+                text:
+            title:
+              label: Title
+              required: true
+              selector:
+                text:
+            uri:
+              label: URI
+              selector:
+                text:
+    tag:
+      example: front-door
+      selector:
+        text:
+    car_ui:
+      selector:
+        boolean:
     data:
       example: "{pushover: {sound: bike}}"
       selector:
@@ -75,6 +107,38 @@ update_channel:
             URL:
               selector:
                 text:
+    click_action:
+      example: /lovelace/cameras
+      selector:
+        text:
+    actions:
+      selector:
+        object:
+          multiple: true
+          label_field: title
+          description_field: action
+          fields:
+            action:
+              label: Action
+              required: true
+              selector:
+                text:
+            title:
+              label: Title
+              required: true
+              selector:
+                text:
+            uri:
+              label: URI
+              selector:
+                text:
+    tag:
+      example: front-door
+      selector:
+        text:
+    car_ui:
+      selector:
+        boolean:
     data:
       example: "{pushover: {sound: bike}}"
       selector:

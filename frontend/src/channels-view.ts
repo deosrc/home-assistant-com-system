@@ -391,13 +391,17 @@ export class ComSystemChannels extends LitElement {
     return String(value);
   }
 
-  /** The defaults: Title, Priority and Image as labelled rows, then one
+  /** The defaults: Title, Priority, Image and the mobile app fields as labelled rows, then one
    * list of properties per receiver type in `data`. */
   private renderDefaults(d: ChannelDefaults) {
     const labels: [keyof ChannelDefaults, string][] = [
       ["title", "Title"],
       ["priority", "Priority"],
       ["image", "Image"],
+      ["click_action", "Click action"],
+      ["actions", "Actions"],
+      ["tag", "Tag"],
+      ["car_ui", "Car UI"],
     ];
     const rows = labels
       .filter(([key]) => d[key] !== undefined)

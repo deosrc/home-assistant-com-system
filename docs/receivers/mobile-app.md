@@ -20,7 +20,8 @@ reason in the result.
 | `priority` | Yes, mapped to `data` keys (below) |
 | `image` | Yes, as `data.image` |
 | `data` | Yes: the `mobile_app` block, any key |
-| Actions | Yes, with [responses](#actions-and-responses) |
+| `click_action`, `tag`, `car_ui` | Yes, mapped to `data` keys (below) |
+| `actions` | Yes, with [responses](#actions-and-responses) |
 
 `priority` is mapped to the companion app's keys; each platform ignores the
 other's:
@@ -49,25 +50,37 @@ data:
       tag: door
 ```
 
+## Click action, tag, car UI and actions
+
+These typed fields are mapped to the companion app's keys; the `mobile_app`
+block of `data` is merged over them, so it can override them:
+
+| Field | Sent as |
+| --- | --- |
+| `click_action` | `clickAction` (Android) and `url` (iOS) |
+| `actions` | `actions` |
+| `tag` | `tag` |
+| `car_ui` | `car_ui: true` (nothing when off) |
+
+The iOS `url` key is from the companion app documentation and has not been
+checked on a device.
+
 ## Actions and responses
 
-Buttons on the notification are the `actions` list of the `mobile_app`
-block, as the companion app defines them (`action`, `title`, and optionally
-`uri`, `behavior`). `channel`, `tag` and the other app keys go in the same
-block.
+Buttons on the notification are the `actions` field: a list of objects with
+an `action` ID, a `title` and optionally a `uri` (other app keys such as
+`behavior` are passed through). In the form it is a list editor.
 
 ```yaml
 action: notify.com_system
 data:
   message: Someone is at the door
-  data:
-    mobile_app:
-      channel: doorbell
-      actions:
-        - action: OPEN
-          title: Open the gate
-        - action: IGNORE
-          title: Ignore
+  channel: notification_channel.doorbell
+  actions:
+    - action: OPEN
+      title: Open the gate
+    - action: IGNORE
+      title: Ignore
 ```
 
 Each notification has an ID, returned as `id` in the action's response.

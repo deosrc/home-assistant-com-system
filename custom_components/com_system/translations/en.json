@@ -86,6 +86,22 @@
           "name": "Image",
           "description": "An image: a URL (http(s), a /local/ path or a media source ID), or an image or camera entity."
         },
+        "click_action": {
+          "name": "Click action",
+          "description": "What happens when the notification is tapped: a URL or a Home Assistant path such as /lovelace/cameras. Mobile apps only."
+        },
+        "actions": {
+          "name": "Actions",
+          "description": "Buttons on the notification. Pressing one fires the com_system_action event. An action with a URI opens it instead. Mobile apps only."
+        },
+        "tag": {
+          "name": "Tag",
+          "description": "Notifications with the same tag replace each other. The tag can also be used to clear a notification. Mobile apps only."
+        },
+        "car_ui": {
+          "name": "Car UI",
+          "description": "Show the notification in Android Auto. Mobile apps only."
+        },
         "data": {
           "name": "Data",
           "description": "Receiver-specific content, keyed by receiver type, for example {mobile_app: {...}, pushover: {...}}. Each receiver reads only its own block."
@@ -115,6 +131,22 @@
         "image": {
           "name": "Image",
           "description": "An image: a URL (http(s), a /local/ path or a media source ID), or an image or camera entity."
+        },
+        "click_action": {
+          "name": "Click action",
+          "description": "What happens when the notification is tapped: a URL or a Home Assistant path such as /lovelace/cameras. Mobile apps only."
+        },
+        "actions": {
+          "name": "Actions",
+          "description": "Buttons on the notification. Pressing one fires the com_system_action event. An action with a URI opens it instead. Mobile apps only."
+        },
+        "tag": {
+          "name": "Tag",
+          "description": "Notifications with the same tag replace each other. The tag can also be used to clear a notification. Mobile apps only."
+        },
+        "car_ui": {
+          "name": "Car UI",
+          "description": "Show the notification in Android Auto. Mobile apps only."
         },
         "data": {
           "name": "Data",

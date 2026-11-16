@@ -31,6 +31,10 @@ ATTR_MESSAGE = "message"
 ATTR_PRIORITY = "priority"
 ATTR_IMAGE = "image"
 ATTR_DATA = "data"
+ATTR_CLICK_ACTION = "click_action"
+ATTR_ACTIONS = "actions"
+ATTR_TAG = "tag"
+ATTR_CAR_UI = "car_ui"
 
 PRIORITY_LOW = "low"
 PRIORITY_NORMAL = "normal"
@@ -45,6 +49,10 @@ CAP_TITLE = ATTR_TITLE
 CAP_PRIORITY = ATTR_PRIORITY
 CAP_IMAGE = ATTR_IMAGE
 CAP_DATA = ATTR_DATA
+CAP_CLICK_ACTION = ATTR_CLICK_ACTION
+CAP_ACTIONS = ATTR_ACTIONS
+CAP_TAG = ATTR_TAG
+CAP_CAR_UI = ATTR_CAR_UI
 DATA_PREFIX = "data."
 
 MEDIA_SOURCE_PREFIX = "media-source://"
@@ -100,6 +108,39 @@ def is_image_entity(image: str) -> bool:
     return image.split(".", 1)[0] in IMAGE_ENTITY_DOMAINS and "/" not in image
 
 
+def validate_click_action(value: Any) -> str:
+    """Validate a click action: a non-empty URI or Home Assistant path."""
+    value = cv.string(value).strip()
+    if not value:
+        raise vol.Invalid("click_action must not be empty")
+    return value
+
+
+def validate_tag(value: Any) -> str:
+    """Validate a tag: a non-empty string."""
+    value = cv.string(value).strip()
+    if not value:
+        raise vol.Invalid("tag must not be empty")
+    return value
+
+
+# One button on a notification. Other keys of the companion app (``behavior``,
+# ``destructive``, ``icon`` and so on) are passed through.
+_ACTION_SCHEMA = vol.Schema(
+    {
+        vol.Required("action"): cv.string,
+        vol.Required("title"): cv.string,
+        vol.Optional("uri"): cv.string,
+    },
+    extra=vol.ALLOW_EXTRA,
+)
+
+
+def validate_actions(value: Any) -> list[dict[str, Any]]:
+    """Validate the actions: a list of ``{action, title, uri?}`` objects."""
+    return vol.All(cv.ensure_list, [_ACTION_SCHEMA])(value)
+
+
 def validate_data(value: Any) -> dict[str, dict[str, Any]]:
     """Validate ``data``: an object of per-receiver-type objects."""
     return vol.Schema({cv.string: dict})(value)
@@ -138,6 +179,10 @@ def apply_capabilities(
         (ATTR_TITLE, CAP_TITLE),
         (ATTR_PRIORITY, CAP_PRIORITY),
         (ATTR_IMAGE, CAP_IMAGE),
+        (ATTR_CLICK_ACTION, CAP_CLICK_ACTION),
+        (ATTR_ACTIONS, CAP_ACTIONS),
+        (ATTR_TAG, CAP_TAG),
+        (ATTR_CAR_UI, CAP_CAR_UI),
     ):
         if field not in content or cap in caps:
             continue

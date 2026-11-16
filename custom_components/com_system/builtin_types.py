@@ -132,7 +132,18 @@ class MobileAppReceiverType(DeviceReceiverType):
     type_id = RECEIVER_TYPE_MOBILE_APP
     name = "Mobile app"
     source_domain = "mobile_app"
-    capabilities = frozenset({"title", "priority", "image", "data"})
+    capabilities = frozenset(
+        {
+            "title",
+            "priority",
+            "image",
+            "click_action",
+            "actions",
+            "tag",
+            "car_ui",
+            "data",
+        }
+    )
     # The person comes from the registering user, not from the options.
     supports_people = False
 

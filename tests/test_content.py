@@ -140,7 +140,16 @@ async def test_declared_capabilities(hass: HomeAssistant) -> None:
     def caps(type_id):
         return get_receiver_type(type_id).capabilities
 
-    assert caps(RECEIVER_TYPE_MOBILE_APP) == {"title", "priority", "image", "data"}
+    assert caps(RECEIVER_TYPE_MOBILE_APP) == {
+        "title",
+        "priority",
+        "image",
+        "click_action",
+        "actions",
+        "tag",
+        "car_ui",
+        "data",
+    }
     assert caps(RECEIVER_TYPE_ALEXA_MEDIA) == {"title"}
     assert caps(RECEIVER_TYPE_PERSISTENT_NOTIFICATION) == {"title"}
     assert caps(RECEIVER_TYPE_WEBOSTV) == {"data.icon"}

@@ -150,7 +150,7 @@ Each type needs a receiver-type definition (names provisional) covering:
 
 - **Mobile app** – built, including priority, image and `data` (see
   `docs/receivers/mobile-app.md`), including actions and their responses
-  (`com_system_action`).
+  (`com_system_action`) and the click action, tag and car UI fields.
 - **Pushover** – built (see `docs/receivers/pushover.md`).
 - **Music Assistant** – one receiver per Music Assistant player. Delivery calls
   Music Assistant's announcement action rather than a notify action (the message

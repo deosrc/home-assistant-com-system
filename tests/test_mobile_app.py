@@ -364,3 +364,86 @@ async def test_response_to_pruned_notification_still_fires(
     await hass.async_block_till_done()
     assert events[0].data["notification_id"] == "gone"
     assert events[0].data["receiver"] is None
+
+
+async def _deliver(hass: HomeAssistant, notification: dict) -> list[ServiceCall]:
+    await _setup_hub(hass)
+    _phone(hass)
+    calls: list[ServiceCall] = []
+    hass.services.async_register("notify", "mobile_app_pixel", calls.append)
+    entry = await _receiver(hass)
+    receiver = _registry(hass).get(entry.entry_id)
+    await (
+        _registry(hass)
+        .type_of(receiver)
+        .async_deliver(hass, receiver, {"message": "Hi", **notification})
+    )
+    return calls
+
+
+async def test_click_action_tag_and_car_ui_are_mapped(hass: HomeAssistant) -> None:
+    """The typed fields become the companion app's data keys."""
+    calls = await _deliver(
+        hass, {"click_action": "/lovelace/cams", "tag": "door", "car_ui": True}
+    )
+    assert calls[0].data["data"] == {
+        "clickAction": "/lovelace/cams",
+        "url": "/lovelace/cams",
+        "tag": "door",
+        "car_ui": True,
+    }
+
+
+async def test_car_ui_false_is_not_sent(hass: HomeAssistant) -> None:
+    """Car UI off sends nothing."""
+    calls = await _deliver(hass, {"car_ui": False})
+    assert "data" not in calls[0].data
+
+
+async def test_typed_actions_get_tracking_and_data_block_wins(
+    hass: HomeAssistant,
+) -> None:
+    """Actions field is sent with tracking; the mobile_app block overrides."""
+    calls = await _deliver(
+        hass,
+        {
+            "id": "n1",
+            "tag": "a",
+            "actions": ACTIONS,
+            "data": {"tag": "b"},
+        },
+    )
+    sent = calls[0].data["data"]
+    assert sent["actions"] == ACTIONS
+    assert sent["tag"] == "b"
+    assert sent["action_data"]["com_system_notification_id"] == "n1"
+
+
+async def test_action_fields_validated_and_dropped_elsewhere(
+    hass: HomeAssistant,
+) -> None:
+    """Bad actions are rejected; other types drop the fields with warnings."""
+    import voluptuous as vol
+
+    from custom_components.com_system.content import (
+        apply_capabilities,
+        validate_actions,
+    )
+    from custom_components.com_system.receiver_type import ReceiverType
+
+    with pytest.raises(vol.Invalid):
+        validate_actions([{"title": "No action id"}])
+    assert validate_actions({"action": "A", "title": "T", "behavior": "x"}) == [
+        {"action": "A", "title": "T", "behavior": "x"}
+    ]
+
+    class Plain(ReceiverType):
+        type_id = "plain"
+        name = "Plain"
+        capabilities = frozenset({"title"})
+
+    content, warnings = apply_capabilities(
+        Plain(), {"message": "m", "tag": "t", "car_ui": True, "actions": ACTIONS}
+    )
+    assert content == {"message": "m"}
+    assert len(warnings) == 3

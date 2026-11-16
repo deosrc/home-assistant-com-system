@@ -205,6 +205,16 @@ async def async_deliver_mobile_app(
             warnings.append(f"The image was dropped: {err}")
     if notification.get("channel"):
         extra["channel"] = notification["channel"]
+    if notification.get("click_action"):
+        # Android reads clickAction, iOS reads url.
+        extra["clickAction"] = notification["click_action"]
+        extra["url"] = notification["click_action"]
+    if notification.get("actions"):
+        extra["actions"] = [dict(a) for a in notification["actions"]]
+    if notification.get("tag"):
+        extra["tag"] = notification["tag"]
+    if notification.get("car_ui"):
+        extra["car_ui"] = True
     extra = merge(extra, notification.get("data") or {})
     if extra.get("actions") and notification.get("id"):
         # The app returns action_data in its response event; that is how a

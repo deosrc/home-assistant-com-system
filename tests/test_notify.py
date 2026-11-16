@@ -351,6 +351,10 @@ async def test_description_order_and_people_selector(hass: HomeAssistant) -> Non
         "channel",
         "priority",
         "image",
+        "click_action",
+        "actions",
+        "tag",
+        "car_ui",
         "data",
     ]
     options = fields["priority"]["selector"]["select"]["options"]
