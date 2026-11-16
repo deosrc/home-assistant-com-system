@@ -1,0 +1,7 @@
+{
+  "triggers": {
+    "action_received": {
+      "trigger": "mdi:gesture-tap-button"
+    }
+  }
+}

@@ -96,3 +96,18 @@ async def test_missing_notification_id_and_tag_message(hass: HomeAssistant) -> N
         await ActionReceivedTrigger.async_validate_config(
             hass, {"options": {"action": "OPEN"}}
         )
+
+
+def test_every_trigger_has_an_icon() -> None:
+    """Each trigger has an entry in icons.json."""
+    import json
+    from pathlib import Path
+
+    from custom_components.com_system.trigger import TRIGGERS
+
+    icons = json.loads(
+        (
+            Path(__file__).parent.parent / "custom_components/com_system/icons.json"
+        ).read_text()
+    )
+    assert set(icons["triggers"]) == set(TRIGGERS)
