@@ -12,6 +12,7 @@ send a notification to the receivers that match its [targets](targets.md).
 | `receivers` | no | Selected receivers, or all areas (see below). |
 | `title` | no | A title; folded into the message where there is none. |
 | `message` | yes | The message to send. |
+| `channel` | no | A [channel](channels.md): its defaults fill what you leave out. |
 | `priority` | no | Low, Normal, High or Critical (Normal if not given). |
 | `image` | no | A URL, or an image or camera entity. |
 | `data` | no | Receiver-specific content, keyed by receiver type. |

@@ -19,6 +19,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.service import async_get_all_descriptions
 
+from .channels import channel_list
 from .const import (
     CONF_ENTRY_TYPE,
     CONF_RECEIVER_TYPE,
@@ -58,6 +59,7 @@ def async_register_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_receivers_set_enabled)
     websocket_api.async_register_command(hass, ws_discoveries_list)
     websocket_api.async_register_command(hass, ws_scripts_check)
+    websocket_api.async_register_command(hass, ws_channels_list)
     websocket_api.async_register_command(hass, ws_scripts_rescan)
     websocket_api.async_register_command(hass, ws_notify_preview)
     websocket_api.async_register_command(hass, ws_notify_test)
@@ -439,3 +441,17 @@ async def ws_history_list(
     connection.send_result(
         msg["id"], {"notifications": await history.async_list(msg.get("limit"))}
     )
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command({vol.Required("type"): "com_system/channels/list"})
+@callback
+def ws_channels_list(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Return the channels with their entity and defaults (read only; writes
+    are the ``com_system`` channel actions).
+    """
+    connection.send_result(msg["id"], {"channels": channel_list(hass)})

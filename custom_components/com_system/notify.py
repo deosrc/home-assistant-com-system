@@ -23,7 +23,13 @@ from homeassistant.helpers.target import (
     async_extract_referenced_entity_ids,
 )
 
-from .const import DOMAIN, NOTIFICATION_RECEIVER_DOMAIN, RESULTS
+from .channels import ATTR_CHANNEL, apply_channel, validate_channel
+from .const import (
+    DOMAIN,
+    NOTIFICATION_CHANNEL_DOMAIN,
+    NOTIFICATION_RECEIVER_DOMAIN,
+    RESULTS,
+)
 from .content import (
     ATTR_DATA,
     ATTR_IMAGE,
@@ -122,6 +128,7 @@ SERVICE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_PRIORITY): validate_priority,
         vol.Optional(ATTR_IMAGE): validate_image,
         vol.Optional(ATTR_DATA): validate_data,
+        vol.Optional(ATTR_CHANNEL): validate_channel,
     }
 )
 
@@ -199,6 +206,21 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
             "required": True,
             "example": "The washing has finished",
             "selector": {"text": {"multiline": True}},
+        },
+        ATTR_CHANNEL: {
+            "name": "Channel",
+            "description": (
+                "A notification channel, managed on the Channels page of the "
+                "Com System panel. Its default title, priority, image and data "
+                "are used for anything this call does not set. "
+                "Mobile apps also use it as the Android notification channel."
+            ),
+            "selector": {
+                "entity": {
+                    "domain": NOTIFICATION_CHANNEL_DOMAIN,
+                    "integration": DOMAIN,
+                }
+            },
         },
         ATTR_PRIORITY: {
             "name": "Priority",
@@ -315,9 +337,17 @@ def resolve_call_targets(hass: HomeAssistant, data: dict[str, Any]) -> ResolvedT
 def notification_from(data: dict[str, Any]) -> dict[str, Any]:
     """Return the content of an action call.
 
-    The message and any of title, priority, image and data that were given.
+    The message and any of title, priority, image, data and channel that
+    were given (after the channel's defaults have been applied).
     """
-    keys = (ATTR_TITLE, ATTR_MESSAGE, ATTR_PRIORITY, ATTR_IMAGE, ATTR_DATA)
+    keys = (
+        ATTR_TITLE,
+        ATTR_MESSAGE,
+        ATTR_PRIORITY,
+        ATTR_IMAGE,
+        ATTR_DATA,
+        ATTR_CHANNEL,
+    )
     return {k: data[k] for k in keys if k in data}
 
 
@@ -339,6 +369,7 @@ async def async_send(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any
     """
     if ATTR_PEOPLE not in data and ATTR_RECEIVERS not in data:
         raise ServiceValidationError("No targets given: set people, receivers or both")
+    data = apply_channel(hass, data)
     resolved = resolve_call_targets(hass, data)
     if not resolved.receivers:
         if resolved.skipped:

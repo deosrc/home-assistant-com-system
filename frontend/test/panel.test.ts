@@ -17,7 +17,11 @@ const RECEIVER = {
   areas: ["unknown_area", "office"],
 };
 
-function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
+function makeHass(): {
+  hass: HomeAssistant;
+  callWS: ReturnType<typeof vi.fn>;
+  callService: ReturnType<typeof vi.fn>;
+} {
   const callWS = vi.fn(async (msg: { type: string }) => {
     switch (msg.type) {
       case "com_system/dashboard":
@@ -108,12 +112,29 @@ function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
             },
           ],
         };
+      case "com_system/channels/list":
+        return {
+          channels: [
+            {
+              channel_id: "c1",
+              name: "Doors",
+              entity_id: "notification_channel.doors",
+              defaults: {
+                priority: "high",
+                image: "/local/d.jpg",
+                data: { mobile_app: { tag: "d" } },
+              },
+            },
+          ],
+        };
       default:
         return null;
     }
   });
+  const callService = vi.fn(async () => undefined);
   const hass = {
     callWS,
+    callService,
     states: {
       "switch.office_notifications_enabled": { state: "on" },
       "person.alice": { state: "home", attributes: { friendly_name: "Alice" } },
@@ -121,7 +142,7 @@ function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
     },
     areas: { office: { name: "Office" } },
   } as unknown as HomeAssistant;
-  return { hass, callWS };
+  return { hass, callWS, callService };
 }
 
 async function mount(path: string, hass: HomeAssistant) {
@@ -501,5 +522,188 @@ describe("testing tool", () => {
     expect(root.querySelector(".error")!.textContent).toContain(
       "No receiver matches the targets",
     );
+  });
+});
+
+describe("channels", () => {
+  async function open() {
+    if (!customElements.get("ha-service-control")) {
+      customElements.define("ha-service-control", class extends HTMLElement {});
+    }
+    const made = makeHass();
+    const panel = await mount("/channels", made.hass);
+    const view = panel.shadowRoot!.querySelector("com-system-channels")!;
+    await settle(view);
+    return { ...made, view };
+  }
+  const button = (view: Element, cls: string) =>
+    view.shadowRoot!.querySelector<HTMLButtonElement>(`button.${cls}`)!;
+  const report = async (view: Element, value: object) => {
+    view
+      .shadowRoot!.querySelector("ha-service-control")!
+      .dispatchEvent(new CustomEvent("value-changed", { detail: { value } }));
+    await settle(view);
+  };
+
+  it("lists the channels with their defaults", async () => {
+    const { view } = await open();
+    const text = view.shadowRoot!.textContent!;
+    expect(text).toContain("Doors");
+    expect(text).toContain("notification_channel.doors");
+    expect(text).toContain("high");
+    // JSON is not shown.
+    expect(text).not.toContain("{");
+  });
+
+  it("shows each receiver type's data as its own list", async () => {
+    const { view } = await open();
+    const root = view.shadowRoot!;
+    const labels = [...root.querySelectorAll("dl.defaults > dt")].map((e) =>
+      e.textContent!.trim(),
+    );
+    expect(labels).toEqual(["Priority", "Image"]);
+    const block = root.querySelector(".data-block")!;
+    expect(block.querySelector(".receiver-type")!.textContent!.trim()).toBe(
+      "mobile_app",
+    );
+    expect(block.querySelector("dt")!.textContent!.trim()).toBe("tag");
+    expect(block.querySelector("dd")!.textContent!.trim()).toBe("d");
+  });
+
+  it("opens the more info dialog for the channel's entity", async () => {
+    const { view } = await open();
+    const events: CustomEvent[] = [];
+    document.body.addEventListener("hass-more-info", (ev) =>
+      events.push(ev as CustomEvent),
+    );
+    button(view, "more-info").click();
+    expect(events).toHaveLength(1);
+    expect(events[0].detail).toEqual({
+      entityId: "notification_channel.doors",
+    });
+  });
+
+  it("creates a channel through the action form", async () => {
+    const { view, callService } = await open();
+    button(view, "add").click();
+    await settle(view);
+    const control = view.shadowRoot!.querySelector("ha-service-control")!;
+    expect(
+      view.shadowRoot!.querySelector(".form-title")!.textContent,
+    ).toContain("Add a channel");
+    expect(control.hasAttribute("hide-picker")).toBe(true);
+    // Starts from the action alone so Home Assistant applies its defaults.
+    expect((control as unknown as { value: object }).value).toEqual({
+      action: "com_system.create_channel",
+    });
+    await report(view, {
+      action: "com_system.create_channel",
+      data: { name: "Alerts", priority: "low" },
+    });
+    button(view, "save").click();
+    await settle(view);
+    expect(callService).toHaveBeenCalledWith("com_system", "create_channel", {
+      name: "Alerts",
+      priority: "low",
+    });
+    expect(view.shadowRoot!.querySelector("ha-service-control")).toBeNull();
+  });
+
+  it("edits a channel starting from its current values", async () => {
+    const { view, callService } = await open();
+    button(view, "edit").click();
+    await settle(view);
+    expect(
+      view.shadowRoot!.querySelector(".form-title")!.textContent,
+    ).toContain("Edit channel");
+    // The channel's own card stays in place beside the form.
+    expect(view.shadowRoot!.querySelector("button.edit")).not.toBeNull();
+    expect(view.shadowRoot!.textContent).toContain(
+      "notification_channel.doors",
+    );
+    const control = view.shadowRoot!.querySelector("ha-service-control")!;
+    expect((control as unknown as { value: object }).value).toEqual({
+      action: "com_system.update_channel",
+      data: {
+        channel: "notification_channel.doors",
+        name: "Doors",
+        priority: "high",
+        image: { active_choice: "URL", URL: "/local/d.jpg" },
+        data: { mobile_app: { tag: "d" } },
+      },
+    });
+    await report(view, {
+      action: "com_system.update_channel",
+      data: { channel: "notification_channel.doors", name: "Gates" },
+    });
+    button(view, "save").click();
+    await settle(view);
+    expect(callService).toHaveBeenCalledWith("com_system", "update_channel", {
+      channel: "notification_channel.doors",
+      name: "Gates",
+    });
+  });
+
+  it("shows the action's error and keeps the form open", async () => {
+    const { view, callService } = await open();
+    callService.mockRejectedValueOnce({ message: "already exists" });
+    button(view, "add").click();
+    await settle(view);
+    await report(view, {
+      action: "com_system.create_channel",
+      data: { name: "Doors" },
+    });
+    button(view, "save").click();
+    await settle(view);
+    expect(view.shadowRoot!.querySelector(".error")!.textContent).toContain(
+      "already exists",
+    );
+    expect(view.shadowRoot!.querySelector("ha-service-control")).not.toBeNull();
+  });
+
+  it("deletes a channel through the action after confirming", async () => {
+    const { view, callService } = await open();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    button(view, "delete").click();
+    await settle(view);
+    expect(confirm).toHaveBeenCalled();
+    expect(callService).toHaveBeenCalledWith("com_system", "delete_channel", {
+      channel: "notification_channel.doors",
+    });
+    confirm.mockRestore();
+  });
+
+  it("confirms deletes in Home Assistant's dialog when it is available", async () => {
+    // Defined from here on, so keep this test last.
+    customElements.define("ha-dialog", class extends HTMLElement {});
+    const { view, callService } = await open();
+    const confirm = vi.spyOn(window, "confirm");
+    button(view, "delete").click();
+    await settle(view);
+    const root = view.shadowRoot!;
+    expect(confirm).not.toHaveBeenCalled();
+    expect(root.querySelector("ha-dialog")).not.toBeNull();
+    expect(root.querySelector(".confirm-title")!.textContent).toContain(
+      "Delete channel",
+    );
+    expect(root.querySelector("ha-dialog")!.textContent).toContain("Doors");
+    expect(callService).not.toHaveBeenCalled();
+
+    // Cancel closes it without deleting.
+    root.querySelector<HTMLElement>(".confirm-cancel")!.click();
+    await settle(view);
+    expect(root.querySelector("ha-dialog")).toBeNull();
+    expect(callService).not.toHaveBeenCalled();
+
+    // Confirming deletes.
+    button(view, "delete").click();
+    await settle(view);
+    root.querySelector<HTMLElement>(".confirm-delete")!.click();
+    await settle(view);
+    expect(callService).toHaveBeenCalledWith("com_system", "delete_channel", {
+      channel: "notification_channel.doors",
+    });
+    expect(root.querySelector("ha-dialog")).toBeNull();
+    confirm.mockRestore();
   });
 });

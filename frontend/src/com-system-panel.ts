@@ -1,4 +1,5 @@
 import { LitElement, css, html, nothing } from "lit";
+import "./channels-view";
 import "./dashboard-view";
 import "./history-view";
 import "./receivers-view";
@@ -18,6 +19,7 @@ if (import.meta.env.MODE === "development") {
 const VIEWS = [
   { path: "dashboard", label: "Dashboard" },
   { path: "receivers", label: "Receivers" },
+  { path: "channels", label: "Channels" },
   { path: "history", label: "Recent" },
   { path: "test", label: "Test" },
 ] as const;
@@ -185,15 +187,19 @@ export class ComSystemPanel extends LitElement {
             ? html`<com-system-receivers
                 .hass=${this.hass}
               ></com-system-receivers>`
-            : active === "history"
-              ? html`<com-system-history
+            : active === "channels"
+              ? html`<com-system-channels
                   .hass=${this.hass}
-                ></com-system-history>`
-              : active === "test"
-                ? html`<com-system-test .hass=${this.hass}></com-system-test>`
-                : html`<com-system-dashboard
+                ></com-system-channels>`
+              : active === "history"
+                ? html`<com-system-history
                     .hass=${this.hass}
-                  ></com-system-dashboard>`
+                  ></com-system-history>`
+                : active === "test"
+                  ? html`<com-system-test .hass=${this.hass}></com-system-test>`
+                  : html`<com-system-dashboard
+                      .hass=${this.hass}
+                    ></com-system-dashboard>`
         }
       </main>
     `;

@@ -1,6 +1,11 @@
 /** The part of Home Assistant's `hass` object the panel uses. */
 export interface HomeAssistant {
   callWS<T>(msg: { type: string; [key: string]: unknown }): Promise<T>;
+  callService(
+    domain: string,
+    service: string,
+    serviceData?: Record<string, unknown>,
+  ): Promise<unknown>;
   states: Record<
     string,
     { state: string; attributes?: { friendly_name?: string } }
@@ -107,6 +112,21 @@ export interface ScriptCheckResult {
   checks: ScriptCheck[];
   /** True when a rescan would offer the script as a receiver. */
   can_rescan: boolean;
+}
+
+export interface ChannelDefaults {
+  title?: string;
+  priority?: string;
+  image?: string;
+  data?: Record<string, unknown>;
+}
+
+export interface ChannelInfo {
+  channel_id: string;
+  name: string;
+  /** The `notification_channel` entity the action's channel field takes. */
+  entity_id: string | null;
+  defaults: ChannelDefaults;
 }
 
 export interface HistoryRecord {

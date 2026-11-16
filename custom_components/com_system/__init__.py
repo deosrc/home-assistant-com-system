@@ -13,19 +13,24 @@ from homeassistant.components.event import EventEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
 
 from .builtin_types import register_builtin_receiver_types
+from .channels import async_register_channel_actions
 from .const import (
     CONF_ENTRY_TYPE,
+    DATA_CHANNEL_COMPONENT,
+    DATA_CHANNEL_MANAGER,
     DATA_COMPONENT,
     DATA_ENTITIES,
     DATA_HISTORY,
     DATA_REGISTRY,
     DOMAIN,
     ENTRY_TYPE_HUB,
+    NOTIFICATION_CHANNEL_DOMAIN,
     NOTIFICATION_RECEIVER_DOMAIN,
     RECEIVER_ENTRY_TYPES,
 )
@@ -50,12 +55,16 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         DATA_REGISTRY: ReceiverRegistry(hass),
         DATA_ENTITIES: {},
         DATA_HISTORY: NotificationHistory(hass),
+        DATA_CHANNEL_COMPONENT: EntityComponent[Entity](
+            _LOGGER, NOTIFICATION_CHANNEL_DOMAIN, hass
+        ),
         # The notification_receiver domain is provided by this integration.
         DATA_COMPONENT: EntityComponent[EventEntity](
             _LOGGER, NOTIFICATION_RECEIVER_DOMAIN, hass
         ),
     }
     async_register_notify_action(hass)
+    async_register_channel_actions(hass)
     async_register_commands(hass)
     await async_register_panel(hass)
     return True
@@ -78,6 +87,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ComSystemConfigEntry) ->
         detector.async_start()
         entry.async_on_unload(detector.async_stop)
         entry.async_on_unload(async_at_started(hass, detector.async_start_detection))
+        await hass.data[DOMAIN][DATA_CHANNEL_COMPONENT].async_setup_entry(entry)
+        entry.async_on_unload(entry.add_update_listener(_async_hub_updated))
     if not _is_receiver(entry):
         return True
     # Do not forward to the notification_receiver platform: it is not an
@@ -89,12 +100,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ComSystemConfigEntry) ->
     return True
 
 
+async def _async_hub_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Bring the channel entities in step with the hub's data."""
+    manager = hass.data[DOMAIN].get(DATA_CHANNEL_MANAGER)
+    if manager is not None:
+        await manager.async_sync()
+
+
 async def _async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ComSystemConfigEntry) -> bool:
     """Unload the hub or a receiver."""
+    if entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_HUB:
+        hass.data[DOMAIN].pop(DATA_CHANNEL_MANAGER, None)
+        return await hass.data[DOMAIN][DATA_CHANNEL_COMPONENT].async_unload_entry(entry)
     if not _is_receiver(entry):
         return True
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
