@@ -43,7 +43,8 @@ drop them with a warning, as with any content they do not support.
 - `actions`: buttons, each with an `action` ID and a `title`, and optionally
   a `uri` to open instead of firing an event. Pressing one fires
   [`com_system_action`](receivers/mobile-app.md#actions-and-responses).
-- `tag`: notifications with the same tag replace each other.
+- `tag`: notifications with the same tag replace each other. The
+  persistent notification receiver supports it too.
 - `car_ui`: show the notification in Android Auto.
 
 They are sent to the app as `clickAction` (and `url` for iOS), `actions`,

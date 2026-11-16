@@ -151,7 +151,7 @@ async def test_declared_capabilities(hass: HomeAssistant) -> None:
         "data",
     }
     assert caps(RECEIVER_TYPE_ALEXA_MEDIA) == {"title"}
-    assert caps(RECEIVER_TYPE_PERSISTENT_NOTIFICATION) == {"title"}
+    assert caps(RECEIVER_TYPE_PERSISTENT_NOTIFICATION) == {"title", "tag"}
     assert caps(RECEIVER_TYPE_WEBOSTV) == {"data.icon"}
     assert {"title", "priority", "image", "data.sound", "data.attachment"} <= caps(
         RECEIVER_TYPE_PUSHOVER

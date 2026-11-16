@@ -22,13 +22,16 @@ reach it like any other receiver. See [Targets](../targets.md).
 | --- | --- |
 | `message` | Yes |
 | `title` | Yes |
-| `priority`, `image`, `data` | No: dropped, with a warning |
+| `tag` | Yes: the same tag replaces the previous notification |
+| Other fields, `data` | No: dropped, with a warning |
 
 ## Behaviour
 
-Delivery calls `persistent_notification.create`. It is create-only: each
-notification creates its own entry in the notification area, and Com System
-never replaces or dismisses one. Dismiss notifications in the Home
+Delivery calls `persistent_notification.create`. Without a `tag` each
+notification creates its own entry in the notification area. With a `tag`
+the notification's ID is made from it (`com_system_tag_<tag>`), so the next
+notification with the same tag replaces the previous one instead of adding
+another. Com System never dismisses one: dismiss notifications in the Home
 Assistant UI as normal.
 
 ## Example

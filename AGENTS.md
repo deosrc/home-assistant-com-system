@@ -106,9 +106,11 @@ records the conventions and how things work as built.
   Pushover, webOS TV and Alexa Media Player types have it).
   `PersistentNotificationReceiverType.async_deliver` calls
   `persistent_notification.create` (blocking) with `message` and, when
-  given, `title`, and never sends `notification_id`: HA then generates one,
-  so every notification is its own and Com System never replaces or
-  dismisses it. It declares no capabilities and returns no warnings. It sets
+  given, `title`, and, without a `tag`, no `notification_id`: HA then generates
+  one, so every notification is its own. With a `tag` it sends
+  `notification_id` `com_system_tag_<tag>` (`TAG_ID_PREFIX`), so the same
+  tag replaces the previous notification. Com System never dismisses one.
+  It declares the `title` and `tag` capabilities and returns no warnings. It sets
   `supports_people = False` on `ReceiverType` (default True): the options
   flow then shows an empty `no_options` step instead of the people field,
   and `associated_people` returns nothing even if people were stored. The
