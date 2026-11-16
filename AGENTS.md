@@ -351,6 +351,11 @@ records the conventions and how things work as built.
   seeded with the channel's values (including the `channel` entity), and
   Save/Create calls the action with the form's data through
   `hass.callService`.
+  Delete asks first in a `ha-dialog` laid out like Home Assistant's own
+  confirmation (`dialog-box`: titled header, text, plain Cancel and danger
+  Delete buttons), copied from the bundled frontend because
+  `showConfirmationDialog` is not reachable from a custom panel; it falls
+  back to `window.confirm` if `ha-dialog` is not defined.
 - `history.py`: `NotificationHistory` (`hass.data[DOMAIN][DATA_HISTORY]`,
   created in `async_setup`) keeps records newest first in a `Store`
   (`com_system.history`, saved with a delay). A record is `{id, time,

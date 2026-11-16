@@ -5,6 +5,8 @@ import type { ChannelDefaults, ChannelInfo, HomeAssistant } from "./types";
 
 /** Home Assistant's own Actions form; loaded lazily, so it may be absent. */
 const CONTROL = "ha-service-control";
+/** Home Assistant's dialog element, used for the delete confirmation. */
+const DIALOG = "ha-dialog";
 const DOMAIN = "com_system";
 const CREATE = "create_channel";
 const UPDATE = "update_channel";
@@ -62,6 +64,8 @@ export class ComSystemChannels extends LitElement {
   declare private error?: string;
   declare private formError?: string;
   declare private saving: boolean;
+  /** The channel whose delete confirmation dialog is open. */
+  declare private confirming?: ChannelInfo;
   /** Whether Home Assistant's Actions form is available (undefined: waiting). */
   declare private haControl?: boolean;
 
@@ -75,6 +79,7 @@ export class ComSystemChannels extends LitElement {
     error: { state: true },
     formError: { state: true },
     saving: { state: true },
+    confirming: { state: true },
     haControl: { state: true },
   };
 
@@ -100,6 +105,17 @@ export class ComSystemChannels extends LitElement {
       .channel-name {
         font-size: 20px;
         font-weight: 500;
+      }
+      /* As in Home Assistant's dialog-box: the header sizes the title, so the
+         heading must not bring its own size and margin. */
+      .confirm-title {
+        font-weight: inherit;
+        font-size: inherit;
+        margin: inherit;
+      }
+      #confirm-text p {
+        color: var(--primary-text-color);
+        margin: 0;
       }
       .form-title {
         margin: 0 0 16px;
@@ -250,14 +266,20 @@ export class ComSystemChannels extends LitElement {
     await this.load();
   }
 
-  private async deleteChannel(channel: ChannelInfo): Promise<void> {
-    if (
-      !window.confirm(
-        `Delete the channel ${channel.name}? Android devices are told to remove it.`,
-      )
-    ) {
-      return;
+  private confirmText(channel: ChannelInfo): string {
+    return `Delete the channel ${channel.name}? Android devices are told to remove it.`;
+  }
+
+  /** Asks first, in Home Assistant's dialog style when it is available. */
+  private requestDelete(channel: ChannelInfo): void {
+    if (customElements.get(DIALOG)) {
+      this.confirming = channel;
+    } else if (window.confirm(this.confirmText(channel))) {
+      void this.deleteChannel(channel);
     }
+  }
+
+  private async deleteChannel(channel: ChannelInfo): Promise<void> {
     try {
       await this.hass.callService(DOMAIN, DELETE, {
         channel: channel.entity_id,
@@ -267,6 +289,46 @@ export class ComSystemChannels extends LitElement {
       return;
     }
     await this.load();
+  }
+
+  /** The delete confirmation, laid out like Home Assistant's own
+   * confirmation dialog (`dialog-box`): a titled `ha-dialog` with a plain
+   * Cancel and a danger Delete button in the footer. */
+  private renderConfirm(channel: ChannelInfo) {
+    const close = () => (this.confirming = undefined);
+    return html`<ha-dialog
+      .open=${true}
+      type="standard"
+      .preventScrimClose=${true}
+      aria-describedby="confirm-text"
+      @closed=${close}
+    >
+      <ha-dialog-header slot="header">
+        <h1 slot="title" class="confirm-title">Delete channel</h1>
+      </ha-dialog-header>
+      <div id="confirm-text"><p>${this.confirmText(channel)}</p></div>
+      <ha-dialog-footer slot="footer">
+        <ha-button
+          slot="secondaryAction"
+          class="confirm-cancel"
+          appearance="plain"
+          @click=${close}
+        >
+          Cancel
+        </ha-button>
+        <ha-button
+          slot="primaryAction"
+          class="confirm-delete"
+          variant="danger"
+          @click=${() => {
+            close();
+            void this.deleteChannel(channel);
+          }}
+        >
+          Delete
+        </ha-button>
+      </ha-dialog-footer>
+    </ha-dialog>`;
   }
 
   private renderForm(editing: Editing) {
@@ -374,7 +436,8 @@ export class ComSystemChannels extends LitElement {
           <span class="muted"
             >Notification Channels provide defaults such as priority when
             sending notifications. For receivers such as the Home Assistant
-            Companion App, the Channel is also used for the Android Notification Channel.</span
+            Companion App, the Channel is also used for the Android Notification
+            Channel.</span
           >
           <button
             class="add"
@@ -417,13 +480,14 @@ export class ComSystemChannels extends LitElement {
                 </button>
                 <button
                   class="danger delete"
-                  @click=${() => void this.deleteChannel(c)}
+                  @click=${() => this.requestDelete(c)}
                 >
                   Delete
                 </button>
               </div>
             </div>`,
         )}
+        ${this.confirming ? this.renderConfirm(this.confirming) : nothing}
       </div>
     `;
   }

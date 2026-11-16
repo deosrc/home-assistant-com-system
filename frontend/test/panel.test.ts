@@ -672,4 +672,38 @@ describe("channels", () => {
     });
     confirm.mockRestore();
   });
+
+  it("confirms deletes in Home Assistant's dialog when it is available", async () => {
+    // Defined from here on, so keep this test last.
+    customElements.define("ha-dialog", class extends HTMLElement {});
+    const { view, callService } = await open();
+    const confirm = vi.spyOn(window, "confirm");
+    button(view, "delete").click();
+    await settle(view);
+    const root = view.shadowRoot!;
+    expect(confirm).not.toHaveBeenCalled();
+    expect(root.querySelector("ha-dialog")).not.toBeNull();
+    expect(root.querySelector(".confirm-title")!.textContent).toContain(
+      "Delete channel",
+    );
+    expect(root.querySelector("ha-dialog")!.textContent).toContain("Doors");
+    expect(callService).not.toHaveBeenCalled();
+
+    // Cancel closes it without deleting.
+    root.querySelector<HTMLElement>(".confirm-cancel")!.click();
+    await settle(view);
+    expect(root.querySelector("ha-dialog")).toBeNull();
+    expect(callService).not.toHaveBeenCalled();
+
+    // Confirming deletes.
+    button(view, "delete").click();
+    await settle(view);
+    root.querySelector<HTMLElement>(".confirm-delete")!.click();
+    await settle(view);
+    expect(callService).toHaveBeenCalledWith("com_system", "delete_channel", {
+      channel: "notification_channel.doors",
+    });
+    expect(root.querySelector("ha-dialog")).toBeNull();
+    confirm.mockRestore();
+  });
 });
