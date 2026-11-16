@@ -121,6 +121,7 @@ function makeHass(): {
               entity_id: "notification_channel.doors",
               defaults: {
                 priority: "high",
+                image: "/local/d.jpg",
                 data: { mobile_app: { tag: "d" } },
               },
             },
@@ -586,6 +587,7 @@ describe("channels", () => {
         channel: "notification_channel.doors",
         name: "Doors",
         priority: "high",
+        image: { active_choice: "URL", URL: "/local/d.jpg" },
         data: { mobile_app: { tag: "d" } },
       },
     });

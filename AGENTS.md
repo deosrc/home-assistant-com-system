@@ -17,6 +17,12 @@ records the conventions and how things work as built.
   with `ha-service-control` and the action description, rather than
   bespoke websocket commands and hand-built forms. Websocket commands stay
   for reading state.
+- Keep the content parameters of the channel actions (`create_channel`,
+  `update_channel`) in sync with `notify.com_system`: `title`, `priority`,
+  `image` and `data` use the same selector, options, name, description and
+  example (the notify ones are in `SERVICE_DESCRIPTION` in `notify.py`, the
+  channel ones in `services.yaml` and `strings.json`). Change both together.
+  `channel` and `message` are excluded.
 
 ## Dev environment
 

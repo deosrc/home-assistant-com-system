@@ -9,7 +9,7 @@ create_channel:
       selector:
         text:
     title:
-      example: Door
+      example: Laundry
       selector:
         text:
     priority:
@@ -24,9 +24,17 @@ create_channel:
             - { value: critical, label: Critical }
     image:
       selector:
-        text:
+        choose:
+          choices:
+            Entity:
+              selector:
+                entity:
+                  domain: [image, camera]
+            URL:
+              selector:
+                text:
     data:
-      example: "{mobile_app: {tag: door}}"
+      example: "{pushover: {sound: bike}}"
       selector:
         object:
 
@@ -43,7 +51,7 @@ update_channel:
       selector:
         text:
     title:
-      example: Door
+      example: Laundry
       selector:
         text:
     priority:
@@ -58,9 +66,17 @@ update_channel:
             - { value: critical, label: Critical }
     image:
       selector:
-        text:
+        choose:
+          choices:
+            Entity:
+              selector:
+                entity:
+                  domain: [image, camera]
+            URL:
+              selector:
+                text:
     data:
-      example: "{mobile_app: {tag: door}}"
+      example: "{pushover: {sound: bike}}"
       selector:
         object:
 

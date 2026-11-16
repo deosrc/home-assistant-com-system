@@ -24,11 +24,24 @@ interface Editing {
 
 /** The update form starts from the channel's current values. */
 function updateValue(channel: ChannelInfo): ActionValue {
-  const defaults: ChannelDefaults = channel.defaults;
+  const { image, ...rest }: ChannelDefaults = channel.defaults;
   return {
     action: `${DOMAIN}.${UPDATE}`,
-    data: { channel: channel.entity_id, name: channel.name, ...defaults },
+    data: {
+      channel: channel.entity_id,
+      name: channel.name,
+      ...rest,
+      ...(image ? { image: imageChoice(image) } : {}),
+    },
   };
+}
+
+/** The image field is a choose selector (as on notify.com_system), so the
+ * stored string becomes its `{active_choice, <choice>: value}` form. */
+function imageChoice(image: string): Record<string, string> {
+  const isEntity = /^(image|camera)\.[^/]*$/.test(image);
+  const choice = isEntity ? "Entity" : "URL";
+  return { active_choice: choice, [choice]: image };
 }
 
 /**
