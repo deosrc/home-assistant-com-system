@@ -16,7 +16,7 @@ send a notification to the receivers that match its [targets](targets.md).
 | `priority` | no | Low, Normal, High or Critical (Normal if not given). |
 | `image` | no | A URL, or an image or camera entity. |
 | `click_action` | no | What a tap opens: a URL or path (mobile app). |
-| `actions` | no | Buttons: `action`, `title`, optional `uri` (mobile app). |
+| `actions` | no | Buttons: `id`, `label`, optional `uri` (mobile app). |
 | `tag` | no | Same-tag notifications replace each other (mobile app). |
 | `car_ui` | no | Show in Android Auto (mobile app). |
 | `data` | no | Receiver-specific content, keyed by receiver type. |

@@ -314,7 +314,9 @@ records the conventions and how things work as built.
   channel defaults (`DEFAULT_KEYS`, `services.yaml`, `strings.json` and its
   `translations/en.json` copy; `test_channel_actions_match_notify_content_fields`
   checks the selectors agree). Delivery maps them to `clickAction`/`url`,
-  `actions`, `tag` and `car_ui` before merging the `mobile_app` data block.
+  `actions` (items are `{id, label, uri?}`, sent as the app's `action` and
+  `title` by `_app_action`; `data.mobile_app.actions` is raw app format),
+  `tag` and `car_ui` before merging the `mobile_app` data block.
 - Notification IDs and action responses: `async_send` gives each
   notification a uuid `id` (in the notification passed to dispatch, so
   receivers and scripts see it, in the action response as `id`, and as the

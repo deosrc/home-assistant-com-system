@@ -178,6 +178,18 @@ async def async_remove_channel(hass: HomeAssistant, channel: str) -> None:
         )
 
 
+def _app_action(action: Mapping[str, Any]) -> dict[str, Any]:
+    """Return an ``actions`` item as the companion app has it.
+
+    ``id`` is the app's ``action`` and ``label`` its ``title``; other keys
+    (``uri``, ``behavior`` and so on) are passed through.
+    """
+    result = {k: v for k, v in action.items() if k not in ("id", "label")}
+    result["action"] = action["id"]
+    result["title"] = action["label"]
+    return result
+
+
 async def async_deliver_mobile_app(
     hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
 ) -> list[str]:
@@ -210,7 +222,7 @@ async def async_deliver_mobile_app(
         extra["clickAction"] = notification["click_action"]
         extra["url"] = notification["click_action"]
     if notification.get("actions"):
-        extra["actions"] = [dict(a) for a in notification["actions"]]
+        extra["actions"] = [_app_action(a) for a in notification["actions"]]
     if notification.get("tag"):
         extra["tag"] = notification["tag"]
     if notification.get("car_ui"):

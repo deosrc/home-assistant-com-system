@@ -41,16 +41,16 @@ create_channel:
       selector:
         object:
           multiple: true
-          label_field: title
-          description_field: action
+          label_field: label
+          description_field: id
           fields:
-            action:
-              label: Action
+            id:
+              label: ID
               required: true
               selector:
                 text:
-            title:
-              label: Title
+            label:
+              label: Label
               required: true
               selector:
                 text:
@@ -115,16 +115,16 @@ update_channel:
       selector:
         object:
           multiple: true
-          label_field: title
-          description_field: action
+          label_field: label
+          description_field: id
           fields:
-            action:
-              label: Action
+            id:
+              label: ID
               required: true
               selector:
                 text:
-            title:
-              label: Title
+            label:
+              label: Label
               required: true
               selector:
                 text:

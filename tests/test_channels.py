@@ -290,7 +290,7 @@ async def test_ws_lists_channels(hass: HomeAssistant, hass_ws_client) -> None:
 async def test_channel_defaults_include_mobile_app_fields(hass: HomeAssistant) -> None:
     """Click action, actions, tag and car UI are channel defaults."""
     receiver, calls = await _setup(hass)
-    actions = [{"action": "OPEN", "title": "Open"}]
+    actions = [{"id": "OPEN", "label": "Open"}]
     channel = await _add_channel(
         hass,
         "Doors",
@@ -306,7 +306,7 @@ async def test_channel_defaults_include_mobile_app_fields(hass: HomeAssistant) -
     )
     sent = calls[0].data["data"]
     assert sent["clickAction"] == "/lovelace/cams"
-    assert sent["actions"] == actions
+    assert sent["actions"] == [{"action": "OPEN", "title": "Open"}]
     assert sent["car_ui"] is True
     assert sent["tag"] == "mine"  # the call wins
     assert sent["channel"] == "Doors"

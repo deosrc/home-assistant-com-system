@@ -58,7 +58,7 @@ block of `data` is merged over them, so it can override them:
 | Field | Sent as |
 | --- | --- |
 | `click_action` | `clickAction` (Android) and `url` (iOS) |
-| `actions` | `actions` |
+| `actions` | `actions`, with `id` as `action` and `label` as `title` |
 | `tag` | `tag` |
 | `car_ui` | `car_ui: true` (nothing when off) |
 
@@ -67,9 +67,11 @@ checked on a device.
 
 ## Actions and responses
 
-Buttons on the notification are the `actions` field: a list of objects with
-an `action` ID, a `title` and optionally a `uri` (other app keys such as
-`behavior` are passed through). In the form it is a list editor.
+Buttons on the notification are the `actions` field: a list of objects
+with an `id`, a `label` (the button text) and optionally a `uri` (other app
+keys such as `behavior` are passed through). In the form it is a list
+editor. Actions given in the `mobile_app` data block use the app's own
+`action` and `title` keys.
 
 ```yaml
 action: notify.com_system
@@ -77,10 +79,10 @@ data:
   message: Someone is at the door
   channel: notification_channel.doorbell
   actions:
-    - action: OPEN
-      title: Open the gate
-    - action: IGNORE
-      title: Ignore
+    - id: OPEN
+      label: Open the gate
+    - id: IGNORE
+      label: Ignore
 ```
 
 Each notification has an ID, returned as `id` in the action's response.
@@ -95,7 +97,7 @@ give is kept). When someone presses an action, Com System fires a
 | `receiver_id` | The receiver's config entry ID |
 | `receiver` | The receiver's name |
 | `person` | The device's person (`person.*`), none for a shared device |
-| `action` | The action that was pressed |
+| `action` | The `id` of the action that was pressed |
 | `reply_text` | The text typed, for an action that asks for a reply |
 
 ```yaml

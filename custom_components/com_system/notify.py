@@ -287,16 +287,16 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
             "selector": {
                 "object": {
                     "multiple": True,
-                    "label_field": "title",
-                    "description_field": "action",
+                    "label_field": "label",
+                    "description_field": "id",
                     "fields": {
-                        "action": {
-                            "label": "Action",
+                        "id": {
+                            "label": "ID",
                             "required": True,
                             "selector": {"text": None},
                         },
-                        "title": {
-                            "label": "Title",
+                        "label": {
+                            "label": "Label",
                             "required": True,
                             "selector": {"text": None},
                         },

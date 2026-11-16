@@ -40,7 +40,7 @@ drop them with a warning, as with any content they do not support.
 
 - `click_action`: a URL or Home Assistant path (such as `/lovelace/cameras`)
   opened when the notification is tapped.
-- `actions`: buttons, each with an `action` ID and a `title`, and optionally
+- `actions`: buttons, each with an `id` and a `label` (the button text), and optionally
   a `uri` to open instead of firing an event. Pressing one fires
   [`com_system_action`](receivers/mobile-app.md#actions-and-responses).
 - `tag`: notifications with the same tag replace each other. The

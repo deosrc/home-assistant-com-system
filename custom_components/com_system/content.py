@@ -124,12 +124,14 @@ def validate_tag(value: Any) -> str:
     return value
 
 
-# One button on a notification. Other keys of the companion app (``behavior``,
+# One button on a notification: an ``id`` (sent back in the response) and a
+# ``label`` (the button text). The mobile app receiver sends them as the app's
+# ``action`` and ``title``. Other keys of the companion app (``behavior``,
 # ``destructive``, ``icon`` and so on) are passed through.
 _ACTION_SCHEMA = vol.Schema(
     {
-        vol.Required("action"): cv.string,
-        vol.Required("title"): cv.string,
+        vol.Required("id"): cv.string,
+        vol.Required("label"): cv.string,
         vol.Optional("uri"): cv.string,
     },
     extra=vol.ALLOW_EXTRA,
@@ -137,7 +139,7 @@ _ACTION_SCHEMA = vol.Schema(
 
 
 def validate_actions(value: Any) -> list[dict[str, Any]]:
-    """Validate the actions: a list of ``{action, title, uri?}`` objects."""
+    """Validate the actions: a list of ``{id, label, uri?}`` objects."""
     return vol.All(cv.ensure_list, [_ACTION_SCHEMA])(value)
 
 

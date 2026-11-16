@@ -256,6 +256,7 @@ async def test_notify_by_person_reaches_personal_only(hass: HomeAssistant) -> No
 
 
 ACTIONS = [{"action": "OPEN", "title": "Open"}, {"action": "SHUT", "title": "Shut"}]
+TYPED = [{"id": "OPEN", "label": "Open", "uri": "/x"}, {"id": "SHUT", "label": "Shut"}]
 
 
 async def _send_with_actions(hass: HomeAssistant) -> tuple[dict, list[ServiceCall]]:
@@ -409,12 +410,16 @@ async def test_typed_actions_get_tracking_and_data_block_wins(
         {
             "id": "n1",
             "tag": "a",
-            "actions": ACTIONS,
+            "actions": TYPED,
             "data": {"tag": "b"},
         },
     )
     sent = calls[0].data["data"]
-    assert sent["actions"] == ACTIONS
+    # id and label are the app's action and title; other keys pass through.
+    assert sent["actions"] == [
+        {"action": "OPEN", "title": "Open", "uri": "/x"},
+        {"action": "SHUT", "title": "Shut"},
+    ]
     assert sent["tag"] == "b"
     assert sent["action_data"]["com_system_notification_id"] == "n1"
 
@@ -432,9 +437,9 @@ async def test_action_fields_validated_and_dropped_elsewhere(
     from custom_components.com_system.receiver_type import ReceiverType
 
     with pytest.raises(vol.Invalid):
-        validate_actions([{"title": "No action id"}])
-    assert validate_actions({"action": "A", "title": "T", "behavior": "x"}) == [
-        {"action": "A", "title": "T", "behavior": "x"}
+        validate_actions([{"label": "No id"}])
+    assert validate_actions({"id": "A", "label": "T", "behavior": "x"}) == [
+        {"id": "A", "label": "T", "behavior": "x"}
     ]
 
     class Plain(ReceiverType):
@@ -443,7 +448,7 @@ async def test_action_fields_validated_and_dropped_elsewhere(
         capabilities = frozenset({"title"})
 
     content, warnings = apply_capabilities(
-        Plain(), {"message": "m", "tag": "t", "car_ui": True, "actions": ACTIONS}
+        Plain(), {"message": "m", "tag": "t", "car_ui": True, "actions": TYPED}
     )
     assert content == {"message": "m"}
     assert len(warnings) == 3
