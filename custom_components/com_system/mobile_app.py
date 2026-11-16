@@ -266,6 +266,18 @@ async def async_deliver_mobile_app(
     return warnings
 
 
+def _tag_of(record: Mapping[str, Any] | None) -> str | None:
+    """Return the tag the notification was sent with, if it is still known.
+
+    It is the typed ``tag``, or the one in the ``mobile_app`` data block.
+    """
+    if record is None:
+        return None
+    notification = record["notification"]
+    block = (notification.get("data") or {}).get("mobile_app") or {}
+    return notification.get("tag") or block.get("tag")
+
+
 async def _async_handle_action(hass: HomeAssistant, event: Event) -> None:
     """Turn the app's action event into ``com_system_action`` and history."""
     data = event.data
@@ -280,8 +292,10 @@ async def _async_handle_action(hass: HomeAssistant, event: Event) -> None:
     if receiver is not None:
         people = mobile_app_people(hass, receiver)
         person = people[0] if people else None
+    record = await hass.data[DOMAIN][DATA_HISTORY].async_get(notification_id)
     response = {
         "notification_id": notification_id,
+        "tag": _tag_of(record),
         "receiver_id": receiver_id,
         "receiver": receiver.name if receiver else None,
         "person": person,

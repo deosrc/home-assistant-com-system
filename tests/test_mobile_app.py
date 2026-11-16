@@ -271,6 +271,7 @@ async def _send_with_actions(hass: HomeAssistant) -> tuple[dict, list[ServiceCal
         "com_system",
         {
             "message": "Door",
+            "tag": "door",
             "people": ["person.alice"],
             "data": {"mobile_app": {"actions": ACTIONS, "action_data": {"x": 1}}},
         },
@@ -348,6 +349,7 @@ async def test_action_response_fires_event_and_is_stored(hass: HomeAssistant) ->
     assert events[0].data == {
         "notification_id": response["id"],
         "receiver_id": response["results"][0]["entry_id"],
+        "tag": "door",
         "receiver": "Pixel",
         "person": "person.alice",
         "action": "OPEN",
@@ -386,6 +388,7 @@ async def test_response_to_pruned_notification_still_fires(
     await hass.async_block_till_done()
     assert events[0].data["notification_id"] == "gone"
     assert events[0].data["receiver"] is None
+    assert events[0].data["tag"] is None  # the notification is not in history
 
 
 async def _deliver(hass: HomeAssistant, notification: dict) -> list[ServiceCall]:

@@ -94,6 +94,7 @@ pressed. When someone presses an action, Com System fires a
 | Key | Value |
 | --- | --- |
 | `notification_id` | The `id` of the notification |
+| `tag` | The notification's `tag`, none if it had no tag or has left [history](../history.md) |
 | `receiver_id` | The receiver's config entry ID |
 | `receiver` | The receiver's name |
 | `person` | The device's person (`person.*`), none for a shared device |
