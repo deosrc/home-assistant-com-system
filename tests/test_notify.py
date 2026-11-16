@@ -140,6 +140,7 @@ async def test_delivers_to_each_receiver(hass: HomeAssistant, types) -> None:
     assert types.deliver.await_args.args[1] == {
         "id": response["id"],
         "message": "Hello",
+        "messages": {"text": "Hello", "tts": "Hello"},
         "title": "Hi",
     }
 
@@ -471,3 +472,74 @@ async def test_ungiven_group_is_not_targeted(hass: HomeAssistant, types) -> None
     assert [r["name"] for r in response["results"]] == ["Alice", "Echo"]
     response = await _send(hass, message="x", people=["person.alice"])
     assert [r["name"] for r in response["results"]] == ["Alice"]
+
+
+class _TextType(ReceiverType):
+    type_id = "test_text"
+    name = "Test text"
+
+    def __init__(self) -> None:
+        self.deliver = AsyncMock(return_value=[])
+
+    async def async_deliver(self, hass, receiver, notification):
+        return await self.deliver(receiver, notification)
+
+
+class _SpeechType(_TextType):
+    type_id = "test_speech"
+    name = "Test speech"
+    message_types = ("tts",)
+
+
+async def test_message_types_pick_content_per_receiver(hass: HomeAssistant) -> None:
+    """Each receiver gets its own message type, or is skipped without one."""
+    text, speech = _TextType(), _SpeechType()
+    register_receiver_type(text)
+    register_receiver_type(speech)
+    try:
+        assert await async_setup_component(hass, DOMAIN, {})
+        await _add(hass, "Screen", "test_text", people=["person.a"])
+        await _add(hass, "Speaker", "test_speech", people=["person.a"])
+        both = [
+            {"type": "text", "content": "Milk, eggs"},
+            {"type": "tts", "content": "You need milk and eggs"},
+        ]
+        response = await _send(hass, message=both, people=EVERYONE)
+        assert response["counts"]["delivered"] == 2
+        assert text.deliver.await_args.args[1]["message"] == "Milk, eggs"
+        assert "messages" not in text.deliver.await_args.args[1]
+        assert speech.deliver.await_args.args[1]["message"] == (
+            "You need milk and eggs"
+        )
+
+        text.deliver.reset_mock()
+        speech.deliver.reset_mock()
+        response = await _send(
+            hass, message=[{"type": "tts", "content": "Ding"}], people=EVERYONE
+        )
+        assert response["counts"] == {"delivered": 1, "failed": 0, "skipped": 1}
+        text.deliver.assert_not_awaited()
+        [skipped] = [r for r in response["results"] if r["result"] == "skipped"]
+        assert skipped["name"] == "Screen"
+        assert skipped["reason"] == "No message content applies to this receiver type"
+
+        # A plain string reaches every receiver.
+        response = await _send(hass, message="Hi", people=EVERYONE)
+        assert response["counts"]["delivered"] == 2
+    finally:
+        unregister_receiver_type("test_text")
+        unregister_receiver_type("test_speech")
+
+
+async def test_message_validation(hass: HomeAssistant) -> None:
+    """Bad message items fail before delivery."""
+    assert await async_setup_component(hass, DOMAIN, {})
+    for bad in (
+        [],
+        [{"type": "video", "content": "x"}],
+        [{"type": "tts"}],
+        [{"type": "tts", "content": "a"}, {"type": "tts", "content": "b"}],
+        "  ",
+    ):
+        with pytest.raises(vol.Invalid):
+            await _send(hass, message=bad, people=EVERYONE)

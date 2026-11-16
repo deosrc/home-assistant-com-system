@@ -11,7 +11,9 @@ the integration is not installed.
 
 A notification is delivered by calling the integration's `notify.alexa_media`
 action with `type: announce`, the Echo's serial number as the target, the
-message and, when given, the title. The Echo speaks the message and devices
+message and, when given, the title. The message is the notification's
+`tts` [message type](../content.md#message-types), or its `text` if there
+is no `tts`. The Echo speaks the message and devices
 with a screen also show the title. Priority, images and `data` are not
 supported and are dropped, with a warning in the result (see
 [content](../content.md)).

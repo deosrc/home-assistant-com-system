@@ -24,6 +24,13 @@ records the conventions and how things work as built.
   example (the notify ones are in `SERVICE_DESCRIPTION` in `notify.py`, the
   channel ones in `services.yaml` and `strings.json`). Change both together.
   `channel` and `message` are excluded.
+- `message` is a string (every type) or a list of `{type: text|tts, content}`
+  (`validate_message` in `content.py`, normalised to `{type: content}`).
+  `notification_from` sets `message` (display text) and `messages`. A
+  receiver type declares `message_types` (tuple, preference order; default
+  `("text",)`, Alexa `("tts", "text")`, scripts both). `message_for` picks
+  its message; the dispatcher skips the receiver when none applies, and
+  `apply_capabilities` sets `message` (scripts also keep `messages`).
 - Keep the field descriptions of `notify.com_system` and the channel actions
   true to what the receiver types support. Fields such as `click_action`,
   `actions`, `tag` and `car_ui` say which receiver types honour them (for

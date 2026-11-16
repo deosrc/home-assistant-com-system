@@ -100,3 +100,16 @@ async def test_unavailable_when_device_removed(hass: HomeAssistant) -> None:
     [device] = dr.async_entries_for_config_entry(device_registry, source.entry_id)
     device_registry.async_remove_device(device.id)
     assert not alexa.is_source_available(hass, receiver)
+
+
+async def test_prefers_speech_message(hass: HomeAssistant) -> None:
+    """Alexa speaks the tts message, falling back to the text."""
+    from custom_components.com_system.content import apply_capabilities
+
+    entry = await _setup(hass)
+    registry = hass.data[DOMAIN]["registry"]
+    alexa = registry.type_of(registry.get(entry.entry_id))
+    both = {"messages": {"text": "List", "tts": "Spoken"}}
+    assert apply_capabilities(alexa, both)[0]["message"] == "Spoken"
+    only_text = {"messages": {"text": "List"}}
+    assert apply_capabilities(alexa, only_text)[0]["message"] == "List"

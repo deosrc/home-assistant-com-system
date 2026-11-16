@@ -37,16 +37,20 @@ from .content import (
     ATTR_CLICK_ACTION,
     ATTR_DATA,
     ATTR_IMAGE,
+    ATTR_MESSAGES,
     ATTR_PRIORITY,
     ATTR_TAG,
     CHOICE_ENTITY,
     CHOICE_URL,
     IMAGE_ENTITY_DOMAINS,
+    MESSAGE_TYPE_LABELS,
     PRIORITIES,
+    display_message,
     validate_actions,
     validate_click_action,
     validate_data,
     validate_image,
+    validate_message,
     validate_priority,
     validate_tag,
 )
@@ -130,7 +134,7 @@ def validate_receivers(value: Any) -> dict[str, Any]:
 SERVICE_SCHEMA = vol.Schema(
     {
         vol.Optional(ATTR_TITLE): cv.string,
-        vol.Required(ATTR_MESSAGE): cv.string,
+        vol.Required(ATTR_MESSAGE): validate_message,
         vol.Optional(ATTR_PEOPLE): validate_people,
         vol.Optional(ATTR_RECEIVERS): validate_receivers,
         vol.Optional(ATTR_PRIORITY): validate_priority,
@@ -214,10 +218,46 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
         },
         ATTR_MESSAGE: {
             "name": "Message",
-            "description": "The message to send.",
+            "description": (
+                "The message to send: a list of items, each with a type "
+                "(Text Display or Text-to-speech) and its content. Give one "
+                "type to reach only receivers that take it, or both to give "
+                "each its own wording. In YAML a plain string is used for "
+                "every type. Receivers skip a notification with no message "
+                "of a type they take."
+            ),
             "required": True,
-            "example": "The washing has finished",
-            "selector": {"text": {"multiline": True}},
+            "example": (
+                "[{type: text, content: 'Shopping: milk, eggs'}, "
+                "{type: tts, content: 'You need milk and eggs'}]"
+            ),
+            "selector": {
+                "object": {
+                    "multiple": True,
+                    "label_field": "content",
+                    "description_field": "type",
+                    "fields": {
+                        "type": {
+                            "label": "Type",
+                            "required": True,
+                            "selector": {
+                                "select": {
+                                    "options": [
+                                        {"value": k, "label": v}
+                                        for k, v in MESSAGE_TYPE_LABELS.items()
+                                    ],
+                                    "mode": "dropdown",
+                                }
+                            },
+                        },
+                        "content": {
+                            "label": "Content",
+                            "required": True,
+                            "selector": {"text": {"multiline": True}},
+                        },
+                    },
+                }
+            },
         },
         ATTR_CHANNEL: {
             "name": "Channel",
@@ -410,7 +450,6 @@ def notification_from(data: dict[str, Any]) -> dict[str, Any]:
     """
     keys = (
         ATTR_TITLE,
-        ATTR_MESSAGE,
         ATTR_PRIORITY,
         ATTR_IMAGE,
         ATTR_CLICK_ACTION,
@@ -420,7 +459,11 @@ def notification_from(data: dict[str, Any]) -> dict[str, Any]:
         ATTR_DATA,
         ATTR_CHANNEL,
     )
-    return {k: data[k] for k in keys if k in data}
+    content = {k: data[k] for k in keys if k in data}
+    messages = validate_message(data[ATTR_MESSAGE])
+    content[ATTR_MESSAGE] = display_message(messages)
+    content[ATTR_MESSAGES] = messages
+    return content
 
 
 def response_data(

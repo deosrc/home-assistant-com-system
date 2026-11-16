@@ -18,7 +18,7 @@ from .const import (
     RESULT_FAILED,
     RESULT_SKIPPED,
 )
-from .content import apply_capabilities
+from .content import apply_capabilities, message_for
 from .receiver import Receiver
 from .registry import ReceiverRegistry
 from .targets import ResolvedTargets
@@ -27,6 +27,7 @@ _LOGGER = logging.getLogger(__name__)
 
 REASON_DISABLED = "Receiver is disabled"
 REASON_UNKNOWN_TYPE = "Receiver type is not available"
+REASON_NO_MESSAGE = "No message content applies to this receiver type"
 REASON_NOT_IMPLEMENTED = "Delivery is not implemented for this receiver type"
 
 
@@ -78,6 +79,10 @@ async def _deliver(
     if receiver_type is None:
         return ReceiverResult(
             receiver, receiver.type_id, RESULT_FAILED, REASON_UNKNOWN_TYPE
+        )
+    if message_for(receiver_type, notification) is None:
+        return ReceiverResult(
+            receiver, receiver_type.name, RESULT_SKIPPED, REASON_NO_MESSAGE
         )
     content, warnings = apply_capabilities(receiver_type, notification)
     try:

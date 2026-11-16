@@ -36,6 +36,11 @@ class ReceiverType:
     # (that key only). Anything else is dropped with a warning before
     # delivery (see ``content.py``).
     capabilities: frozenset[str] = frozenset()
+    # The message types the type takes, in order of preference: ``text`` is
+    # shown on a display and ``tts`` is spoken. A notification with no
+    # content of these types is skipped for the receiver. The message the
+    # type is delivered is the first one the notification has.
+    message_types: tuple[str, ...] = ("text",)
     # Whether the type takes whatever content it is given (scripts do), so
     # nothing is dropped.
     accepts_any_content: bool = False
@@ -134,6 +139,7 @@ class CustomReceiverType(ReceiverType):
     name = "Script"
     discoverable = True
     accepts_any_content = True
+    message_types = ("text", "tts")
 
     async def async_detect(self, hass: HomeAssistant) -> list[DiscoveryCandidate]:
         """Return a candidate for each script that takes a notification."""

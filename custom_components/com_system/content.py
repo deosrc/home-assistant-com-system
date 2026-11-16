@@ -28,6 +28,7 @@ _LOGGER = logging.getLogger(__name__)
 
 ATTR_TITLE = "title"
 ATTR_MESSAGE = "message"
+ATTR_MESSAGES = "messages"
 ATTR_PRIORITY = "priority"
 ATTR_IMAGE = "image"
 ATTR_DATA = "data"
@@ -54,6 +55,14 @@ CAP_ACTIONS = ATTR_ACTIONS
 CAP_TAG = ATTR_TAG
 CAP_CAR_UI = ATTR_CAR_UI
 DATA_PREFIX = "data."
+
+# Message types: what a piece of message content is for. ``text`` is shown on
+# a display, ``tts`` is spoken. A receiver type declares the types it takes in
+# ``message_types``.
+MESSAGE_TEXT = "text"
+MESSAGE_TTS = "tts"
+MESSAGE_TYPES = (MESSAGE_TEXT, MESSAGE_TTS)
+MESSAGE_TYPE_LABELS = {MESSAGE_TEXT: "Text Display", MESSAGE_TTS: "Text-to-speech"}
 
 MEDIA_SOURCE_PREFIX = "media-source://"
 LOCAL_PREFIX = "/local/"
@@ -106,6 +115,73 @@ def validate_image(value: Any) -> str:
 def is_image_entity(image: str) -> bool:
     """Return whether an image is an image or camera entity id."""
     return image.split(".", 1)[0] in IMAGE_ENTITY_DOMAINS and "/" not in image
+
+
+def _message_type(value: Any) -> str:
+    """Validate a message type (the id or its label, any case)."""
+    value = cv.string(value).strip().lower()
+    for type_id, label in MESSAGE_TYPE_LABELS.items():
+        if value in (type_id, label.lower()):
+            return type_id
+    raise vol.Invalid(f"type must be one of {', '.join(MESSAGE_TYPES)}")
+
+
+_MESSAGE_ITEM_SCHEMA = vol.Schema(
+    {vol.Required("type"): _message_type, vol.Required("content"): cv.string}
+)
+
+
+def validate_message(value: Any) -> dict[str, str]:
+    """Validate ``message`` and return it as ``{type: content}``.
+
+    A plain string is the content for every type. Otherwise it is a list of
+    ``{type, content}`` objects (a single object is accepted), with each type
+    at most once.
+    """
+    if isinstance(value, str):
+        if not value.strip():
+            raise vol.Invalid("message must not be empty")
+        return {t: value for t in MESSAGE_TYPES}
+    if (
+        isinstance(value, dict)
+        and value
+        and "type" not in value
+        and set(value) <= set(MESSAGE_TYPES)
+    ):
+        # Already validated (``{type: content}``).
+        value = [{"type": k, "content": v} for k, v in value.items()]
+    items = vol.All(cv.ensure_list, [_MESSAGE_ITEM_SCHEMA])(value)
+    messages: dict[str, str] = {}
+    for item in items:
+        if item["type"] in messages:
+            raise vol.Invalid(f"message type {item['type']} is given twice")
+        messages[item["type"]] = item["content"]
+    if not messages:
+        raise vol.Invalid("message must have at least one item")
+    return messages
+
+
+def display_message(messages: Mapping[str, str]) -> str:
+    """Return the text to show for a message: the text, else the speech."""
+    return messages.get(MESSAGE_TEXT) or messages.get(MESSAGE_TTS) or ""
+
+
+def message_for(
+    receiver_type: ReceiverType, notification: Mapping[str, Any]
+) -> str | None:
+    """Return the message a receiver type should get, or None if none applies.
+
+    The first of the type's ``message_types`` (in the order of its tuple) that
+    the notification has content for. A notification without ``messages``
+    (built by code, not the action) has one ``message`` for every type.
+    """
+    messages = notification.get(ATTR_MESSAGES)
+    if messages is None:
+        return notification.get(ATTR_MESSAGE)
+    for type_id in receiver_type.message_types:
+        if messages.get(type_id):
+            return messages[type_id]
+    return None
 
 
 def validate_click_action(value: Any) -> str:
@@ -167,6 +243,14 @@ def apply_capabilities(
     that accepts any content (scripts) gets everything.
     """
     content = dict(notification)
+    message = message_for(receiver_type, notification)
+    if message is not None:
+        content[ATTR_MESSAGE] = message
+    if receiver_type.accepts_any_content:
+        # Scripts see every message type as well as the one chosen.
+        pass
+    else:
+        content.pop(ATTR_MESSAGES, None)
     block = (notification.get(ATTR_DATA) or {}).get(receiver_type.type_id)
     content.pop(ATTR_DATA, None)
     if block:
