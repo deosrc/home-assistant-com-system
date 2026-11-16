@@ -34,7 +34,7 @@ STORAGE_VERSION = 1
 SAVE_DELAY_SECONDS = 10
 
 # The notification fields kept in history.
-CONTENT_KEYS = ("title", "message", "priority", "image", "data")
+CONTENT_KEYS = ("title", "message", "priority", "image", "data", "channel")
 
 
 class NotificationHistory:

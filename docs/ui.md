@@ -122,6 +122,12 @@ admin user.
 - `com_system/discoveries/list`: the pending discoveries.
 - `com_system/history/list`: the recent notifications, newest first
   (optional `limit`). Each has `id`, `time`, `notification` and `results`.
+- `com_system/channels/list`: the [channels](channels.md), each `name` and
+  `defaults`.
+- `com_system/channels/set`: creates or replaces a channel (`name`, optional
+  `defaults`); `previous_name` renames one. Errors are `channel_error`.
+- `com_system/channels/remove`: removes a channel (`name`) and sends
+  `remove_channel` to Android mobile apps.
 - `com_system/notify/preview`: the receivers the targets (`people` and
   `receivers`, as in the action) would reach, each `reached` or
   `skipped` with a reason. Sends

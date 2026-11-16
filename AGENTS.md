@@ -300,6 +300,19 @@ records the conventions and how things work as built.
   `ReceiverResult(receiver, type_name, result, reason, warnings)`, ordered by
   name; `result` is one of `RESULTS` (`delivered`, `failed`, `skipped`).
   Conditions are not evaluated yet.
+- `channels.py`: `ChannelStore` (`hass.data[DOMAIN][DATA_CHANNELS]`, created
+  in `async_setup`) keeps channels by name in a `Store` (`com_system.channels`):
+  `{name: defaults}`, defaults being `title`, `priority`, `image`, `data`.
+  `async_send` calls `async_apply` first: a call's `channel` field adds the
+  defaults for anything the call omits (`data` deep-merged, call wins); an
+  unknown channel raises `ServiceValidationError`. `channel` travels in the
+  notification (history and the receiver entity record it) and is not
+  filtered by capabilities. The mobile app type sends it as `data.channel`
+  (under the `mobile_app` block). Removing (or renaming) a channel calls
+  `mobile_app.async_remove_channel`, which sends `message: remove_channel`,
+  `data: {channel}` to the `notify.mobile_app_*` action of every registered
+  mobile app receiver whose entry has `os_name` Android. Websocket
+  commands `channels/list|set|remove`. The panel has no channels view yet.
 - `history.py`: `NotificationHistory` (`hass.data[DOMAIN][DATA_HISTORY]`,
   created in `async_setup`) keeps records newest first in a `Store`
   (`com_system.history`, saved with a delay). A record is `{id, time,

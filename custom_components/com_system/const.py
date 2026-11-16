@@ -33,6 +33,7 @@ NOTIFICATION_RECEIVER_DOMAIN = "notification_receiver"
 DATA_REGISTRY = "registry"
 DATA_COMPONENT = "notification_receiver_component"
 DATA_ENTITIES = "entities"
+DATA_CHANNELS = "channels"
 
 # Delivery results, used as the event types of the receiver entity.
 RESULT_DELIVERED = "delivered"

@@ -18,8 +18,10 @@ from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
 
 from .builtin_types import register_builtin_receiver_types
+from .channels import ChannelStore
 from .const import (
     CONF_ENTRY_TYPE,
+    DATA_CHANNELS,
     DATA_COMPONENT,
     DATA_ENTITIES,
     DATA_HISTORY,
@@ -50,6 +52,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         DATA_REGISTRY: ReceiverRegistry(hass),
         DATA_ENTITIES: {},
         DATA_HISTORY: NotificationHistory(hass),
+        DATA_CHANNELS: ChannelStore(hass),
         # The notification_receiver domain is provided by this integration.
         DATA_COMPONENT: EntityComponent[EventEntity](
             _LOGGER, NOTIFICATION_RECEIVER_DOMAIN, hass

@@ -19,10 +19,12 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.service import async_get_all_descriptions
 
+from .channels import DEFAULTS_SCHEMA, validate_channel_name
 from .const import (
     CONF_ENTRY_TYPE,
     CONF_RECEIVER_TYPE,
     CONF_SOURCE_ID,
+    DATA_CHANNELS,
     DATA_HISTORY,
     DATA_REGISTRY,
     DOMAIN,
@@ -58,6 +60,9 @@ def async_register_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_receivers_set_enabled)
     websocket_api.async_register_command(hass, ws_discoveries_list)
     websocket_api.async_register_command(hass, ws_scripts_check)
+    websocket_api.async_register_command(hass, ws_channels_list)
+    websocket_api.async_register_command(hass, ws_channels_set)
+    websocket_api.async_register_command(hass, ws_channels_remove)
     websocket_api.async_register_command(hass, ws_scripts_rescan)
     websocket_api.async_register_command(hass, ws_notify_preview)
     websocket_api.async_register_command(hass, ws_notify_test)
@@ -439,3 +444,61 @@ async def ws_history_list(
     connection.send_result(
         msg["id"], {"notifications": await history.async_list(msg.get("limit"))}
     )
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command({vol.Required("type"): "com_system/channels/list"})
+@websocket_api.async_response
+async def ws_channels_list(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Return the notification channels with their defaults."""
+    channels = await hass.data[DOMAIN][DATA_CHANNELS].async_list()
+    connection.send_result(msg["id"], {"channels": channels})
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "com_system/channels/set",
+        vol.Required("name"): validate_channel_name,
+        vol.Optional("previous_name"): str,
+        vol.Optional("defaults", default=dict): DEFAULTS_SCHEMA,
+    }
+)
+@websocket_api.async_response
+async def ws_channels_set(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Create or replace a channel; ``previous_name`` renames one."""
+    try:
+        channel = await hass.data[DOMAIN][DATA_CHANNELS].async_set(
+            msg["name"], msg["defaults"], previous_name=msg.get("previous_name")
+        )
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "channel_error", str(err))
+        return
+    connection.send_result(msg["id"], channel)
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {vol.Required("type"): "com_system/channels/remove", vol.Required("name"): str}
+)
+@websocket_api.async_response
+async def ws_channels_remove(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Remove a channel and delete it from Android mobile apps."""
+    try:
+        await hass.data[DOMAIN][DATA_CHANNELS].async_remove(msg["name"])
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "channel_error", str(err))
+        return
+    connection.send_result(msg["id"])
