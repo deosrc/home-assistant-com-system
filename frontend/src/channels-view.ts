@@ -300,37 +300,36 @@ export class ComSystemChannels extends LitElement {
             Add channel
           </button>
         </div>
-        ${editing && !editing.channel ? this.renderForm(editing) : nothing}
+        ${editing ? this.renderForm(editing) : nothing}
         ${
           !this.channels.length && !editing
             ? html`<p class="muted">No channels yet.</p>`
             : nothing
         }
-        ${this.channels.map((c) =>
-          editing?.channel?.channel_id === c.channel_id
-            ? this.renderForm(editing)
-            : html`<div class="card">
-                <div class="head">
-                  <strong>${c.name}</strong>
-                  <code>${c.entity_id ?? ""}</code>
-                </div>
-                ${this.renderDefaults(c.defaults)}
-                <div class="actions">
-                  <button
-                    class="secondary edit"
-                    @click=${() =>
-                      this.open({ channel: c, value: updateValue(c) })}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    class="danger delete"
-                    @click=${() => void this.deleteChannel(c)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>`,
+        ${this.channels.map(
+          (c) =>
+            html`<div class="card">
+              <div class="head">
+                <strong>${c.name}</strong>
+                <code>${c.entity_id ?? ""}</code>
+              </div>
+              ${this.renderDefaults(c.defaults)}
+              <div class="actions">
+                <button
+                  class="secondary edit"
+                  @click=${() =>
+                    this.open({ channel: c, value: updateValue(c) })}
+                >
+                  Edit
+                </button>
+                <button
+                  class="danger delete"
+                  @click=${() => void this.deleteChannel(c)}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>`,
         )}
       </div>
     `;

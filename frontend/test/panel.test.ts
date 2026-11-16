@@ -580,6 +580,11 @@ describe("channels", () => {
     const { view, callService } = await open();
     button(view, "edit").click();
     await settle(view);
+    // The channel's own card stays in place beside the form.
+    expect(view.shadowRoot!.querySelector("button.edit")).not.toBeNull();
+    expect(view.shadowRoot!.textContent).toContain(
+      "notification_channel.doors",
+    );
     const control = view.shadowRoot!.querySelector("ha-service-control")!;
     expect((control as unknown as { value: object }).value).toEqual({
       action: "com_system.update_channel",
