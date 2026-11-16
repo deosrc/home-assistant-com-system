@@ -344,10 +344,10 @@ async def test_description_order_and_people_selector(hass: HomeAssistant) -> Non
         "receivers",
         "title",
         "message",
+        "channel",
         "priority",
         "image",
         "data",
-        "channel",
     ]
     options = fields["priority"]["selector"]["select"]["options"]
     assert [o["label"] for o in options] == ["Low", "Normal", "High", "Critical"]

@@ -112,7 +112,7 @@ function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
         return {
           channels: [
             {
-              entry_id: "c1",
+              channel_id: "c1",
               name: "Doors",
               entity_id: "notification_channel.doors",
               defaults: {

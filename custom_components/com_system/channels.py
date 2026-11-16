@@ -1,17 +1,19 @@
 """Notification channels.
 
-A channel is a config entry (entry type ``channel``) with a
-``notification_channel`` entity. Its title is the channel name and its
-options are the default content (``title``, ``priority``, ``image`` and
-``data``). A notification that names a channel entity gets the defaults for
-anything it does not set itself; what the call sets always wins (``data`` is
-deep-merged). The mobile app receivers also use the name as the Android
-notification channel.
+Channels live in the hub entry's data (``data["channels"]``, a dict of
+``{channel id: {"name", "defaults"}}``), which no config or options flow
+touches. Each has a ``notification_channel`` entity (see
+``notification_channel.py``). The defaults are content (``title``,
+``priority``, ``image`` and ``data``). A notification that names a channel
+entity gets the defaults for anything it does not set itself; what the call
+sets always wins (``data`` is deep-merged). The mobile app receivers also use
+the name as the Android notification channel.
 """
 
 from __future__ import annotations
 
 import logging
+import uuid
 from collections.abc import Mapping
 from typing import Any
 
@@ -24,10 +26,11 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 
 from .const import (
+    CONF_CHANNELS,
     CONF_ENTRY_TYPE,
-    CONF_NAME,
+    DATA_CHANNEL_MANAGER,
     DOMAIN,
-    ENTRY_TYPE_CHANNEL,
+    ENTRY_TYPE_HUB,
     NOTIFICATION_CHANNEL_DOMAIN,
 )
 from .content import (
@@ -82,41 +85,72 @@ def apply_defaults(
     return result
 
 
-def channel_entries(hass: HomeAssistant) -> list[ConfigEntry]:
-    """Return the channel entries, sorted by name."""
-    return sorted(
+def hub_entry(hass: HomeAssistant) -> ConfigEntry | None:
+    """Return the hub entry, which holds the channels."""
+    return next(
         (
             entry
             for entry in hass.config_entries.async_entries(DOMAIN)
-            if entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_CHANNEL
+            if entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_HUB
         ),
-        key=lambda e: e.title.casefold(),
+        None,
     )
 
 
-def channel_info(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any]:
+def get_channels(hub: ConfigEntry) -> dict[str, dict[str, Any]]:
+    """Return the hub's channels by id (as stored; do not modify)."""
+    return dict(hub.data.get(CONF_CHANNELS, {}))
+
+
+def unique_id_of(hub: ConfigEntry, channel_id: str) -> str:
+    """Return the unique id of a channel's entity."""
+    return f"{hub.entry_id}_{channel_id}"
+
+
+def channel_info(
+    hass: HomeAssistant, hub: ConfigEntry, channel_id: str
+) -> dict[str, Any]:
     """Describe a channel for the panel."""
+    channel = get_channels(hub)[channel_id]
     return {
-        "entry_id": entry.entry_id,
-        "name": entry.title,
+        "channel_id": channel_id,
+        "name": channel["name"],
         "entity_id": er.async_get(hass).async_get_entity_id(
-            NOTIFICATION_CHANNEL_DOMAIN, DOMAIN, entry.entry_id
+            NOTIFICATION_CHANNEL_DOMAIN, DOMAIN, unique_id_of(hub, channel_id)
         ),
-        "defaults": dict(entry.options),
+        "defaults": dict(channel["defaults"]),
     }
 
 
+def channel_list(hass: HomeAssistant) -> list[dict[str, Any]]:
+    """Return every channel, sorted by name."""
+    hub = hub_entry(hass)
+    if hub is None:
+        return []
+    ids = sorted(
+        get_channels(hub), key=lambda i: get_channels(hub)[i]["name"].casefold()
+    )
+    return [channel_info(hass, hub, i) for i in ids]
+
+
+def _loaded_hub(hass: HomeAssistant) -> ConfigEntry:
+    hub = hub_entry(hass)
+    if hub is None:
+        raise ServiceValidationError("The Com System hub does not exist")
+    return hub
+
+
 def _checked(
-    hass: HomeAssistant,
+    channels: Mapping[str, Mapping[str, Any]],
     name: str,
     defaults: Mapping[str, Any],
-    entry: ConfigEntry | None,
+    channel_id: str | None,
 ) -> tuple[str, dict[str, Any]]:
     """Validate a name (unique ignoring case) and the defaults."""
     name = cv.string(name).strip()
     if not name:
         raise ServiceValidationError("A channel needs a name")
-    taken = {e.title.casefold() for e in channel_entries(hass) if e is not entry}
+    taken = {c["name"].casefold() for i, c in channels.items() if i != channel_id}
     if name.casefold() in taken:
         raise ServiceValidationError(f"The channel {name} already exists")
     try:
@@ -125,34 +159,55 @@ def _checked(
         raise ServiceValidationError(str(err)) from err
 
 
+async def _async_save(
+    hass: HomeAssistant, hub: ConfigEntry, channels: dict[str, dict[str, Any]]
+) -> None:
+    """Store the channels in the hub's data and bring the entities in step."""
+    hass.config_entries.async_update_entry(
+        hub, data={**hub.data, CONF_CHANNELS: channels}
+    )
+    manager = hass.data[DOMAIN].get(DATA_CHANNEL_MANAGER)
+    if manager is not None:
+        await manager.async_sync()
+
+
 async def async_create_channel(
     hass: HomeAssistant, name: str, defaults: Mapping[str, Any]
-) -> ConfigEntry:
-    """Create a channel through a config flow with the ``channel`` source."""
-    name, clean = _checked(hass, name, defaults, None)
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={"source": "channel"},
-        data={CONF_NAME: name, "defaults": clean},
-    )
-    return result["result"]
+) -> dict[str, Any]:
+    """Create a channel and return its description."""
+    hub = _loaded_hub(hass)
+    channels = get_channels(hub)
+    name, clean = _checked(channels, name, defaults, None)
+    channel_id = uuid.uuid4().hex
+    channels[channel_id] = {"name": name, "defaults": clean}
+    await _async_save(hass, hub, channels)
+    return channel_info(hass, hub, channel_id)
 
 
 async def async_update_channel(
-    hass: HomeAssistant,
-    entry: ConfigEntry,
-    name: str,
-    defaults: Mapping[str, Any],
-) -> None:
-    """Rename a channel and replace its defaults.
-
-    A rename tells Android devices to drop the old channel. Updating
-    reloads the entry, which refreshes the entity.
+    hass: HomeAssistant, channel_id: str, name: str, defaults: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Rename a channel and replace its defaults (a rename drops the old name
+    from Android devices).
     """
-    name, clean = _checked(hass, name, defaults, entry)
-    if name != entry.title:
-        await async_remove_channel_from_devices(hass, entry.title)
-    hass.config_entries.async_update_entry(entry, title=name, options=clean)
+    hub = _loaded_hub(hass)
+    channels = get_channels(hub)
+    if channel_id not in channels:
+        raise ServiceValidationError("No such channel")
+    name, clean = _checked(channels, name, defaults, channel_id)
+    channels[channel_id] = {"name": name, "defaults": clean}
+    await _async_save(hass, hub, channels)
+    return channel_info(hass, hub, channel_id)
+
+
+async def async_delete_channel(hass: HomeAssistant, channel_id: str) -> None:
+    """Delete a channel; Android devices are told to drop it."""
+    hub = _loaded_hub(hass)
+    channels = get_channels(hub)
+    if channel_id not in channels:
+        raise ServiceValidationError("No such channel")
+    del channels[channel_id]
+    await _async_save(hass, hub, channels)
 
 
 async def async_remove_channel_from_devices(hass: HomeAssistant, name: str) -> None:
@@ -173,18 +228,14 @@ def apply_channel(hass: HomeAssistant, data: Mapping[str, Any]) -> dict[str, Any
     if entity_id is None:
         return dict(data)
     registered = er.async_get(hass).async_get(entity_id)
-    entry = (
-        hass.config_entries.async_get_entry(registered.config_entry_id)
-        if registered is not None and registered.config_entry_id
-        else None
-    )
-    if (
-        registered is None
-        or registered.platform != DOMAIN
-        or entry is None
-        or entry.data.get(CONF_ENTRY_TYPE) != ENTRY_TYPE_CHANNEL
-    ):
+    hub = hub_entry(hass)
+    channel = None
+    if registered is not None and registered.platform == DOMAIN and hub is not None:
+        prefix = unique_id_of(hub, "")
+        if registered.unique_id.startswith(prefix):
+            channel = get_channels(hub).get(registered.unique_id[len(prefix) :])
+    if channel is None:
         raise ServiceValidationError(f"{entity_id} is not a Com System channel")
-    result = apply_defaults(data, entry.options)
-    result[ATTR_CHANNEL] = entry.title
+    result = apply_defaults(data, channel["defaults"])
+    result[ATTR_CHANNEL] = channel["name"]
     return result

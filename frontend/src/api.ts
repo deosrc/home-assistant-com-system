@@ -87,24 +87,24 @@ export class ComSystemApi {
     return result.channels;
   }
 
-  /** Creates a channel, or with `entryId` renames it and replaces its defaults. */
+  /** Creates a channel, or with `channelId` renames it and replaces its defaults. */
   saveChannel(
     name: string,
     defaults: ChannelDefaults,
-    entryId?: string,
+    channelId?: string,
   ): Promise<ChannelInfo> {
     return this.hass.callWS({
       type: "com_system/channels/set",
       name,
       defaults,
-      ...(entryId ? { entry_id: entryId } : {}),
+      ...(channelId ? { channel_id: channelId } : {}),
     });
   }
 
-  removeChannel(entryId: string): Promise<void> {
+  removeChannel(channelId: string): Promise<void> {
     return this.hass.callWS({
       type: "com_system/channels/remove",
-      entry_id: entryId,
+      channel_id: channelId,
     });
   }
 

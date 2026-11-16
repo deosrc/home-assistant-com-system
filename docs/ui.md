@@ -126,12 +126,12 @@ admin user.
 - `com_system/discoveries/list`: the pending discoveries.
 - `com_system/history/list`: the recent notifications, newest first
   (optional `limit`). Each has `id`, `time`, `notification` and `results`.
-- `com_system/channels/list`: the [channels](channels.md), each `entry_id`,
+- `com_system/channels/list`: the [channels](channels.md), each `channel_id`,
   `name`, `entity_id` and `defaults`.
 - `com_system/channels/set`: creates a channel (`name`, optional
-  `defaults`), or with `entry_id` renames it and replaces its defaults.
+  `defaults`), or with `channel_id` renames it and replaces its defaults.
   Errors are `channel_error`.
-- `com_system/channels/remove`: deletes a channel (`entry_id`).
+- `com_system/channels/remove`: deletes a channel (`channel_id`).
 - `com_system/notify/preview`: the receivers the targets (`people` and
   `receivers`, as in the action) would reach, each `reached` or
   `skipped` with a reason. Sends

@@ -7,7 +7,7 @@ const PRIORITIES = ["", "low", "normal", "high", "critical"];
 
 interface Draft {
   /** Absent while adding a new channel. */
-  entryId?: string;
+  channelId?: string;
   name: string;
   title: string;
   priority: string;
@@ -19,7 +19,7 @@ interface Draft {
 function toDraft(channel?: ChannelInfo): Draft {
   const d = channel?.defaults ?? {};
   return {
-    entryId: channel?.entry_id,
+    channelId: channel?.channel_id,
     name: channel?.name ?? "",
     title: d.title ?? "",
     priority: d.priority ?? "",
@@ -166,7 +166,7 @@ export class ComSystemChannels extends LitElement {
       await new ComSystemApi(this.hass).saveChannel(
         draft.name,
         toDefaults(draft),
-        draft.entryId,
+        draft.channelId,
       );
     } catch (err) {
       this.formError = errorMessage(err);
@@ -186,7 +186,7 @@ export class ComSystemChannels extends LitElement {
       return;
     }
     try {
-      await new ComSystemApi(this.hass).removeChannel(channel.entry_id);
+      await new ComSystemApi(this.hass).removeChannel(channel.channel_id);
     } catch (err) {
       this.error = errorMessage(err);
       return;
@@ -292,14 +292,14 @@ export class ComSystemChannels extends LitElement {
           >
           <button @click=${() => (this.draft = toDraft())}>Add channel</button>
         </div>
-        ${this.draft && !this.draft.entryId ? this.renderForm(this.draft) : nothing}
+        ${this.draft && !this.draft.channelId ? this.renderForm(this.draft) : nothing}
         ${
           !this.channels.length && !this.draft
             ? html`<p class="muted">No channels yet.</p>`
             : nothing
         }
         ${this.channels.map((c) =>
-          this.draft?.entryId === c.entry_id
+          this.draft?.channelId === c.channel_id
             ? this.renderForm(this.draft)
             : html`<div class="card">
                 <div class="head">

@@ -8,13 +8,14 @@ ENTRY_TYPE_HUB = "hub"
 ENTRY_TYPE_CUSTOM_RECEIVER = "custom_receiver"
 # A receiver of a built-in type, created from a discovery.
 ENTRY_TYPE_RECEIVER = "receiver"
-# A notification channel: named default content, one entry and entity each.
-ENTRY_TYPE_CHANNEL = "channel"
 
 # Entry types that are receivers. Each receiver type maps to one of these.
 RECEIVER_ENTRY_TYPES = (ENTRY_TYPE_CUSTOM_RECEIVER, ENTRY_TYPE_RECEIVER)
 
 CONF_NAME = "name"
+
+# Hub entry data: the notification channels, ``{channel id: {name, defaults}}``.
+CONF_CHANNELS = "channels"
 
 # Receiver entry data: the receiver type id and, for receivers attached to
 # another integration's device, the identifier of that source device.
@@ -39,6 +40,7 @@ DATA_REGISTRY = "registry"
 DATA_COMPONENT = "notification_receiver_component"
 DATA_ENTITIES = "entities"
 DATA_CHANNEL_COMPONENT = "notification_channel_component"
+DATA_CHANNEL_MANAGER = "notification_channel_manager"
 
 # Delivery results, used as the event types of the receiver entity.
 RESULT_DELIVERED = "delivered"

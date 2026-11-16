@@ -47,9 +47,6 @@
           "people": "People"
         }
       }
-    },
-    "abort": {
-      "managed_in_panel": "Channels are edited on the Channels page of the Com System panel."
     }
   },
   "entity": {

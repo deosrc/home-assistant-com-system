@@ -117,7 +117,7 @@ export interface ChannelDefaults {
 }
 
 export interface ChannelInfo {
-  entry_id: string;
+  channel_id: string;
   name: string;
   /** The `notification_channel` entity the action's channel field takes. */
   entity_id: string | null;

@@ -21,9 +21,9 @@ from homeassistant.helpers.service import async_get_all_descriptions
 
 from .channels import (
     async_create_channel,
+    async_delete_channel,
     async_update_channel,
-    channel_entries,
-    channel_info,
+    channel_list,
 )
 from .const import (
     CONF_ENTRY_TYPE,
@@ -458,17 +458,15 @@ def ws_channels_list(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """Return the channels (entries with their entity and defaults)."""
-    connection.send_result(
-        msg["id"], {"channels": [channel_info(hass, e) for e in channel_entries(hass)]}
-    )
+    """Return the channels with their entity and defaults."""
+    connection.send_result(msg["id"], {"channels": channel_list(hass)})
 
 
 @websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "com_system/channels/set",
-        vol.Optional("entry_id"): str,
+        vol.Optional("channel_id"): str,
         vol.Required("name"): str,
         vol.Optional("defaults", default=dict): dict,
     }
@@ -479,29 +477,26 @@ async def ws_channels_set(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """Create a channel, or with ``entry_id`` rename it and set its defaults."""
+    """Create a channel, or with ``channel_id`` rename it and set its defaults."""
     try:
-        if "entry_id" in msg:
-            entry = next(
-                (e for e in channel_entries(hass) if e.entry_id == msg["entry_id"]),
-                None,
+        if "channel_id" in msg:
+            channel = await async_update_channel(
+                hass, msg["channel_id"], msg["name"], msg["defaults"]
             )
-            if entry is None:
-                connection.send_error(msg["id"], "not_found", "No such channel")
-                return
-            await async_update_channel(hass, entry, msg["name"], msg["defaults"])
         else:
-            entry = await async_create_channel(hass, msg["name"], msg["defaults"])
-        await hass.async_block_till_done()
+            channel = await async_create_channel(hass, msg["name"], msg["defaults"])
     except HomeAssistantError as err:
         connection.send_error(msg["id"], "channel_error", str(err))
         return
-    connection.send_result(msg["id"], channel_info(hass, entry))
+    connection.send_result(msg["id"], channel)
 
 
 @websocket_api.require_admin
 @websocket_api.websocket_command(
-    {vol.Required("type"): "com_system/channels/remove", vol.Required("entry_id"): str}
+    {
+        vol.Required("type"): "com_system/channels/remove",
+        vol.Required("channel_id"): str,
+    }
 )
 @websocket_api.async_response
 async def ws_channels_remove(
@@ -510,8 +505,9 @@ async def ws_channels_remove(
     msg: dict[str, Any],
 ) -> None:
     """Delete a channel; Android devices are told to drop it."""
-    if all(e.entry_id != msg["entry_id"] for e in channel_entries(hass)):
-        connection.send_error(msg["id"], "not_found", "No such channel")
+    try:
+        await async_delete_channel(hass, msg["channel_id"])
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "channel_error", str(err))
         return
-    await hass.config_entries.async_remove(msg["entry_id"])
     connection.send_result(msg["id"])

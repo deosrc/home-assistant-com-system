@@ -36,13 +36,14 @@ that cannot be reached is logged and skipped; the channel is removed anyway.
 
 ## Managing channels
 
-Use the **Channels** page of the Com System panel. Each channel is a config
-entry with a `notification_channel` entity whose state is its name and whose
-attributes are its defaults.
+Use the **Channels** page of the Com System panel. Channels are stored with
+the hub, so they do not appear as separate entries in Devices & services,
+and no configuration or options dialog edits them. Each has a
+`notification_channel` entity whose state is its name and whose attributes
+are its defaults.
 
 - **Add**: **Add channel**, then a name and any defaults. Names are unique,
   ignoring case. `data` is JSON keyed by receiver type.
 - **Edit or rename**: **Edit**. A rename removes the old name from Android
   devices.
-- **Delete**: **Delete**. Deleting the entry in Devices & services does the
-  same.
+- **Delete**: **Delete**.

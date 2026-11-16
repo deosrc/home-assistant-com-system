@@ -207,6 +207,21 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
             "example": "The washing has finished",
             "selector": {"text": {"multiline": True}},
         },
+        ATTR_CHANNEL: {
+            "name": "Channel",
+            "description": (
+                "A notification channel, managed on the Channels page of the "
+                "Com System panel. Its default title, priority, image and data "
+                "are used for anything this call does not set. "
+                "Mobile apps also use it as the Android notification channel."
+            ),
+            "selector": {
+                "entity": {
+                    "domain": NOTIFICATION_CHANNEL_DOMAIN,
+                    "integration": DOMAIN,
+                }
+            },
+        },
         ATTR_PRIORITY: {
             "name": "Priority",
             "description": (
@@ -249,21 +264,6 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
             ),
             "example": "{pushover: {sound: bike}}",
             "selector": {"object": None},
-        },
-        ATTR_CHANNEL: {
-            "name": "Channel",
-            "description": (
-                "A notification channel (add one under Devices & services). Its "
-                "default title, priority, image and data are used for anything "
-                "this call does not set. "
-                "Mobile apps also use it as the Android notification channel."
-            ),
-            "selector": {
-                "entity": {
-                    "domain": NOTIFICATION_CHANNEL_DOMAIN,
-                    "integration": DOMAIN,
-                }
-            },
         },
     },
 }
