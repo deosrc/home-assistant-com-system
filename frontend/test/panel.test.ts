@@ -553,6 +553,19 @@ describe("channels", () => {
     expect(text).toContain("high");
   });
 
+  it("opens the more info dialog for the channel's entity", async () => {
+    const { view } = await open();
+    const events: CustomEvent[] = [];
+    document.body.addEventListener("hass-more-info", (ev) =>
+      events.push(ev as CustomEvent),
+    );
+    button(view, "more-info").click();
+    expect(events).toHaveLength(1);
+    expect(events[0].detail).toEqual({
+      entityId: "notification_channel.doors",
+    });
+  });
+
   it("creates a channel through the action form", async () => {
     const { view, callService } = await open();
     button(view, "add").click();

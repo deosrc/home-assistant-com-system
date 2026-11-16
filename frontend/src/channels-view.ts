@@ -174,6 +174,17 @@ export class ComSystemChannels extends LitElement {
     }
   }
 
+  /** Opens Home Assistant's "More info" dialog for the channel's entity. */
+  private showMoreInfo(entityId: string): void {
+    this.dispatchEvent(
+      new CustomEvent("hass-more-info", {
+        detail: { entityId },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  }
+
   private open(editing: Editing): void {
     this.editing = editing;
     this.formError = undefined;
@@ -323,6 +334,16 @@ export class ComSystemChannels extends LitElement {
               </div>
               ${this.renderDefaults(c.defaults)}
               <div class="actions">
+                ${
+                  c.entity_id
+                    ? html`<button
+                        class="secondary more-info"
+                        @click=${() => this.showMoreInfo(c.entity_id!)}
+                      >
+                        More info
+                      </button>`
+                    : nothing
+                }
                 <button
                   class="secondary edit"
                   @click=${() =>
