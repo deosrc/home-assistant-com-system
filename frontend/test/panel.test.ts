@@ -15,6 +15,7 @@ const RECEIVER = {
   device_id: "dev1",
   people: ["person.zed", "person.alice"],
   areas: ["unknown_area", "office"],
+  conditions: 2,
 };
 
 function makeHass(): {
@@ -240,6 +241,9 @@ describe("panel", () => {
     const text = view.shadowRoot!.textContent!;
     expect(text).toContain("Office");
     expect(text).toContain("Custom");
+    expect(
+      view.shadowRoot!.querySelector("td.conditions")!.textContent!.trim(),
+    ).toBe("2 conditions");
     // Discoveries are an alert with a link, not a list.
     expect(text).not.toContain("Pixel");
     const alert = view.shadowRoot!.querySelector("#discoveries")!;

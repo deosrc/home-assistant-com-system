@@ -203,3 +203,14 @@ async def test_preview_evaluates_conditions(
     skipped = await outcome(message="a secret")
     assert skipped["outcome"] == "skipped"
     assert skipped["reason"] == "Conditions did not pass"
+
+
+async def test_receivers_list_counts_conditions(
+    hass: HomeAssistant, hass_ws_client
+) -> None:
+    assert await async_setup_component(hass, "websocket_api", {})
+    await _add(hass, ["{{ true }}", "{{ true }}"])
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "com_system/receivers/list"})
+    msg = await client.receive_json()
+    assert msg["result"]["receivers"][0]["conditions"] == 2

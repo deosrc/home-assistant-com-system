@@ -20,7 +20,11 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.service import async_get_all_descriptions
 
 from .channels import channel_list
-from .conditions import async_check_conditions, condition_variables
+from .conditions import (
+    async_check_conditions,
+    condition_variables,
+    receiver_conditions,
+)
 from .const import (
     CONF_ENTRY_TYPE,
     CONF_RECEIVER_TYPE,
@@ -117,6 +121,8 @@ def _receiver_info(hass: HomeAssistant, receiver: Receiver) -> dict[str, Any]:
         "device_id": receiver_entity.device_id if receiver_entity else None,
         "people": list(registry.people_of(receiver)),
         "areas": list(registry.areas_of(receiver)),
+        # How many notification conditions the receiver has.
+        "conditions": len(receiver_conditions(hass, receiver)),
     }
 
 

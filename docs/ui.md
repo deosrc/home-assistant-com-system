@@ -20,10 +20,13 @@ An overview of the receivers:
 ## Receivers
 
 A table of every receiver. The first column is a switch that turns the
-receiver on or off; the other columns are its name, type and targets.
+receiver on or off; the other columns are its name, type, targets and
+conditions.
 Targets are shown as badges, one for each area (with an area icon) and
 person (with a person icon) the receiver is linked to, by name. A
 receiver's area is the area of its device; change it in Home Assistant.
+The **Conditions** column says how many [notification
+conditions](conditions.md) the receiver has, or **None**.
 
 The switch operates the receiver's enabled switch, so it is the same as
 using the switch entity or an automation, and the list updates when that
@@ -124,7 +127,8 @@ admin user.
 - `com_system/receivers/list`: each receiver's name, type, enabled state,
   availability, switch entity id, `notification_receiver` entity id
   (`receiver_entity_id`), device id (`device_id`, the page a row opens),
-  people, areas.
+  people, areas and `conditions` (how many
+  [conditions](conditions.md) it has).
 - `com_system/receivers/set_enabled`: turns the receiver's enabled switch on
   or off (`entry_id`, `enabled`).
 - `com_system/scripts/check`: checks a script (`entity_id`) and returns

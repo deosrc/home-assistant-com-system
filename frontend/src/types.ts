@@ -44,6 +44,8 @@ export interface ReceiverInfo {
   device_id: string | null;
   people: string[];
   areas: string[];
+  /** How many notification conditions the receiver has. */
+  conditions: number;
 }
 
 export interface DiscoveryInfo {

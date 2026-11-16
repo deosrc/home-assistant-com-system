@@ -320,6 +320,7 @@ export class ComSystemReceivers extends LitElement {
           <th>Name</th>
           <th>Type</th>
           <th>Targets</th>
+          <th>Conditions</th>
         </tr>
       </thead>
       <tbody>
@@ -349,6 +350,11 @@ export class ComSystemReceivers extends LitElement {
               <td>${r.name}</td>
               <td>${r.type}</td>
               <td>${this.renderTargets(r)}</td>
+              <td class="conditions">
+                ${r.conditions
+                  ? `${r.conditions} ${r.conditions === 1 ? "condition" : "conditions"}`
+                  : "None"}
+              </td>
             </tr>
           `,
         )}

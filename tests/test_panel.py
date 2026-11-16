@@ -187,6 +187,7 @@ async def test_receiver_area_comes_from_its_device(
     [receiver] = msg["result"]["receivers"]
     assert receiver["entry_id"] == entry.entry_id
     assert receiver["areas"] == [area.id]
+    assert receiver["conditions"] == 0
 
 
 async def test_set_enabled_unknown_receiver(
