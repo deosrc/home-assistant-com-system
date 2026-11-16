@@ -28,6 +28,11 @@ data:
   applies to this receiver type"), not failed.
 - A plain string (`message: Hello`) is used for every type, so existing
   calls keep working.
+- `type` is optional and defaults to both types, so
+  `{content: The washing has finished}` is used for display and speech.
+- `type` can be a list, so one content serves several types without
+  repeating it: `{type: [text, tts], content: The washing has finished}`.
+  In the form, select both types.
 - Each type may be given once. The type id or its label is accepted, in any
   case.
 

@@ -127,7 +127,12 @@ def _message_type(value: Any) -> str:
 
 
 _MESSAGE_ITEM_SCHEMA = vol.Schema(
-    {vol.Required("type"): _message_type, vol.Required("content"): cv.string}
+    {
+        vol.Optional("type", default=list(MESSAGE_TYPES)): vol.All(
+            cv.ensure_list, [_message_type]
+        ),
+        vol.Required("content"): cv.string,
+    }
 )
 
 
@@ -135,8 +140,9 @@ def validate_message(value: Any) -> dict[str, str]:
     """Validate ``message`` and return it as ``{type: content}``.
 
     A plain string is the content for every type. Otherwise it is a list of
-    ``{type, content}`` objects (a single object is accepted), with each type
-    at most once.
+    ``{type, content}`` objects (a single object is accepted). ``type`` is
+    one type or a list of types, so one content can serve several, and both
+    when omitted. Each type may be given once.
     """
     if isinstance(value, str):
         if not value.strip():
@@ -153,9 +159,12 @@ def validate_message(value: Any) -> dict[str, str]:
     items = vol.All(cv.ensure_list, [_MESSAGE_ITEM_SCHEMA])(value)
     messages: dict[str, str] = {}
     for item in items:
-        if item["type"] in messages:
-            raise vol.Invalid(f"message type {item['type']} is given twice")
-        messages[item["type"]] = item["content"]
+        if not item["type"]:
+            raise vol.Invalid("message type must not be empty")
+        for type_id in item["type"]:
+            if type_id in messages:
+                raise vol.Invalid(f"message type {type_id} is given twice")
+            messages[type_id] = item["content"]
     if not messages:
         raise vol.Invalid("message must have at least one item")
     return messages

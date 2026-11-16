@@ -220,17 +220,16 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
             "name": "Message",
             "description": (
                 "The message to send: a list of items, each with a type "
-                "(Text Display or Text-to-speech) and its content. Give one "
-                "type to reach only receivers that take it, or both to give "
-                "each its own wording. In YAML a plain string is used for "
+                "(Text Display, Text-to-speech or both, the default) and its "
+                "content. Give "
+                "one type to reach only receivers that take it, both types "
+                "to use the same content for each, or an item per type to "
+                "give each its own wording. In YAML a plain string is used for "
                 "every type. Receivers skip a notification with no message "
                 "of a type they take."
             ),
             "required": True,
-            "example": (
-                "[{type: text, content: 'Shopping: milk, eggs'}, "
-                "{type: tts, content: 'You need milk and eggs'}]"
-            ),
+            "example": ("[{type: [text, tts], content: 'The washing has finished'}]"),
             "selector": {
                 "object": {
                     "multiple": True,
@@ -239,9 +238,10 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
                     "fields": {
                         "type": {
                             "label": "Type",
-                            "required": True,
+                            "default": list(MESSAGE_TYPE_LABELS),
                             "selector": {
                                 "select": {
+                                    "multiple": True,
                                     "options": [
                                         {"value": k, "label": v}
                                         for k, v in MESSAGE_TYPE_LABELS.items()

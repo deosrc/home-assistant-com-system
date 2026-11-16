@@ -543,3 +543,35 @@ async def test_message_validation(hass: HomeAssistant) -> None:
     ):
         with pytest.raises(vol.Invalid):
             await _send(hass, message=bad, people=EVERYONE)
+
+
+async def test_one_content_for_several_types(hass: HomeAssistant) -> None:
+    """An item with a list of types serves each of them."""
+    from custom_components.com_system.content import validate_message
+
+    assert validate_message([{"type": ["text", "tts"], "content": "Hi"}]) == {
+        "text": "Hi",
+        "tts": "Hi",
+    }
+    assert validate_message(
+        [
+            {"type": ["Text Display", "tts"], "content": "Hi"},
+        ]
+    ) == {"text": "Hi", "tts": "Hi"}
+    with pytest.raises(vol.Invalid):
+        validate_message(
+            [
+                {"type": ["text", "tts"], "content": "a"},
+                {"type": "tts", "content": "b"},
+            ]
+        )
+    with pytest.raises(vol.Invalid):
+        validate_message([{"type": [], "content": "a"}])
+
+
+async def test_message_type_defaults_to_both(hass: HomeAssistant) -> None:
+    """An item without a type is used for every type."""
+    from custom_components.com_system.content import validate_message
+
+    assert validate_message([{"content": "Hi"}]) == {"text": "Hi", "tts": "Hi"}
+    assert validate_message({"content": "Hi"}) == {"text": "Hi", "tts": "Hi"}
