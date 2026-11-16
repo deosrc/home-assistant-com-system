@@ -3,6 +3,49 @@
 The content of a notification is the `message`, an optional `title`, and
 the fields below. See [the action](services.md) for the target fields.
 
+## Message types
+
+`message` is a list of items, each with a `type` and its `content`. The
+type is **Text Display** (`text`) for receivers that show text, or
+**Text-to-speech** (`tts`) for receivers that speak. A list reads badly when
+spoken, so give each its own wording:
+
+```yaml
+action: notify.com_system
+data:
+  message:
+    - type: text
+      content: "Shopping: milk, eggs, bread"
+    - type: tts
+      content: You need milk, eggs and bread
+  receivers:
+    active_choice: All Areas
+    All Areas: true
+```
+
+- Give one type to reach only the receivers that take it. A receiver whose
+  types are not in the message is **skipped** (reason "No message content
+  applies to this receiver type"), not failed.
+- A plain string (`message: Hello`) is used for every type, so existing
+  calls keep working.
+- `type` is optional and defaults to both types, so
+  `{content: The washing has finished}` is used for display and speech.
+- `type` can be a list, so one content serves several types without
+  repeating it: `{type: [text, tts], content: The washing has finished}`.
+  In the form, select both types.
+- Each type may be given once. The type id or its label is accepted, in any
+  case.
+
+| Type | Message types taken |
+| --- | --- |
+| Mobile app, Pushover, webOS TV, persistent notification | `text` |
+| [Alexa Media Player](receivers/alexa-media-player.md) | `tts`, else `text` |
+| [Script](receivers/custom.md) | Both |
+
+A script receives `message` (its first matching type) and `messages`, an
+object with every type given. The mobile app can also speak a message, but
+through a different mechanism that is not used yet.
+
 ## Common content
 
 - `message` (required) is supported by every receiver type.

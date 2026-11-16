@@ -37,6 +37,7 @@ SAVE_DELAY_SECONDS = 10
 CONTENT_KEYS = (
     "title",
     "message",
+    "messages",
     "priority",
     "image",
     "click_action",
