@@ -97,6 +97,11 @@ export class ComSystemChannels extends LitElement {
         align-items: baseline;
         gap: 8px;
       }
+      .form-title {
+        margin: 0 0 16px;
+        font-size: 20px;
+        font-weight: 400;
+      }
       .actions {
         display: flex;
         gap: 8px;
@@ -229,6 +234,9 @@ export class ComSystemChannels extends LitElement {
   private renderForm(editing: Editing) {
     return html`
       <div class="card">
+        <h2 class="form-title">
+          ${editing.channel ? "Edit channel" : "Add a channel"}
+        </h2>
         ${
           this.haControl
             ? html`<ha-service-control

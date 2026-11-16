@@ -558,6 +558,9 @@ describe("channels", () => {
     button(view, "add").click();
     await settle(view);
     const control = view.shadowRoot!.querySelector("ha-service-control")!;
+    expect(
+      view.shadowRoot!.querySelector(".form-title")!.textContent,
+    ).toContain("Add a channel");
     expect(control.hasAttribute("hide-picker")).toBe(true);
     // Starts from the action alone so Home Assistant applies its defaults.
     expect((control as unknown as { value: object }).value).toEqual({
@@ -580,6 +583,9 @@ describe("channels", () => {
     const { view, callService } = await open();
     button(view, "edit").click();
     await settle(view);
+    expect(
+      view.shadowRoot!.querySelector(".form-title")!.textContent,
+    ).toContain("Edit channel");
     // The channel's own card stays in place beside the form.
     expect(view.shadowRoot!.querySelector("button.edit")).not.toBeNull();
     expect(view.shadowRoot!.textContent).toContain(
