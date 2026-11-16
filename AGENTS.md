@@ -10,6 +10,13 @@ records the conventions and how things work as built.
 - Update this file when behavior or architecture changes.
 - When a feature is complete, remove it from `PLAN.md`.
 - Markdown must pass `npm run lint:md` (default rules, 80 columns).
+- Prefer implementing write functionality (anything that creates, changes
+  or deletes) as Home Assistant actions. The panel should then use Home
+  Assistant's native mechanisms for retrieving an action's parameters and
+  for the UI components to enter them, in the same way the Test page does
+  with `ha-service-control` and the action description, rather than
+  bespoke websocket commands and hand-built forms. Websocket commands stay
+  for reading state.
 
 ## Dev environment
 
