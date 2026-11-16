@@ -343,9 +343,9 @@ records the conventions and how things work as built.
   skipped if the record was pruned) and fires `com_system_action`
   (`EVENT_ACTION`) with the original action id and the notification's `tag`
   (read from its history record by `_tag_of`, so none once pruned). Other
-  receiver types have no response mechanism. The Test page has no editor for actions: its form must
-  stay the action form of Developer tools > Actions (minus the action
-  picker), so actions are entered in the `data` field. Recent shows each
+  receiver types have no response mechanism. The Test page has no editor for
+  actions: its form must stay the action form of Developer tools > Actions
+  (minus the action picker), so actions are entered in the `data` field. Recent shows each
   record's `responses` in a Response column on the row of the receiver
   (`receiver_id`), and below the message when that receiver is not in the
   results.
