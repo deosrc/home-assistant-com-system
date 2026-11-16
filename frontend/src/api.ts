@@ -5,6 +5,7 @@ import type {
   HomeAssistant,
   NotifyTargets,
   PreviewEntry,
+  ChannelInfo,
   ReceiverInfo,
   ScriptCheckResult,
   SendResponse,
@@ -76,6 +77,13 @@ export class ComSystemApi {
 
   rescanScripts(): Promise<void> {
     return this.hass.callWS({ type: "com_system/scripts/rescan" });
+  }
+
+  async channels(): Promise<ChannelInfo[]> {
+    const result = await this.hass.callWS<{ channels: ChannelInfo[] }>({
+      type: "com_system/channels/list",
+    });
+    return result.channels;
   }
 
   setEnabled(entryId: string, enabled: boolean): Promise<void> {

@@ -14,6 +14,9 @@ RECEIVER_ENTRY_TYPES = (ENTRY_TYPE_CUSTOM_RECEIVER, ENTRY_TYPE_RECEIVER)
 
 CONF_NAME = "name"
 
+# Hub entry data: the notification channels, ``{channel id: {name, defaults}}``.
+CONF_CHANNELS = "channels"
+
 # Receiver entry data: the receiver type id and, for receivers attached to
 # another integration's device, the identifier of that source device.
 CONF_RECEIVER_TYPE = "receiver_type"
@@ -29,10 +32,15 @@ CONF_PEOPLE = "people"
 # The domain of the read-only receiver entity, which com_system provides.
 NOTIFICATION_RECEIVER_DOMAIN = "notification_receiver"
 
+# The domain of the channel entity, which com_system provides.
+NOTIFICATION_CHANNEL_DOMAIN = "notification_channel"
+
 # Keys of ``hass.data[DOMAIN]``.
 DATA_REGISTRY = "registry"
 DATA_COMPONENT = "notification_receiver_component"
 DATA_ENTITIES = "entities"
+DATA_CHANNEL_COMPONENT = "notification_channel_component"
+DATA_CHANNEL_MANAGER = "notification_channel_manager"
 
 # Delivery results, used as the event types of the receiver entity.
 RESULT_DELIVERED = "delivered"

@@ -30,6 +30,8 @@ The hub's options set how much [history](history.md) is kept.
   notification goes.
 - [The notify.com_system action](services.md): sending a notification, its
   fields, delivery and the per-receiver response.
+- [Channels](channels.md): named defaults for notifications, and Android
+  notification channels.
 - [History](history.md): the recent notifications and their limits.
 - [Content](content.md): priority, images, per-type `data`, capabilities
   and dropped content.

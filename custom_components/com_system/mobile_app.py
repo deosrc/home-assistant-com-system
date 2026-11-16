@@ -22,6 +22,7 @@ from .const import (
     DATA_REGISTRY,
     DOMAIN,
     EVENT_ACTION,
+    RECEIVER_TYPE_MOBILE_APP,
 )
 from .content import (
     PRIORITY_CRITICAL,
@@ -31,6 +32,8 @@ from .content import (
     merge,
 )
 from .receiver import Receiver
+
+REMOVE_CHANNEL_MESSAGE = "remove_channel"
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -142,6 +145,39 @@ PRIORITY_DATA: dict[str, dict[str, Any]] = {
 }
 
 
+def android_entries(hass: HomeAssistant) -> list[ConfigEntry]:
+    """Return the registered mobile app entries of Android devices."""
+    return [
+        entry
+        for entry in hass.config_entries.async_entries(MOBILE_APP_DOMAIN)
+        if str(entry.data.get("os_name", "")).lower() == "android"
+    ]
+
+
+async def async_remove_channel(hass: HomeAssistant, channel: str) -> None:
+    """Tell every Android device with a mobile app receiver to drop a channel.
+
+    Sends the companion app's ``remove_channel`` notification. A device whose
+    notify action is missing is skipped.
+    """
+    receivers = hass.data[DOMAIN][DATA_REGISTRY].all()
+    device_ids = {
+        r.source_id for r in receivers if r.type_id == RECEIVER_TYPE_MOBILE_APP
+    }
+    for entry in android_entries(hass):
+        if entry.data.get("device_id") not in device_ids:
+            continue
+        service = f"mobile_app_{slugify(entry.data['device_name'])}"
+        if not hass.services.has_service(NOTIFY_DOMAIN, service):
+            continue
+        await hass.services.async_call(
+            NOTIFY_DOMAIN,
+            service,
+            {"message": REMOVE_CHANNEL_MESSAGE, "data": {"channel": channel}},
+            blocking=True,
+        )
+
+
 async def async_deliver_mobile_app(
     hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
 ) -> list[str]:
@@ -167,6 +203,8 @@ async def async_deliver_mobile_app(
             extra["image"] = await async_image_url(hass, notification["image"])
         except HomeAssistantError as err:
             warnings.append(f"The image was dropped: {err}")
+    if notification.get("channel"):
+        extra["channel"] = notification["channel"]
     extra = merge(extra, notification.get("data") or {})
     if extra.get("actions") and notification.get("id"):
         # The app returns action_data in its response event; that is how a

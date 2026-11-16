@@ -48,6 +48,12 @@ them; see [receiver discovery](receivers/README.md#automatic-detection). The
 sources are not listed. A receiver with a type that is no longer known stays
 in the list, with the type id as its type.
 
+## Channels
+
+Create, edit and delete [channels](channels.md). The forms are Home
+Assistant's action forms for the channel actions; the page reads the list
+over websocket.
+
 ## Recent
 
 The notifications sent, newest first, each with its title and message, the
@@ -123,6 +129,9 @@ admin user.
 - `com_system/discoveries/list`: the pending discoveries.
 - `com_system/history/list`: the recent notifications, newest first
   (optional `limit`). Each has `id`, `time`, `notification` and `results`.
+- `com_system/channels/list`: the [channels](channels.md), each `channel_id`,
+  `name`, `entity_id` and `defaults`. Channels are written through the
+  `com_system` channel actions, not websocket commands.
 - `com_system/notify/preview`: the receivers the targets (`people` and
   `receivers`, as in the action) would reach, each `reached` or
   `skipped` with a reason. Sends

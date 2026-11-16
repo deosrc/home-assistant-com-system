@@ -348,6 +348,7 @@ async def test_description_order_and_people_selector(hass: HomeAssistant) -> Non
         "receivers",
         "title",
         "message",
+        "channel",
         "priority",
         "image",
         "data",

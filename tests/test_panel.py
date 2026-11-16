@@ -31,6 +31,7 @@ COMMANDS = [
     {"type": "com_system/notify/preview"},
     {"type": "com_system/notify/test", "service_data": {"message": "x"}},
     {"type": "com_system/history/list"},
+    {"type": "com_system/channels/list"},
 ]
 
 

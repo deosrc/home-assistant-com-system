@@ -1,4 +1,90 @@
-# Intentionally empty. The only action, notify.com_system, belongs to the
-# notify domain, whose services.yaml is Home Assistant's own, so its fields
-# are described in code (see notify.py). Hassfest requires this file because
-# the integration registers a service.
+# The notify.com_system action belongs to the notify domain, whose
+# services.yaml is Home Assistant's own, so its fields are described in code
+# (see notify.py). The channel actions are this integration's own.
+create_channel:
+  fields:
+    name:
+      required: true
+      example: Doors
+      selector:
+        text:
+    title:
+      example: Laundry
+      selector:
+        text:
+    priority:
+      example: high
+      selector:
+        select:
+          mode: dropdown
+          options:
+            - { value: low, label: Low }
+            - { value: normal, label: Normal }
+            - { value: high, label: High }
+            - { value: critical, label: Critical }
+    image:
+      selector:
+        choose:
+          choices:
+            Entity:
+              selector:
+                entity:
+                  domain: [image, camera]
+            URL:
+              selector:
+                text:
+    data:
+      example: "{pushover: {sound: bike}}"
+      selector:
+        object:
+
+update_channel:
+  fields:
+    channel:
+      required: true
+      selector:
+        entity:
+          domain: notification_channel
+          integration: com_system
+    name:
+      example: Entrances
+      selector:
+        text:
+    title:
+      example: Laundry
+      selector:
+        text:
+    priority:
+      example: high
+      selector:
+        select:
+          mode: dropdown
+          options:
+            - { value: low, label: Low }
+            - { value: normal, label: Normal }
+            - { value: high, label: High }
+            - { value: critical, label: Critical }
+    image:
+      selector:
+        choose:
+          choices:
+            Entity:
+              selector:
+                entity:
+                  domain: [image, camera]
+            URL:
+              selector:
+                text:
+    data:
+      example: "{pushover: {sound: bike}}"
+      selector:
+        object:
+
+delete_channel:
+  fields:
+    channel:
+      required: true
+      selector:
+        entity:
+          domain: notification_channel
+          integration: com_system

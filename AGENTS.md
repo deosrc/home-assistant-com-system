@@ -10,6 +10,19 @@ records the conventions and how things work as built.
 - Update this file when behavior or architecture changes.
 - When a feature is complete, remove it from `PLAN.md`.
 - Markdown must pass `npm run lint:md` (default rules, 80 columns).
+- Prefer implementing write functionality (anything that creates, changes
+  or deletes) as Home Assistant actions. The panel should then use Home
+  Assistant's native mechanisms for retrieving an action's parameters and
+  for the UI components to enter them, in the same way the Test page does
+  with `ha-service-control` and the action description, rather than
+  bespoke websocket commands and hand-built forms. Websocket commands stay
+  for reading state.
+- Keep the content parameters of the channel actions (`create_channel`,
+  `update_channel`) in sync with `notify.com_system`: `title`, `priority`,
+  `image` and `data` use the same selector, options, name, description and
+  example (the notify ones are in `SERVICE_DESCRIPTION` in `notify.py`, the
+  channel ones in `services.yaml` and `strings.json`). Change both together.
+  `channel` and `message` are excluded.
 
 ## Dev environment
 
@@ -246,8 +259,8 @@ records the conventions and how things work as built.
   `title`, `people`, `receivers`; title is first, which sets the order in
   the form) and its UI description through
   `async_set_service_schema` (the `notify` domain's `services.yaml` is
-  core's, so the integration's `services.yaml` is deliberately empty (hassfest
-  requires the file); name and description are plain strings). `people` and
+  core's, so `services.yaml` holds only the integration's own channel
+  actions; name and description are plain strings). `people` and
   `receivers` are `choose` selectors whose choice names are the labels the
   form shows, because the selector has no label
   field and the notify domain's translations are core's: `people` is
@@ -316,6 +329,49 @@ records the conventions and how things work as built.
   `ReceiverResult(receiver, type_name, result, reason, warnings)`, ordered by
   name; `result` is one of `RESULTS` (`delivered`, `failed`, `skipped`).
   Conditions are not evaluated yet.
+- `channels.py` and `notification_channel.py`: channels are stored in the
+  hub entry's data, `data["channels"] = {channel id: {name, defaults}}`
+  (defaults are `title`, `priority`, `image`, `data`; ids are `uuid4().hex`,
+  names are unique ignoring case). They are not in `options`, because the
+  hub's options flow replaces options wholesale, and no config, options or
+  reconfigure flow shows or touches them. Each channel has one
+  `notification_channel` entity (unique id `<hub entry id>_<channel id>`, no
+  device) from a second `EntityComponent` (`DATA_CHANNEL_COMPONENT`), set up
+  for the hub entry in `async_setup_entry`. `ChannelManager`
+  (`hass.data[DOMAIN][DATA_CHANNEL_MANAGER]`, created by the platform's
+  `async_setup_entry`) diffs the hub's data against its entities in
+  `async_sync`: it adds entities, writes state for changes, and on a rename
+  or removal sends `remove_channel` and, for removals, removes the entity and
+  its registry entry. The hub's update listener and every panel change call
+  it, so nothing reloads the hub (that would restart detection). Channels
+  are written by the actions `com_system.create_channel`, `update_channel`
+  (replaces the defaults; omitted ones are cleared) and `delete_channel`
+  (`async_register_channel_actions`; fields in `services.yaml`, texts in
+  `strings.json`), which call `async_create_channel`, `async_update_channel`
+  and `async_delete_channel` to write the hub data with `async_update_entry`.
+  The panel reads them with the websocket command `channels/list`. The
+  action's `channel` field is an entity selector limited to domain
+  `notification_channel` and this integration, so other Com System entities
+  never appear. `apply_channel` (called first by `async_send`) maps the
+  entity's unique id to the channel, adds the defaults for anything the call
+  omits (`data` deep-merged, call wins) and replaces `channel` with the name;
+  anything that is not one of ours raises `ServiceValidationError`.
+  `channel` travels in the notification (history and the receiver entity
+  record it) and is not filtered by capabilities. The mobile app type sends
+  it as `data.channel` (before its `data` block). `mobile_app.
+  async_remove_channel` sends `message: remove_channel`, `data: {channel}` to
+  the `notify.mobile_app_*` action of every registered mobile app receiver
+  whose entry has `os_name` Android. `channels-view.ts` uses
+  `ha-service-control` like the Test page: the create form starts from the
+  action alone (so Home Assistant applies the defaults), the update form is
+  seeded with the channel's values (including the `channel` entity), and
+  Save/Create calls the action with the form's data through
+  `hass.callService`.
+  Delete asks first in a `ha-dialog` laid out like Home Assistant's own
+  confirmation (`dialog-box`: titled header, text, plain Cancel and danger
+  Delete buttons), copied from the bundled frontend because
+  `showConfirmationDialog` is not reachable from a custom panel; it falls
+  back to `window.confirm` if `ha-dialog` is not defined.
 - `history.py`: `NotificationHistory` (`hass.data[DOMAIN][DATA_HISTORY]`,
   created in `async_setup`) keeps records newest first in a `Store`
   (`com_system.history`, saved with a delay). A record is `{id, time,
