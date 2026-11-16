@@ -97,6 +97,10 @@ export class ComSystemChannels extends LitElement {
         align-items: baseline;
         gap: 8px;
       }
+      .channel-name {
+        font-size: 20px;
+        font-weight: 500;
+      }
       .form-title {
         margin: 0 0 16px;
         font-size: 20px;
@@ -131,9 +135,28 @@ export class ComSystemChannels extends LitElement {
         color: var(--error-color, #db4437);
         background: transparent;
       }
-      ul.defaults {
+      dl {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 4px 16px;
         margin: 8px 0 0;
-        padding-left: 18px;
+      }
+      dt {
+        color: var(--secondary-text-color);
+      }
+      dd {
+        margin: 0;
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      dd dl {
+        margin: 0;
+      }
+      .data-block {
+        margin-top: 12px;
+      }
+      .receiver-type {
+        font-weight: 500;
       }
     `,
   ];
@@ -283,18 +306,54 @@ export class ComSystemChannels extends LitElement {
     `;
   }
 
+  /** A value for the cards: objects broken down by key, lists joined. */
+  private renderValue(value: unknown): unknown {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      return html`<dl>
+        ${Object.entries(value).map(
+          ([k, v]) =>
+            html`<dt>${k}</dt>
+              <dd>${this.renderValue(v)}</dd>`,
+        )}
+      </dl>`;
+    }
+    if (Array.isArray(value)) {
+      return value.every((v) => v === null || typeof v !== "object")
+        ? value.join(", ")
+        : html`<code>${JSON.stringify(value)}</code>`;
+    }
+    return String(value);
+  }
+
+  /** The defaults: Title, Priority and Image as labelled rows, then one
+   * list of properties per receiver type in `data`. */
   private renderDefaults(d: ChannelDefaults) {
-    const rows = Object.entries(d).map(
-      ([k, v]) =>
-        html`<li>
-          ${k}: <code>${typeof v === "string" ? v : JSON.stringify(v)}</code>
-        </li>`,
-    );
-    return rows.length
-      ? html`<ul class="defaults">
-          ${rows}
-        </ul>`
-      : html`<p class="muted">No defaults.</p>`;
+    const labels: [keyof ChannelDefaults, string][] = [
+      ["title", "Title"],
+      ["priority", "Priority"],
+      ["image", "Image"],
+    ];
+    const rows = labels
+      .filter(([key]) => d[key] !== undefined)
+      .map(
+        ([key, label]) =>
+          html`<dt>${label}</dt>
+            <dd>${this.renderValue(d[key])}</dd>`,
+      );
+    const blocks = Object.entries(d.data ?? {});
+    if (!rows.length && !blocks.length) {
+      return html`<p class="muted">No defaults.</p>`;
+    }
+    return html`<div class="defaults-wrap">
+      ${rows.length ? html`<dl class="defaults">${rows}</dl>` : nothing}
+      ${blocks.map(
+        ([type, block]) =>
+          html`<div class="data-block">
+            <div class="receiver-type">${type}</div>
+            ${this.renderValue(block)}
+          </div>`,
+      )}
+    </div>`;
   }
 
   protected render() {
@@ -329,7 +388,7 @@ export class ComSystemChannels extends LitElement {
           (c) =>
             html`<div class="card">
               <div class="head">
-                <strong>${c.name}</strong>
+                <strong class="channel-name">${c.name}</strong>
                 <code>${c.entity_id ?? ""}</code>
               </div>
               ${this.renderDefaults(c.defaults)}

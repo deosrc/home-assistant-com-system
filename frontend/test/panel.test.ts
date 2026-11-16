@@ -551,6 +551,23 @@ describe("channels", () => {
     expect(text).toContain("Doors");
     expect(text).toContain("notification_channel.doors");
     expect(text).toContain("high");
+    // JSON is not shown.
+    expect(text).not.toContain("{");
+  });
+
+  it("shows each receiver type's data as its own list", async () => {
+    const { view } = await open();
+    const root = view.shadowRoot!;
+    const labels = [...root.querySelectorAll("dl.defaults > dt")].map((e) =>
+      e.textContent!.trim(),
+    );
+    expect(labels).toEqual(["Priority", "Image"]);
+    const block = root.querySelector(".data-block")!;
+    expect(block.querySelector(".receiver-type")!.textContent!.trim()).toBe(
+      "mobile_app",
+    );
+    expect(block.querySelector("dt")!.textContent!.trim()).toBe("tag");
+    expect(block.querySelector("dd")!.textContent!.trim()).toBe("d");
   });
 
   it("opens the more info dialog for the channel's entity", async () => {
