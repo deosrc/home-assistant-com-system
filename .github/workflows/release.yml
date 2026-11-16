@@ -23,6 +23,16 @@ jobs:
         working-directory: frontend
       - run: npm run build
         working-directory: frontend
+      - name: Set the manifest version from the release tag
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          # Strip a leading "v" so tags like v1.2.3 give version 1.2.3.
+          version="${TAG#v}"
+          jq --arg v "$version" '.version = $v' \
+            custom_components/com_system/manifest.json > manifest.tmp
+          mv manifest.tmp custom_components/com_system/manifest.json
+          grep '"version"' custom_components/com_system/manifest.json
       - name: Zip the integration
         run: |
           cd custom_components/com_system

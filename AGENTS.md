@@ -506,8 +506,10 @@ validation). Hassfest and HACS validation also run nightly. All must pass.
 
 `release.yml` is not a check. When a release is published it builds the
 panel and attaches `com_system.zip` (the integration folder with the bundle)
-to it; `hacs.json` has `zip_release` so HACS installs that zip. The release
-flow has not run yet.
+to it; `hacs.json` has `zip_release` so HACS installs that zip. Before
+zipping, it sets `version` in the zip's `manifest.json` from the release tag
+(a leading `v` is stripped), so the committed `manifest.json` version is only
+a placeholder and need not be bumped. The release flow has not run yet.
 
 `sync-issue-labels.yml` is not a check. When a pull request is opened or
 reopened (`pull_request_target`, never checks out PR code), it copies the
