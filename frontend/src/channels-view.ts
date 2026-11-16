@@ -123,6 +123,10 @@ export class ComSystemChannels extends LitElement {
         color: var(--text-primary-color, #fff);
         background: var(--primary-color);
       }
+      button.add {
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
       button:disabled {
         opacity: 0.5;
         cursor: default;
@@ -368,8 +372,9 @@ export class ComSystemChannels extends LitElement {
       <div>
         <div class="toolbar">
           <span class="muted"
-            >Select a channel in the channel field of notify.com_system. Its
-            defaults fill anything the call leaves out.</span
+            >Notification Channels provide defaults such as priority when
+            sending notifications. For receivers such as the Home Assistant
+            Companion App, the Channel is also used for the Android Notification Channel.</span
           >
           <button
             class="add"
