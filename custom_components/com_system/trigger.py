@@ -27,7 +27,10 @@ CONF_TAG = "tag"
 def _needs_notification_id_or_tag(options: dict[str, Any]) -> dict[str, Any]:
     """The action must be narrowed to a notification or a tag."""
     if not options.get(CONF_NOTIFICATION_ID) and not options.get(CONF_TAG):
-        raise vol.Invalid("Give either a notification_id or a tag")
+        raise vol.Invalid(
+            "Com System notification action received triggers require either "
+            "a notification Id or a tag"
+        )
     return options
 
 

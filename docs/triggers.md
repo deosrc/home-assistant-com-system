@@ -1,11 +1,12 @@
 # Triggers
 
-## Notification action received
+## Com System notification action received
 
 `com_system.action_received` starts an automation when someone responds to a
 notification action, such as a button on a [mobile app
 notification](receivers/mobile-app.md#actions-and-responses). It is
-available in the automation editor as **Notification action received**.
+available in the automation editor as **Com System notification action
+received**.
 
 | Option | Required | Description |
 | --- | --- | --- |

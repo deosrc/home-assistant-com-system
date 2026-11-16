@@ -167,7 +167,7 @@
   },
   "triggers": {
     "action_received": {
-      "name": "Notification action received",
+      "name": "Com System notification action received",
       "description": "Triggers when someone responds to a notification action, for example by pressing a button on a mobile app notification. Give the action ID and either the notification ID or the tag.",
       "fields": {
         "action": {

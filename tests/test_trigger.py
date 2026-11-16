@@ -88,3 +88,11 @@ async def test_invalid_options_rejected(hass: HomeAssistant, options: dict) -> N
     """The action is required, with a notification id or a tag."""
     with pytest.raises(vol.Invalid):
         await ActionReceivedTrigger.async_validate_config(hass, {"options": options})
+
+
+async def test_missing_notification_id_and_tag_message(hass: HomeAssistant) -> None:
+    """The error says what is needed."""
+    with pytest.raises(vol.Invalid, match="require either a notification Id or a tag"):
+        await ActionReceivedTrigger.async_validate_config(
+            hass, {"options": {"action": "OPEN"}}
+        )
