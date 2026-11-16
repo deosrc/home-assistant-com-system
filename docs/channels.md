@@ -44,11 +44,13 @@ and no configuration or options dialog edits them. Each has a
 `notification_channel` entity whose state is its name and whose attributes
 are its defaults.
 
-| Action | Fields | What it does |
-| --- | --- | --- |
-| `com_system.create_channel` | `name`, and any of `title`, `priority`, `image`, `data` | Creates a channel. Names are unique, ignoring case. |
-| `com_system.update_channel` | `channel` (entity), optional `name`, and any of the defaults | Renames a channel and **replaces** its defaults: any that are not given are cleared. |
-| `com_system.delete_channel` | `channel` (entity) | Deletes a channel. |
+- `com_system.create_channel`: creates a channel. Fields: `name`, and any of
+  `title`, `priority`, `image` and `data`. Names are unique, ignoring case.
+- `com_system.update_channel`: renames a channel and **replaces** its
+  defaults, so any that are not given are cleared. Fields: `channel` (the
+  entity), an optional `name`, and any of the defaults.
+- `com_system.delete_channel`: deletes a channel. Field: `channel` (the
+  entity).
 
 `create_channel` and `update_channel` return the channel (`channel_id`,
 `name`, `entity_id`, `defaults`) when a response is requested. `image` is
