@@ -249,7 +249,11 @@ async def _async_handle_action(hass: HomeAssistant, event: Event) -> None:
     sources.append(data)  # iOS may put action_data keys at the top level
     found = next((s for s in sources if KEY_NOTIFICATION_ID in s), None)
     if found is None or "action" not in data:
-        return  # not a Com System notification
+        # Not a Com System notification, or the app did not return action_data.
+        _LOGGER.debug(
+            "Ignoring mobile app action event without Com System ids: %s", dict(data)
+        )
+        return
     receiver = hass.data[DOMAIN][DATA_REGISTRY].get(found.get(KEY_RECEIVER_ID))
     person = None
     if receiver is not None:
