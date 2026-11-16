@@ -41,11 +41,30 @@ MOBILE_APP_DOMAIN = "mobile_app"
 NOTIFY_DOMAIN = "notify"
 AUDIENCE_KEY = "audience"
 
-# The app's event for a pressed notification action, and the keys Com System
-# adds to ``action_data`` so a response can be matched to its notification.
+# The app's event for a pressed notification action. The app returns only the
+# pressed action's ID, so Com System encodes the notification and receiver in
+# the ID it sends (``com_system:<notification id>:<receiver id>:<action id>``)
+# and decodes it when the event comes back.
 MOBILE_APP_ACTION_EVENT = "mobile_app_notification_action"
-KEY_NOTIFICATION_ID = "com_system_notification_id"
-KEY_RECEIVER_ID = "com_system_receiver_id"
+ACTION_PREFIX = "com_system"
+
+
+def encode_action(notification_id: str, receiver_id: str, action: str) -> str:
+    """Return the action ID the app is sent for a Com System notification."""
+    return f"{ACTION_PREFIX}:{notification_id}:{receiver_id}:{action}"
+
+
+def decode_action(value: Any) -> tuple[str, str, str] | None:
+    """Return ``(notification id, receiver id, action id)``, or None.
+
+    None means the value is not one Com System encoded.
+    """
+    if not isinstance(value, str):
+        return None
+    parts = value.split(":", 3)
+    if len(parts) != 4 or parts[0] != ACTION_PREFIX or not parts[1] or not parts[2]:
+        return None
+    return parts[1], parts[2], parts[3]
 
 
 def source_entry(hass: HomeAssistant, receiver: Receiver) -> ConfigEntry | None:
@@ -228,13 +247,19 @@ async def async_deliver_mobile_app(
     if notification.get("car_ui"):
         extra["car_ui"] = True
     extra = merge(extra, notification.get("data") or {})
-    if extra.get("actions") and notification.get("id"):
-        # The app returns action_data in its response event; that is how a
-        # response is tied back to this notification and receiver.
-        action_data = dict(extra.get("action_data") or {})
-        action_data[KEY_NOTIFICATION_ID] = notification["id"]
-        action_data[KEY_RECEIVER_ID] = receiver.entry_id
-        extra["action_data"] = action_data
+    if notification.get("id") and extra.get("actions"):
+        # Actions that open a URI send no response, so they are left alone.
+        extra["actions"] = [
+            action
+            if action.get("uri") or "action" not in action
+            else {
+                **action,
+                "action": encode_action(
+                    notification["id"], receiver.entry_id, str(action["action"])
+                ),
+            }
+            for action in extra["actions"]
+        ]
     if extra:
         data["data"] = extra
     await hass.services.async_call(NOTIFY_DOMAIN, service, data, blocking=True)
@@ -244,27 +269,23 @@ async def async_deliver_mobile_app(
 async def _async_handle_action(hass: HomeAssistant, event: Event) -> None:
     """Turn the app's action event into ``com_system_action`` and history."""
     data = event.data
-    nested = data.get("action_data")
-    sources = [nested] if isinstance(nested, Mapping) else []
-    sources.append(data)  # iOS may put action_data keys at the top level
-    found = next((s for s in sources if KEY_NOTIFICATION_ID in s), None)
-    if found is None or "action" not in data:
-        # Not a Com System notification, or the app did not return action_data.
-        _LOGGER.debug(
-            "Ignoring mobile app action event without Com System ids: %s", dict(data)
-        )
+    decoded = decode_action(data.get("action"))
+    if decoded is None:
+        # Not a Com System notification (or its actions were not encoded).
+        _LOGGER.debug("Ignoring mobile app action event: %s", dict(data))
         return
-    receiver = hass.data[DOMAIN][DATA_REGISTRY].get(found.get(KEY_RECEIVER_ID))
+    notification_id, receiver_id, action = decoded
+    receiver = hass.data[DOMAIN][DATA_REGISTRY].get(receiver_id)
     person = None
     if receiver is not None:
         people = mobile_app_people(hass, receiver)
         person = people[0] if people else None
     response = {
-        "notification_id": found[KEY_NOTIFICATION_ID],
-        "receiver_id": found.get(KEY_RECEIVER_ID),
+        "notification_id": notification_id,
+        "receiver_id": receiver_id,
         "receiver": receiver.name if receiver else None,
         "person": person,
-        "action": data["action"],
+        "action": action,
         "reply_text": data.get("reply_text"),
     }
     stored = await hass.data[DOMAIN][DATA_HISTORY].async_add_response(

@@ -328,16 +328,20 @@ records the conventions and how things work as built.
 - Notification IDs and action responses: `async_send` gives each
   notification a uuid `id` (in the notification passed to dispatch, so
   receivers and scripts see it, in the action response as `id`, and as the
-  history record id). The mobile app delivery, when `data.mobile_app.actions`
-  is set, merges `com_system_notification_id` and `com_system_receiver_id`
-  into `action_data` (keeping the user's keys). `async_setup_action_responses`
-  (called from `async_setup`) listens for `mobile_app_notification_action`;
-  `_async_handle_action` ignores events without those keys, stores the
-  response with `NotificationHistory.async_add_response` (record
-  `responses`, newest last; skipped if the record was pruned) and fires
-  `com_system_action` (`EVENT_ACTION`). The app returning `action_data`
-  nested in the event (or flattened, handled too) is from the companion app's
-  documentation and was not checked on a device. Other receiver types have no
+  history record id). The mobile app delivery encodes
+  each action that fires an event (no `uri`) as
+  `com_system:<notification id>:<receiver id>:<action id>` (`encode_action`),
+  for typed `actions` and raw `data.mobile_app.actions` alike. The companion
+  app returns only the pressed action's `action` string (its event also has
+  `action_N_key`/`action_N_title`, `message`, `device_id`, `webhook_id`, and
+  no `action_data`; checked on a real device), so the encoded string is the
+  only way to match a response. `async_setup_action_responses` (called from
+  `async_setup`) listens for `mobile_app_notification_action`;
+  `_async_handle_action` ignores events whose `action` does not `decode_action`
+  (logged at debug), stores the response with
+  `NotificationHistory.async_add_response` (record `responses`, newest last;
+  skipped if the record was pruned) and fires `com_system_action`
+  (`EVENT_ACTION`) with the original action id. Other receiver types have no
   response mechanism. The Test page has no editor for actions: its form must
   stay the action form of Developer tools > Actions (minus the action
   picker), so actions are entered in the `data` field. Recent shows each

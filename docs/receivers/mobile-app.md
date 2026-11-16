@@ -85,10 +85,10 @@ data:
       label: Ignore
 ```
 
-Each notification has an ID, returned as `id` in the action's response.
-When the notification has actions, Com System adds its notification ID and
-the receiver to the `action_data` the app sends back (any `action_data` you
-give is kept). When someone presses an action, Com System fires a
+Each notification has an ID, returned as `id` in the action's response. Com
+System sends each action to the app with the notification and receiver
+encoded in its ID, because the app returns only that ID when a button is
+pressed. When someone presses an action, Com System fires a
 `com_system_action` event:
 
 | Key | Value |
@@ -112,9 +112,9 @@ The response is also stored with the notification in
 [history](../history.md) and shown under Recent. If the notification has
 already left history the event is still fired. Actions with a `uri` open it
 and send no response. Responses to notifications that Com System did not
-send are ignored. The matching of a response relies on the app returning
-`action_data` in `mobile_app_notification_action`; this has not been checked
-on a real device.
+send are ignored. Automations that listen to `mobile_app_notification_action`
+directly see the encoded ID, so use `com_system_action`, which has the
+original one.
 
 In the [testing tool](../ui.md#test), enter the actions in the `data` field
 like any other receiver content; the form has no action editor of its own.

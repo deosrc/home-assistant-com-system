@@ -281,16 +281,36 @@ async def _send_with_actions(hass: HomeAssistant) -> tuple[dict, list[ServiceCal
 
 
 async def test_actions_carry_notification_id(hass: HomeAssistant) -> None:
-    """Actions are sent with action_data naming the notification and receiver."""
+    """Action IDs are sent with the notification and receiver encoded."""
     response, calls = await _send_with_actions(hass)
     sent = calls[0].data["data"]
-    assert sent["actions"] == ACTIONS
-    assert sent["action_data"]["x"] == 1
-    assert sent["action_data"]["com_system_notification_id"] == response["id"]
-    assert (
-        sent["action_data"]["com_system_receiver_id"]
-        == (response["results"][0]["entry_id"])
+    prefix = f"com_system:{response['id']}:{response['results'][0]['entry_id']}:"
+    assert sent["actions"] == [
+        {"action": f"{prefix}OPEN", "title": "Open"},
+        {"action": f"{prefix}SHUT", "title": "Shut"},
+    ]
+    assert sent["action_data"] == {"x": 1}  # the user's own keys are untouched
+
+
+def test_action_encoding_round_trips() -> None:
+    """An action id may itself contain colons; other values do not decode."""
+    from custom_components.com_system.mobile_app import decode_action, encode_action
+
+    assert decode_action(encode_action("n", "r", "a:b")) == ("n", "r", "a:b")
+    assert decode_action("OPEN") is None
+    assert decode_action("com_system::r:a") is None
+    assert decode_action(None) is None
+
+
+async def test_uri_actions_are_not_encoded(hass: HomeAssistant) -> None:
+    """An action that opens a URI sends no response, so it is left as is."""
+    calls = await _deliver(
+        hass,
+        {"id": "n1", "actions": [{"id": "GO", "label": "Go", "uri": "/x"}]},
     )
+    assert calls[0].data["data"]["actions"] == [
+        {"action": "GO", "title": "Go", "uri": "/x"}
+    ]
 
 
 async def test_no_action_data_without_actions(hass: HomeAssistant) -> None:
@@ -317,9 +337,10 @@ async def test_action_response_fires_event_and_is_stored(hass: HomeAssistant) ->
     hass.bus.async_fire(
         "mobile_app_notification_action",
         {
-            "action": "OPEN",
+            "action": calls[0].data["data"]["actions"][0]["action"],
+            "action_1_key": "x",
             "reply_text": "ok",
-            "action_data": calls[0].data["data"]["action_data"],
+            "device_id": "abc",
         },
     )
     await hass.async_block_till_done()
@@ -360,7 +381,7 @@ async def test_response_to_pruned_notification_still_fires(
     hass.bus.async_listen("com_system_action", events.append)
     hass.bus.async_fire(
         "mobile_app_notification_action",
-        {"action": "OPEN", "action_data": {"com_system_notification_id": "gone"}},
+        {"action": "com_system:gone:missing:OPEN"},
     )
     await hass.async_block_till_done()
     assert events[0].data["notification_id"] == "gone"
@@ -401,6 +422,10 @@ async def test_car_ui_false_is_not_sent(hass: HomeAssistant) -> None:
     assert "data" not in calls[0].data
 
 
+def _entry_id(calls: list[ServiceCall]) -> str:
+    return calls[0].data["data"]["actions"][1]["action"].split(":")[2]
+
+
 async def test_typed_actions_get_tracking_and_data_block_wins(
     hass: HomeAssistant,
 ) -> None:
@@ -416,12 +441,13 @@ async def test_typed_actions_get_tracking_and_data_block_wins(
     )
     sent = calls[0].data["data"]
     # id and label are the app's action and title; other keys pass through.
+    # The id is the app's action (encoded, so a response can be matched), the
+    # label its title; a uri action is not encoded and other keys pass through.
     assert sent["actions"] == [
         {"action": "OPEN", "title": "Open", "uri": "/x"},
-        {"action": "SHUT", "title": "Shut"},
+        {"action": "com_system:n1:" + _entry_id(calls) + ":SHUT", "title": "Shut"},
     ]
     assert sent["tag"] == "b"
-    assert sent["action_data"]["com_system_notification_id"] == "n1"
 
 
 async def test_action_fields_validated_and_dropped_elsewhere(

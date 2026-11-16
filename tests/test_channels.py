@@ -306,7 +306,9 @@ async def test_channel_defaults_include_mobile_app_fields(hass: HomeAssistant) -
     )
     sent = calls[0].data["data"]
     assert sent["clickAction"] == "/lovelace/cams"
-    assert sent["actions"] == [{"action": "OPEN", "title": "Open"}]
+    [action] = sent["actions"]
+    assert action["title"] == "Open"
+    assert action["action"].endswith(":OPEN")  # encoded for responses
     assert sent["car_ui"] is True
     assert sent["tag"] == "mine"  # the call wins
     assert sent["channel"] == "Doors"
