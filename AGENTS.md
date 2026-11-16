@@ -253,8 +253,8 @@ records the conventions and how things work as built.
   `title`, `people`, `receivers`; title is first, which sets the order in
   the form) and its UI description through
   `async_set_service_schema` (the `notify` domain's `services.yaml` is
-  core's, so the integration's `services.yaml` is deliberately empty (hassfest
-  requires the file); name and description are plain strings). `people` and
+  core's, so `services.yaml` holds only the integration's own channel
+  actions; name and description are plain strings). `people` and
   `receivers` are `choose` selectors whose choice names are the labels the
   form shows, because the selector has no label
   field and the notify domain's translations are core's: `people` is
@@ -322,9 +322,12 @@ records the conventions and how things work as built.
   or removal sends `remove_channel` and, for removals, removes the entity and
   its registry entry. The hub's update listener and every panel change call
   it, so nothing reloads the hub (that would restart detection). Channels
-  are managed only in the panel's Channels view, through
-  `channels/list|set|remove` (`async_create_channel`, `async_update_channel`,
-  `async_delete_channel` write the hub data with `async_update_entry`). The
+  are written by the actions `com_system.create_channel`, `update_channel`
+  (replaces the defaults; omitted ones are cleared) and `delete_channel`
+  (`async_register_channel_actions`; fields in `services.yaml`, texts in
+  `strings.json`), which call `async_create_channel`, `async_update_channel`
+  and `async_delete_channel` to write the hub data with `async_update_entry`.
+  The panel reads them with the websocket command `channels/list`. The
   action's `channel` field is an entity selector limited to domain
   `notification_channel` and this integration, so other Com System entities
   never appear. `apply_channel` (called first by `async_send`) maps the
@@ -336,8 +339,12 @@ records the conventions and how things work as built.
   it as `data.channel` (before its `data` block). `mobile_app.
   async_remove_channel` sends `message: remove_channel`, `data: {channel}` to
   the `notify.mobile_app_*` action of every registered mobile app receiver
-  whose entry has `os_name` Android. The panel's `channels-view.ts` uses
-  native inputs; `data` is edited as JSON text.
+  whose entry has `os_name` Android. `channels-view.ts` uses
+  `ha-service-control` like the Test page: the create form starts from the
+  action alone (so Home Assistant applies the defaults), the update form is
+  seeded with the channel's values (including the `channel` entity), and
+  Save/Create calls the action with the form's data through
+  `hass.callService`.
 - `history.py`: `NotificationHistory` (`hass.data[DOMAIN][DATA_HISTORY]`,
   created in `async_setup`) keeps records newest first in a `Store`
   (`com_system.history`, saved with a delay). A record is `{id, time,

@@ -36,14 +36,35 @@ that cannot be reached is logged and skipped; the channel is removed anyway.
 
 ## Managing channels
 
-Use the **Channels** page of the Com System panel. Channels are stored with
+Channels are written with three actions, and the **Channels** page of the
+Com System panel is a front end for them: its forms are Home Assistant's own
+action forms, built from the actions' descriptions. Channels are stored with
 the hub, so they do not appear as separate entries in Devices & services,
 and no configuration or options dialog edits them. Each has a
 `notification_channel` entity whose state is its name and whose attributes
 are its defaults.
 
-- **Add**: **Add channel**, then a name and any defaults. Names are unique,
-  ignoring case. `data` is JSON keyed by receiver type.
-- **Edit or rename**: **Edit**. A rename removes the old name from Android
-  devices.
-- **Delete**: **Delete**.
+| Action | Fields | What it does |
+| --- | --- | --- |
+| `com_system.create_channel` | `name`, and any of `title`, `priority`, `image`, `data` | Creates a channel. Names are unique, ignoring case. |
+| `com_system.update_channel` | `channel` (entity), optional `name`, and any of the defaults | Renames a channel and **replaces** its defaults: any that are not given are cleared. |
+| `com_system.delete_channel` | `channel` (entity) | Deletes a channel. |
+
+`create_channel` and `update_channel` return the channel (`channel_id`,
+`name`, `entity_id`, `defaults`) when a response is requested. `image` is
+an http(s) URL, a `/local/` path, a `media-source://` ID, or an image or
+camera entity ID. `data` is keyed by receiver type.
+
+```yaml
+action: com_system.create_channel
+data:
+  name: Doors
+  priority: high
+  data:
+    mobile_app:
+      tag: door
+```
+
+Renaming or deleting a channel removes the old name from Android devices.
+On the Channels page, **Edit** opens the update form filled with the
+channel's current values.

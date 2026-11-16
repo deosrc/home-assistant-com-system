@@ -1,6 +1,11 @@
 /** The part of Home Assistant's `hass` object the panel uses. */
 export interface HomeAssistant {
   callWS<T>(msg: { type: string; [key: string]: unknown }): Promise<T>;
+  callService(
+    domain: string,
+    service: string,
+    serviceData?: Record<string, unknown>,
+  ): Promise<unknown>;
   states: Record<
     string,
     { state: string; attributes?: { friendly_name?: string } }

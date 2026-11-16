@@ -1,6 +1,7 @@
 """Tests for the notification channel store."""
 
 import pytest
+import voluptuous as vol
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.com_system.channels import (
@@ -220,66 +221,67 @@ async def test_options_flow_save_keeps_channels(hass: HomeAssistant) -> None:
     assert info["channel_id"] in hub.data[CONF_CHANNELS]
 
 
-async def _call(client, msg: dict) -> dict:
-    client.next_id = getattr(client, "next_id", 0) + 1
-    await client.send_json({"id": client.next_id, **msg})
-    return await client.receive_json()
+async def _action(hass: HomeAssistant, service: str, data: dict, response=True):
+    return await hass.services.async_call(
+        DOMAIN, service, data, blocking=True, return_response=response
+    )
 
 
-async def test_ws_create_update_remove(hass: HomeAssistant, hass_ws_client) -> None:
-    """The panel creates, renames, lists and deletes channels."""
+async def test_actions_create_update_delete(hass: HomeAssistant) -> None:
+    """The channel actions create, rename, replace the defaults and delete."""
     _, calls = await _setup(hass)
-    client = await hass_ws_client(hass)
-    created = await _call(
-        client,
-        {
-            "type": "com_system/channels/set",
-            "name": "Doors",
-            "defaults": {"priority": "high"},
-        },
+    info = await _action(
+        hass, "create_channel", {"name": "Doors", "priority": "high", "title": "T"}
     )
-    assert created["success"]
-    info = created["result"]
     assert info["name"] == "Doors"
-    assert info["defaults"] == {"priority": "high"}
-    assert hass.states.get(info["entity_id"]).state == "Doors"
+    assert info["defaults"] == {"priority": "high", "title": "T"}
+    entity_id = info["entity_id"]
+    assert hass.states.get(entity_id).state == "Doors"
 
-    dupe = await _call(client, {"type": "com_system/channels/set", "name": "doors"})
-    assert dupe["error"]["code"] == "channel_error"
-    bad = await _call(
-        client,
-        {
-            "type": "com_system/channels/set",
-            "name": "Bad",
-            "defaults": {"image": "nope"},
-        },
-    )
-    assert bad["error"]["code"] == "channel_error"
+    with pytest.raises(ServiceValidationError, match="already exists"):
+        await _action(hass, "create_channel", {"name": "doors"})
+    with pytest.raises(vol.Invalid):
+        await _action(hass, "create_channel", {"name": "Bad", "image": "nope"})
 
-    updated = await _call(
-        client,
-        {
-            "type": "com_system/channels/set",
-            "channel_id": info["channel_id"],
-            "name": "Entrances",
-            "defaults": {"priority": "low"},
-        },
+    # Updating replaces the defaults (priority is cleared) and renames.
+    updated = await _action(
+        hass,
+        "update_channel",
+        {"channel": entity_id, "name": "Entrances", "title": "New"},
     )
-    assert updated["result"]["name"] == "Entrances"
-    # The old name is dropped from Android devices.
+    assert updated["name"] == "Entrances"
+    assert updated["defaults"] == {"title": "New"}
     assert calls[-1].data == {"message": "remove_channel", "data": {"channel": "Doors"}}
-    await hass.async_block_till_done()
-    assert hass.states.get(info["entity_id"]).attributes["priority"] == "low"
+    assert hass.states.get(entity_id).state == "Entrances"
 
-    listed = await _call(client, {"type": "com_system/channels/list"})
-    assert [c["name"] for c in listed["result"]["channels"]] == ["Entrances"]
+    # Without a name the current one is kept.
+    kept = await _action(hass, "update_channel", {"channel": entity_id})
+    assert kept["name"] == "Entrances"
+    assert kept["defaults"] == {}
 
-    removed = await _call(
-        client, {"type": "com_system/channels/remove", "channel_id": info["channel_id"]}
-    )
-    assert removed["success"]
+    await _action(hass, "delete_channel", {"channel": entity_id}, response=False)
     assert calls[-1].data["data"] == {"channel": "Entrances"}
-    missing = await _call(
-        client, {"type": "com_system/channels/remove", "channel_id": info["channel_id"]}
-    )
-    assert missing["error"]["code"] == "channel_error"
+    assert hass.states.get(entity_id) is None
+
+
+async def test_actions_reject_other_entities(hass: HomeAssistant) -> None:
+    """Only this integration's channel entities can be updated or deleted."""
+    await _setup(hass)
+    hass.states.async_set("notification_channel.other", "x")
+    with pytest.raises(ServiceValidationError, match="not a Com System channel"):
+        await _action(
+            hass, "delete_channel", {"channel": "notification_channel.other"}, False
+        )
+
+
+async def test_ws_lists_channels(hass: HomeAssistant, hass_ws_client) -> None:
+    """The panel reads channels over websocket."""
+    await _setup(hass)
+    await _add_channel(hass, "Beta")
+    await _add_channel(hass, "alpha", priority="low")
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "com_system/channels/list"})
+    msg = await client.receive_json()
+    channels = msg["result"]["channels"]
+    assert [c["name"] for c in channels] == ["alpha", "Beta"]
+    assert channels[0]["defaults"] == {"priority": "low"}

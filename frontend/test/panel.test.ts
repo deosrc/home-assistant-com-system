@@ -17,7 +17,11 @@ const RECEIVER = {
   areas: ["unknown_area", "office"],
 };
 
-function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
+function makeHass(): {
+  hass: HomeAssistant;
+  callWS: ReturnType<typeof vi.fn>;
+  callService: ReturnType<typeof vi.fn>;
+} {
   const callWS = vi.fn(async (msg: { type: string }) => {
     switch (msg.type) {
       case "com_system/dashboard":
@@ -122,14 +126,14 @@ function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
             },
           ],
         };
-      case "com_system/channels/set":
-        return {};
       default:
         return null;
     }
   });
+  const callService = vi.fn(async () => undefined);
   const hass = {
     callWS,
+    callService,
     states: {
       "switch.office_notifications_enabled": { state: "on" },
       "person.alice": { state: "home", attributes: { friendly_name: "Alice" } },
@@ -137,7 +141,7 @@ function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
     },
     areas: { office: { name: "Office" } },
   } as unknown as HomeAssistant;
-  return { hass, callWS };
+  return { hass, callWS, callService };
 }
 
 async function mount(path: string, hass: HomeAssistant) {
@@ -205,61 +209,6 @@ describe("panel", () => {
     const badges = [...view.shadowRoot!.querySelectorAll("summary .count")];
     expect(badges.map((b) => b.textContent!.trim())).toEqual(["1 failed"]);
     expect(text).toContain("dropped");
-  });
-
-  it("lists channels and saves a new one", async () => {
-    const { hass, callWS } = makeHass();
-    const panel = await mount("/channels", hass);
-    const view = panel.shadowRoot!.querySelector("com-system-channels")!;
-    await settle(view);
-    const text = view.shadowRoot!.textContent!;
-    expect(text).toContain("Doors");
-    expect(text).toContain("notification_channel.doors");
-    expect(text).toContain("high");
-    const buttons = [...view.shadowRoot!.querySelectorAll("button")];
-    buttons.find((b) => b.textContent!.trim() === "Add channel")!.click();
-    await settle(view);
-    const inputs = view.shadowRoot!.querySelectorAll("input");
-    (inputs[0] as HTMLInputElement).value = "Alerts";
-    inputs[0].dispatchEvent(new Event("input"));
-    const select = view.shadowRoot!.querySelector("select")!;
-    select.value = "low";
-    select.dispatchEvent(new Event("change"));
-    await settle(view);
-    [...view.shadowRoot!.querySelectorAll("button")]
-      .find((b) => b.textContent!.trim() === "Save")!
-      .click();
-    await settle(view);
-    expect(callWS).toHaveBeenCalledWith({
-      type: "com_system/channels/set",
-      name: "Alerts",
-      defaults: { priority: "low" },
-    });
-  });
-
-  it("refuses data that is not a JSON object", async () => {
-    const { hass, callWS } = makeHass();
-    const panel = await mount("/channels", hass);
-    const view = panel.shadowRoot!.querySelector("com-system-channels")!;
-    await settle(view);
-    [...view.shadowRoot!.querySelectorAll("button")]
-      .find((b) => b.textContent!.trim() === "Add channel")!
-      .click();
-    await settle(view);
-    const area = view.shadowRoot!.querySelector("textarea")!;
-    area.value = "[1]";
-    area.dispatchEvent(new Event("input"));
-    await settle(view);
-    [...view.shadowRoot!.querySelectorAll("button")]
-      .find((b) => b.textContent!.trim() === "Save")!
-      .click();
-    await settle(view);
-    expect(view.shadowRoot!.querySelector(".error")!.textContent).toContain(
-      "object",
-    );
-    expect(callWS).not.toHaveBeenCalledWith(
-      expect.objectContaining({ type: "com_system/channels/set" }),
-    );
   });
 
   it("lists receivers and discoveries and toggles enabled", async () => {
@@ -572,5 +521,112 @@ describe("testing tool", () => {
     expect(root.querySelector(".error")!.textContent).toContain(
       "No receiver matches the targets",
     );
+  });
+});
+
+describe("channels", () => {
+  async function open() {
+    if (!customElements.get("ha-service-control")) {
+      customElements.define("ha-service-control", class extends HTMLElement {});
+    }
+    const made = makeHass();
+    const panel = await mount("/channels", made.hass);
+    const view = panel.shadowRoot!.querySelector("com-system-channels")!;
+    await settle(view);
+    return { ...made, view };
+  }
+  const button = (view: Element, cls: string) =>
+    view.shadowRoot!.querySelector<HTMLButtonElement>(`button.${cls}`)!;
+  const report = async (view: Element, value: object) => {
+    view
+      .shadowRoot!.querySelector("ha-service-control")!
+      .dispatchEvent(new CustomEvent("value-changed", { detail: { value } }));
+    await settle(view);
+  };
+
+  it("lists the channels with their defaults", async () => {
+    const { view } = await open();
+    const text = view.shadowRoot!.textContent!;
+    expect(text).toContain("Doors");
+    expect(text).toContain("notification_channel.doors");
+    expect(text).toContain("high");
+  });
+
+  it("creates a channel through the action form", async () => {
+    const { view, callService } = await open();
+    button(view, "add").click();
+    await settle(view);
+    const control = view.shadowRoot!.querySelector("ha-service-control")!;
+    expect(control.hasAttribute("hide-picker")).toBe(true);
+    // Starts from the action alone so Home Assistant applies its defaults.
+    expect((control as unknown as { value: object }).value).toEqual({
+      action: "com_system.create_channel",
+    });
+    await report(view, {
+      action: "com_system.create_channel",
+      data: { name: "Alerts", priority: "low" },
+    });
+    button(view, "save").click();
+    await settle(view);
+    expect(callService).toHaveBeenCalledWith("com_system", "create_channel", {
+      name: "Alerts",
+      priority: "low",
+    });
+    expect(view.shadowRoot!.querySelector("ha-service-control")).toBeNull();
+  });
+
+  it("edits a channel starting from its current values", async () => {
+    const { view, callService } = await open();
+    button(view, "edit").click();
+    await settle(view);
+    const control = view.shadowRoot!.querySelector("ha-service-control")!;
+    expect((control as unknown as { value: object }).value).toEqual({
+      action: "com_system.update_channel",
+      data: {
+        channel: "notification_channel.doors",
+        name: "Doors",
+        priority: "high",
+        data: { mobile_app: { tag: "d" } },
+      },
+    });
+    await report(view, {
+      action: "com_system.update_channel",
+      data: { channel: "notification_channel.doors", name: "Gates" },
+    });
+    button(view, "save").click();
+    await settle(view);
+    expect(callService).toHaveBeenCalledWith("com_system", "update_channel", {
+      channel: "notification_channel.doors",
+      name: "Gates",
+    });
+  });
+
+  it("shows the action's error and keeps the form open", async () => {
+    const { view, callService } = await open();
+    callService.mockRejectedValueOnce({ message: "already exists" });
+    button(view, "add").click();
+    await settle(view);
+    await report(view, {
+      action: "com_system.create_channel",
+      data: { name: "Doors" },
+    });
+    button(view, "save").click();
+    await settle(view);
+    expect(view.shadowRoot!.querySelector(".error")!.textContent).toContain(
+      "already exists",
+    );
+    expect(view.shadowRoot!.querySelector("ha-service-control")).not.toBeNull();
+  });
+
+  it("deletes a channel through the action after confirming", async () => {
+    const { view, callService } = await open();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    button(view, "delete").click();
+    await settle(view);
+    expect(confirm).toHaveBeenCalled();
+    expect(callService).toHaveBeenCalledWith("com_system", "delete_channel", {
+      channel: "notification_channel.doors",
+    });
+    confirm.mockRestore();
   });
 });

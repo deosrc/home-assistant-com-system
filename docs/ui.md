@@ -50,7 +50,9 @@ in the list, with the type id as its type.
 
 ## Channels
 
-Create, edit and delete [channels](channels.md).
+Create, edit and delete [channels](channels.md). The forms are Home
+Assistant's action forms for the channel actions; the page reads the list
+over websocket.
 
 ## Recent
 
@@ -127,11 +129,8 @@ admin user.
 - `com_system/history/list`: the recent notifications, newest first
   (optional `limit`). Each has `id`, `time`, `notification` and `results`.
 - `com_system/channels/list`: the [channels](channels.md), each `channel_id`,
-  `name`, `entity_id` and `defaults`.
-- `com_system/channels/set`: creates a channel (`name`, optional
-  `defaults`), or with `channel_id` renames it and replaces its defaults.
-  Errors are `channel_error`.
-- `com_system/channels/remove`: deletes a channel (`channel_id`).
+  `name`, `entity_id` and `defaults`. Channels are written through the
+  `com_system` channel actions, not websocket commands.
 - `com_system/notify/preview`: the receivers the targets (`people` and
   `receivers`, as in the action) would reach, each `reached` or
   `skipped` with a reason. Sends

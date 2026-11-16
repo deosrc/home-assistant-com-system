@@ -19,12 +19,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.service import async_get_all_descriptions
 
-from .channels import (
-    async_create_channel,
-    async_delete_channel,
-    async_update_channel,
-    channel_list,
-)
+from .channels import channel_list
 from .const import (
     CONF_ENTRY_TYPE,
     CONF_RECEIVER_TYPE,
@@ -65,8 +60,6 @@ def async_register_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_discoveries_list)
     websocket_api.async_register_command(hass, ws_scripts_check)
     websocket_api.async_register_command(hass, ws_channels_list)
-    websocket_api.async_register_command(hass, ws_channels_set)
-    websocket_api.async_register_command(hass, ws_channels_remove)
     websocket_api.async_register_command(hass, ws_scripts_rescan)
     websocket_api.async_register_command(hass, ws_notify_preview)
     websocket_api.async_register_command(hass, ws_notify_test)
@@ -458,56 +451,7 @@ def ws_channels_list(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """Return the channels with their entity and defaults."""
+    """Return the channels with their entity and defaults (read only; writes
+    are the ``com_system`` channel actions).
+    """
     connection.send_result(msg["id"], {"channels": channel_list(hass)})
-
-
-@websocket_api.require_admin
-@websocket_api.websocket_command(
-    {
-        vol.Required("type"): "com_system/channels/set",
-        vol.Optional("channel_id"): str,
-        vol.Required("name"): str,
-        vol.Optional("defaults", default=dict): dict,
-    }
-)
-@websocket_api.async_response
-async def ws_channels_set(
-    hass: HomeAssistant,
-    connection: websocket_api.ActiveConnection,
-    msg: dict[str, Any],
-) -> None:
-    """Create a channel, or with ``channel_id`` rename it and set its defaults."""
-    try:
-        if "channel_id" in msg:
-            channel = await async_update_channel(
-                hass, msg["channel_id"], msg["name"], msg["defaults"]
-            )
-        else:
-            channel = await async_create_channel(hass, msg["name"], msg["defaults"])
-    except HomeAssistantError as err:
-        connection.send_error(msg["id"], "channel_error", str(err))
-        return
-    connection.send_result(msg["id"], channel)
-
-
-@websocket_api.require_admin
-@websocket_api.websocket_command(
-    {
-        vol.Required("type"): "com_system/channels/remove",
-        vol.Required("channel_id"): str,
-    }
-)
-@websocket_api.async_response
-async def ws_channels_remove(
-    hass: HomeAssistant,
-    connection: websocket_api.ActiveConnection,
-    msg: dict[str, Any],
-) -> None:
-    """Delete a channel; Android devices are told to drop it."""
-    try:
-        await async_delete_channel(hass, msg["channel_id"])
-    except HomeAssistantError as err:
-        connection.send_error(msg["id"], "channel_error", str(err))
-        return
-    connection.send_result(msg["id"])

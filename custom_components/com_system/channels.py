@@ -20,7 +20,13 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import (
+    HomeAssistant,
+    ServiceCall,
+    ServiceResponse,
+    SupportsResponse,
+    callback,
+)
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
@@ -218,6 +224,21 @@ async def async_remove_channel_from_devices(hass: HomeAssistant, name: str) -> N
         _LOGGER.warning("Could not remove channel %s: %s", name, err)
 
 
+def channel_id_of(hass: HomeAssistant, entity_id: str) -> str:
+    """Return the id of the channel a ``notification_channel`` entity is.
+
+    Raises ``ServiceValidationError`` for any other entity.
+    """
+    registered = er.async_get(hass).async_get(entity_id)
+    hub = hub_entry(hass)
+    if registered is not None and registered.platform == DOMAIN and hub is not None:
+        prefix = unique_id_of(hub, "")
+        channel_id = registered.unique_id[len(prefix) :]
+        if registered.unique_id.startswith(prefix) and channel_id in get_channels(hub):
+            return channel_id
+    raise ServiceValidationError(f"{entity_id} is not a Com System channel")
+
+
 def apply_channel(hass: HomeAssistant, data: Mapping[str, Any]) -> dict[str, Any]:
     """Apply the channel a call names, and replace it with the channel's name.
 
@@ -227,15 +248,82 @@ def apply_channel(hass: HomeAssistant, data: Mapping[str, Any]) -> dict[str, Any
     entity_id = data.get(ATTR_CHANNEL)
     if entity_id is None:
         return dict(data)
-    registered = er.async_get(hass).async_get(entity_id)
-    hub = hub_entry(hass)
-    channel = None
-    if registered is not None and registered.platform == DOMAIN and hub is not None:
-        prefix = unique_id_of(hub, "")
-        if registered.unique_id.startswith(prefix):
-            channel = get_channels(hub).get(registered.unique_id[len(prefix) :])
-    if channel is None:
-        raise ServiceValidationError(f"{entity_id} is not a Com System channel")
+    channel = get_channels(_loaded_hub(hass))[channel_id_of(hass, entity_id)]
     result = apply_defaults(data, channel["defaults"])
     result[ATTR_CHANNEL] = channel["name"]
     return result
+
+
+# The channel actions. They are the only way to write channels; the panel's
+# Channels page calls them through Home Assistant's own action form.
+SERVICE_CREATE_CHANNEL = "create_channel"
+SERVICE_UPDATE_CHANNEL = "update_channel"
+SERVICE_DELETE_CHANNEL = "delete_channel"
+
+ATTR_NAME = "name"
+
+_DEFAULT_FIELDS = {
+    vol.Optional(ATTR_TITLE): cv.string,
+    vol.Optional(ATTR_PRIORITY): validate_priority,
+    vol.Optional(ATTR_IMAGE): validate_image,
+    vol.Optional(ATTR_DATA): validate_data,
+}
+
+CREATE_SCHEMA = vol.Schema({vol.Required(ATTR_NAME): cv.string, **_DEFAULT_FIELDS})
+UPDATE_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_CHANNEL): validate_channel,
+        vol.Optional(ATTR_NAME): cv.string,
+        **_DEFAULT_FIELDS,
+    }
+)
+DELETE_SCHEMA = vol.Schema({vol.Required(ATTR_CHANNEL): validate_channel})
+
+
+def _defaults_of(data: Mapping[str, Any]) -> dict[str, Any]:
+    return {k: data[k] for k in DEFAULT_KEYS if k in data}
+
+
+async def _handle_create(call: ServiceCall) -> ServiceResponse:
+    return await async_create_channel(
+        call.hass, call.data[ATTR_NAME], _defaults_of(call.data)
+    )
+
+
+async def _handle_update(call: ServiceCall) -> ServiceResponse:
+    """Replace a channel's defaults with the ones given (omitted ones are
+    cleared); the name is kept unless one is given.
+    """
+    hass = call.hass
+    channel_id = channel_id_of(hass, call.data[ATTR_CHANNEL])
+    name = (
+        call.data.get(ATTR_NAME) or get_channels(_loaded_hub(hass))[channel_id]["name"]
+    )
+    return await async_update_channel(hass, channel_id, name, _defaults_of(call.data))
+
+
+async def _handle_delete(call: ServiceCall) -> None:
+    await async_delete_channel(
+        call.hass, channel_id_of(call.hass, call.data[ATTR_CHANNEL])
+    )
+
+
+@callback
+def async_register_channel_actions(hass: HomeAssistant) -> None:
+    """Register ``com_system.create_channel``, ``update_channel`` and
+    ``delete_channel``. Their fields are in ``services.yaml``.
+    """
+    for service, handler, schema, response in (
+        (SERVICE_CREATE_CHANNEL, _handle_create, CREATE_SCHEMA, True),
+        (SERVICE_UPDATE_CHANNEL, _handle_update, UPDATE_SCHEMA, True),
+        (SERVICE_DELETE_CHANNEL, _handle_delete, DELETE_SCHEMA, False),
+    ):
+        hass.services.async_register(
+            DOMAIN,
+            service,
+            handler,
+            schema=schema,
+            supports_response=SupportsResponse.OPTIONAL
+            if response
+            else SupportsResponse.NONE,
+        )

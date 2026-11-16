@@ -64,5 +64,73 @@
         }
       }
     }
+  },
+  "services": {
+    "create_channel": {
+      "name": "Create a channel",
+      "description": "Creates a notification channel. Notifications that select it get its defaults for anything they do not set.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "The channel's name. Names are unique, ignoring case. Mobile apps use it as the Android notification channel."
+        },
+        "title": {
+          "name": "Title",
+          "description": "The default title for notifications on this channel."
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "The default priority: low, normal, high or critical."
+        },
+        "image": {
+          "name": "Image",
+          "description": "The default image: an http(s) URL, a /local/ path, a media-source:// ID, or an image or camera entity ID."
+        },
+        "data": {
+          "name": "Data",
+          "description": "The default receiver-specific content, keyed by receiver type, for example {mobile_app: {tag: door}}."
+        }
+      }
+    },
+    "update_channel": {
+      "name": "Update a channel",
+      "description": "Renames a channel and replaces its defaults. Defaults that are not given are cleared. Renaming removes the old name from Android devices.",
+      "fields": {
+        "channel": {
+          "name": "Channel",
+          "description": "The channel to update."
+        },
+        "name": {
+          "name": "Name",
+          "description": "A new name. Leave empty to keep the current one."
+        },
+        "title": {
+          "name": "Title",
+          "description": "The default title for notifications on this channel."
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "The default priority: low, normal, high or critical."
+        },
+        "image": {
+          "name": "Image",
+          "description": "The default image: an http(s) URL, a /local/ path, a media-source:// ID, or an image or camera entity ID."
+        },
+        "data": {
+          "name": "Data",
+          "description": "The default receiver-specific content, keyed by receiver type, for example {mobile_app: {tag: door}}."
+        }
+      }
+    },
+    "delete_channel": {
+      "name": "Delete a channel",
+      "description": "Deletes a channel. Android devices are told to remove it.",
+      "fields": {
+        "channel": {
+          "name": "Channel",
+          "description": "The channel to delete."
+        }
+      }
+    }
   }
 }
