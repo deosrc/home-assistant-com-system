@@ -330,7 +330,8 @@ records the conventions and how things work as built.
   receivers and scripts see it, in the action response as `id`, and as the
   history record id). The mobile app delivery encodes
   each action that fires an event (no `uri`) as
-  `com_system:<notification id>:<receiver id>:<action id>` (`encode_action`),
+  `com_system:<notification id>:<receiver id>:<tag>:<action id>`
+  (`encode_action`; the tag is URL-encoded and empty when there is none),
   for typed `actions` and raw `data.mobile_app.actions` alike. The companion
   app returns only the pressed action's `action` string (its event also has
   `action_N_key`/`action_N_title`, `message`, `device_id`, `webhook_id`, and
@@ -342,7 +343,7 @@ records the conventions and how things work as built.
   `NotificationHistory.async_add_response` (record `responses`, newest last;
   skipped if the record was pruned) and fires `com_system_action`
   (`EVENT_ACTION`) with the original action id and the notification's `tag`
-  (read from its history record by `_tag_of`, so none once pruned). Other
+  (decoded from the action id, so it survives pruning). Other
   receiver types have no response mechanism. The Test page has no editor for
   actions: its form must stay the action form of Developer tools > Actions
   (minus the action picker), so actions are entered in the `data` field.

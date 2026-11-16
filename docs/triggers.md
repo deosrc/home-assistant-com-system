@@ -37,10 +37,8 @@ The trigger variables are the keys of the
 `trigger.receiver_id`, `trigger.receiver`, `trigger.person` and
 `trigger.reply_text`.
 
-The tag is read from the notification's [history](history.md) when the
-response arrives, so it is empty once the notification has been removed from
-history. A trigger that uses `tag` then does not fire for it; use the
-notification ID if responses can arrive late.
+The tag is carried in the action ID the app is sent, so it is known even
+when the notification has since been removed from [history](history.md).
 
 The trigger fires from the `com_system_action` event, so you can also use an
 `event` trigger on it. This trigger adds the form in the editor and the

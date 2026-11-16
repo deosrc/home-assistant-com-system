@@ -118,12 +118,6 @@ class NotificationHistory:
         self._schedule_save()
         return record
 
-    async def async_get(self, notification_id: str) -> dict[str, Any] | None:
-        """Return a record by notification id, or None if it is gone."""
-        await self.async_load()
-        assert self._records is not None
-        return next((r for r in self._records if r["id"] == notification_id), None)
-
     async def async_add_response(
         self, notification_id: str, response: Mapping[str, Any]
     ) -> bool:

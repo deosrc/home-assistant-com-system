@@ -285,7 +285,7 @@ async def test_actions_carry_notification_id(hass: HomeAssistant) -> None:
     """Action IDs are sent with the notification and receiver encoded."""
     response, calls = await _send_with_actions(hass)
     sent = calls[0].data["data"]
-    prefix = f"com_system:{response['id']}:{response['results'][0]['entry_id']}:"
+    prefix = f"com_system:{response['id']}:{response['results'][0]['entry_id']}:door:"
     assert sent["actions"] == [
         {"action": f"{prefix}OPEN", "title": "Open"},
         {"action": f"{prefix}SHUT", "title": "Shut"},
@@ -297,9 +297,18 @@ def test_action_encoding_round_trips() -> None:
     """An action id may itself contain colons; other values do not decode."""
     from custom_components.com_system.mobile_app import decode_action, encode_action
 
-    assert decode_action(encode_action("n", "r", "a:b")) == ("n", "r", "a:b")
+    assert decode_action(encode_action("n", "r", "a:b")) == ("n", "r", None, "a:b")
+    # A tag may contain colons and other awkward characters.
+    tag = "front door: 1/é"
+    assert decode_action(encode_action("n", "r", "a:b", tag)) == (
+        "n",
+        "r",
+        tag,
+        "a:b",
+    )
     assert decode_action("OPEN") is None
-    assert decode_action("com_system::r:a") is None
+    assert decode_action("com_system::r::a") is None
+    assert decode_action("com_system:n:r:a") is None  # the old, tagless form
     assert decode_action(None) is None
 
 
@@ -383,12 +392,13 @@ async def test_response_to_pruned_notification_still_fires(
     hass.bus.async_listen("com_system_action", events.append)
     hass.bus.async_fire(
         "mobile_app_notification_action",
-        {"action": "com_system:gone:missing:OPEN"},
+        {"action": "com_system:gone:missing:front%20door:OPEN"},
     )
     await hass.async_block_till_done()
     assert events[0].data["notification_id"] == "gone"
     assert events[0].data["receiver"] is None
-    assert events[0].data["tag"] is None  # the notification is not in history
+    # The tag travels in the action ID, so it survives the record being gone.
+    assert events[0].data["tag"] == "front door"
 
 
 async def _deliver(hass: HomeAssistant, notification: dict) -> list[ServiceCall]:
@@ -448,7 +458,10 @@ async def test_typed_actions_get_tracking_and_data_block_wins(
     # label its title; a uri action is not encoded and other keys pass through.
     assert sent["actions"] == [
         {"action": "OPEN", "title": "Open", "uri": "/x"},
-        {"action": "com_system:n1:" + _entry_id(calls) + ":SHUT", "title": "Shut"},
+        {
+            "action": "com_system:n1:" + _entry_id(calls) + ":b:SHUT",
+            "title": "Shut",
+        },
     ]
     assert sent["tag"] == "b"
 

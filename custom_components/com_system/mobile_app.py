@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, NamedTuple
+from urllib.parse import quote, unquote
 
 from homeassistant.components.person import persons_with_entity
 from homeassistant.config_entries import ConfigEntry
@@ -42,29 +43,40 @@ NOTIFY_DOMAIN = "notify"
 AUDIENCE_KEY = "audience"
 
 # The app's event for a pressed notification action. The app returns only the
-# pressed action's ID, so Com System encodes the notification and receiver in
-# the ID it sends (``com_system:<notification id>:<receiver id>:<action id>``)
-# and decodes it when the event comes back.
+# pressed action's ID, so Com System encodes what it needs in the ID it sends
+# (``com_system:<notification id>:<receiver id>:<tag>:<action id>``, the tag
+# URL-encoded and empty when there is none) and decodes it when the event
+# comes back. Nothing then has to be looked up, so a response still has its
+# tag after the notification has left history.
 MOBILE_APP_ACTION_EVENT = "mobile_app_notification_action"
 ACTION_PREFIX = "com_system"
 
 
-def encode_action(notification_id: str, receiver_id: str, action: str) -> str:
+class DecodedAction(NamedTuple):
+    """What an encoded action ID carries."""
+
+    notification_id: str
+    receiver_id: str
+    tag: str | None
+    action: str
+
+
+def encode_action(
+    notification_id: str, receiver_id: str, action: str, tag: str | None = None
+) -> str:
     """Return the action ID the app is sent for a Com System notification."""
-    return f"{ACTION_PREFIX}:{notification_id}:{receiver_id}:{action}"
+    quoted = quote(tag, safe="") if tag else ""
+    return f"{ACTION_PREFIX}:{notification_id}:{receiver_id}:{quoted}:{action}"
 
 
-def decode_action(value: Any) -> tuple[str, str, str] | None:
-    """Return ``(notification id, receiver id, action id)``, or None.
-
-    None means the value is not one Com System encoded.
-    """
+def decode_action(value: Any) -> DecodedAction | None:
+    """Return what an action ID carries, or None if Com System did not make it."""
     if not isinstance(value, str):
         return None
-    parts = value.split(":", 3)
-    if len(parts) != 4 or parts[0] != ACTION_PREFIX or not parts[1] or not parts[2]:
+    parts = value.split(":", 4)
+    if len(parts) != 5 or parts[0] != ACTION_PREFIX or not parts[1] or not parts[2]:
         return None
-    return parts[1], parts[2], parts[3]
+    return DecodedAction(parts[1], parts[2], unquote(parts[3]) or None, parts[4])
 
 
 def source_entry(hass: HomeAssistant, receiver: Receiver) -> ConfigEntry | None:
@@ -255,7 +267,10 @@ async def async_deliver_mobile_app(
             else {
                 **action,
                 "action": encode_action(
-                    notification["id"], receiver.entry_id, str(action["action"])
+                    notification["id"],
+                    receiver.entry_id,
+                    str(action["action"]),
+                    extra.get("tag"),
                 ),
             }
             for action in extra["actions"]
@@ -266,18 +281,6 @@ async def async_deliver_mobile_app(
     return warnings
 
 
-def _tag_of(record: Mapping[str, Any] | None) -> str | None:
-    """Return the tag the notification was sent with, if it is still known.
-
-    It is the typed ``tag``, or the one in the ``mobile_app`` data block.
-    """
-    if record is None:
-        return None
-    notification = record["notification"]
-    block = (notification.get("data") or {}).get("mobile_app") or {}
-    return notification.get("tag") or block.get("tag")
-
-
 async def _async_handle_action(hass: HomeAssistant, event: Event) -> None:
     """Turn the app's action event into ``com_system_action`` and history."""
     data = event.data
@@ -286,16 +289,15 @@ async def _async_handle_action(hass: HomeAssistant, event: Event) -> None:
         # Not a Com System notification (or its actions were not encoded).
         _LOGGER.debug("Ignoring mobile app action event: %s", dict(data))
         return
-    notification_id, receiver_id, action = decoded
+    notification_id, receiver_id, tag, action = decoded
     receiver = hass.data[DOMAIN][DATA_REGISTRY].get(receiver_id)
     person = None
     if receiver is not None:
         people = mobile_app_people(hass, receiver)
         person = people[0] if people else None
-    record = await hass.data[DOMAIN][DATA_HISTORY].async_get(notification_id)
     response = {
         "notification_id": notification_id,
-        "tag": _tag_of(record),
+        "tag": tag,
         "receiver_id": receiver_id,
         "receiver": receiver.name if receiver else None,
         "person": person,

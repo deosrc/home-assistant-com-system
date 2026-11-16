@@ -180,7 +180,7 @@
         },
         "tag": {
           "name": "Tag",
-          "description": "The tag of the notification. Give this or a notification ID. Only notifications still in history have their tag known."
+          "description": "The tag of the notification. Give this or a notification ID."
         }
       }
     }
