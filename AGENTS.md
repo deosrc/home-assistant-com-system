@@ -338,11 +338,12 @@ records the conventions and how things work as built.
   `com_system_action` (`EVENT_ACTION`). The app returning `action_data`
   nested in the event (or flattened, handled too) is from the companion app's
   documentation and was not checked on a device. Other receiver types have no
-  response mechanism. The Test page has no editor for actions: its form must stay
-  the action form of Developer tools > Actions (minus the action picker), so
-  actions are entered in the `data` field. Recent shows each record's `responses` in a Response column on the row of
-  the receiver (`receiver_id`), and below the message when that receiver is
-  not in the results.
+  response mechanism. The Test page has no editor for actions: its form must
+  stay the action form of Developer tools > Actions (minus the action
+  picker), so actions are entered in the `data` field. Recent shows each
+  record's `responses` in a Response column on the row of the receiver
+  (`receiver_id`), and below the message when that receiver is not in the
+  results.
 - `dispatcher.py`: `async_dispatch(hass, resolved, notification)` delivers
   to the enabled receivers concurrently (`asyncio.gather`); `_deliver`
   never raises, so one failure cannot affect another (unknown type,
