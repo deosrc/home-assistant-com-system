@@ -202,6 +202,52 @@ Evaluation order for a notification:
 3. Drop receivers whose conditions do not pass.
 4. Deliver to the remaining receivers.
 
+**Spike #24 decisions** (verified with Home Assistant 2026.10.4 using the
+condition helpers; the feature that builds on this removes it from the
+plan):
+
+- **Evaluating:** validate with
+  `condition.async_validate_conditions_config(hass, cv.CONDITIONS_SCHEMA(raw))`,
+  build one checker per condition with `condition.async_from_config`, and
+  call `checker(hass, variables)` with
+  `{"notification": ..., "receiver": ..., "resolved_targets": ...}` (plain
+  dicts). Call `checker.async_unload()` when the checker is dropped.
+  Template (including the plain-string shorthand), state, numeric state, time
+  and `and`/`or`/`not` conditions all work, and templates see the three
+  variables (`{{ 'x' in notification.message }}`). A `state` condition's
+  `state` is **not** a template, so it cannot refer to the variables.
+- **Errors:** a failing condition raises `ConditionError` (for example
+  `ConditionErrorMessage` for `{{ 1/0 }}` or an undefined attribute such as
+  `notification.nope.deeper`, `ConditionErrorContainer` for a state condition
+  on a missing entity). Catch `ConditionError` per receiver and record
+  "skipped (condition error)". Do **not** use
+  `async_conditions_from_config`: its checker swallows errors, logs a warning
+  and returns `False`, so a condition error cannot be told from "did not
+  pass". `or` ignores an erroring branch if another branch is true. Templates
+  log "Template variable error" at error level on undefined variables;
+  document `notification.get('key')` / `| default` for optional fields.
+- **Validation:** an invalid template or unknown condition is rejected at
+  validation (`probatio.MultipleInvalid` or `HomeAssistantError`), so bad
+  conditions never reach evaluation from the UI. Revalidate stored
+  conditions when loading the receiver and treat a failure as a condition
+  error.
+- **Storage (important):** the condition selector's validated output is not
+  JSON serialisable (`Template`, `timedelta` and `time` objects), so it must
+  not be stored in the config entry options as returned. Store the **raw**
+  list of dicts. In the options or reconfigure flow use a selector subclass
+  that validates with `cv.CONDITIONS_SCHEMA` but returns its input unchanged
+  (`class RawConditionSelector(ConditionSelector)` with `__call__` returning
+  `data`). It still serialises as `{"selector": {"condition": {}}}` and
+  rejects invalid templates. Validate again with the helpers at evaluation.
+- **UI:** the selector's frontend element `ha-selector-condition` ships in the
+  Home Assistant frontend (2026.10.4 bundle), so the options flow renders the
+  standard automation condition editor, and the panel can use it the same way
+  as `ha-service-control` renders selectors. **Not verified in a running
+  frontend**: only the schema serialisation and the presence of the element
+  were checked; the editor cannot offer completion for our variables.
+- The spike test is kept outside the repository; nothing from it is
+  production code.
+
 ### 2.7 Associating receivers with people
 
 Targeting by person needs a way to decide which receivers belong to
