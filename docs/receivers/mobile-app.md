@@ -109,6 +109,9 @@ triggers:
       action: OPEN
 ```
 
+To start an automation from a response, use the
+[action received trigger](../triggers.md).
+
 The response is also stored with the notification in
 [history](../history.md) and shown under Recent. If the notification has
 already left history the event is still fired. Actions with a `uri` open it

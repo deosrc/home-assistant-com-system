@@ -164,5 +164,25 @@
         }
       }
     }
+  },
+  "triggers": {
+    "action_received": {
+      "name": "Notification action received",
+      "description": "Triggers when someone responds to a notification action, for example by pressing a button on a mobile app notification. Give the action ID and either the notification ID or the tag.",
+      "fields": {
+        "action": {
+          "name": "Action",
+          "description": "The ID of the action that was pressed."
+        },
+        "notification_id": {
+          "name": "Notification ID",
+          "description": "The ID of the notification, as returned by notify.com_system. Give this or a tag."
+        },
+        "tag": {
+          "name": "Tag",
+          "description": "The tag of the notification. Give this or a notification ID. Only notifications still in history have their tag known."
+        }
+      }
+    }
   }
 }

@@ -35,6 +35,7 @@ The hub's options set how much [history](history.md) is kept.
 - [History](history.md): the recent notifications and their limits.
 - [Content](content.md): priority, images, per-type `data`, capabilities
   and dropped content.
+- [Triggers](triggers.md): starting automations from notification actions.
 - [User interface](ui.md): the sidebar panel and its websocket commands.
 
 More documents (conditions and notification actions) are added as those
