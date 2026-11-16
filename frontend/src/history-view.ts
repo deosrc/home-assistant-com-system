@@ -149,6 +149,40 @@ export class ComSystemHistory extends LitElement {
     return name ?? x.receiver ?? "an unknown receiver";
   }
 
+  /** The responses from one receiver, or an empty string. */
+  private renderResponses(r: HistoryRecord, entryId: string) {
+    const own = (r.responses ?? []).filter((x) => x.receiver_id === entryId);
+    return own.map(
+      (x) =>
+        html`<div class="response">
+          <strong>${x.action}</strong>${
+            x.reply_text ? html` “${x.reply_text}”` : ""
+          }
+          ${x.person ? html`by <span>${this.responder(x)}</span>` : ""}
+          <span class="muted">${new Date(x.time).toLocaleString()}</span>
+        </div>`,
+    );
+  }
+
+  /** Responses from a receiver that is not in the results (for example one
+   * that was removed), so none is lost. */
+  private renderOrphans(r: HistoryRecord) {
+    const known = new Set(r.results.map((x) => x.entry_id));
+    const orphans = (r.responses ?? []).filter(
+      (x) => !x.receiver_id || !known.has(x.receiver_id),
+    );
+    if (!orphans.length) return "";
+    return html`<ul class="responses">
+      ${orphans.map(
+        (x) =>
+          html`<li>
+            <strong>${x.action}</strong> from ${this.responder(x)}
+            <span class="muted">${new Date(x.time).toLocaleString()}</span>
+          </li>`,
+      )}
+    </ul>`;
+  }
+
   private renderCounts(r: HistoryRecord) {
     const counts = (["delivered", "failed", "skipped"] as const)
       .map((k) => [k, r.results.filter((x) => x.result === k).length] as const)
@@ -185,23 +219,7 @@ export class ComSystemHistory extends LitElement {
                 <span class="muted">${new Date(r.time).toLocaleString()}</span>
               </div>
               <div class="body">${r.notification.message}</div>
-              ${
-                r.responses?.length
-                  ? html`<ul class="responses">
-                      ${r.responses.map(
-                        (x) =>
-                          html`<li>
-                            <strong>${x.action}</strong>
-                            ${x.reply_text ? html`“${x.reply_text}”` : ""} from
-                            ${this.responder(x)}
-                            <span class="muted"
-                              >${new Date(x.time).toLocaleString()}</span
-                            >
-                          </li>`,
-                      )}
-                    </ul>`
-                  : ""
-              }
+              ${this.renderOrphans(r)}
               <hr />
               <details>
                 <summary>
@@ -216,6 +234,7 @@ export class ComSystemHistory extends LitElement {
                       <th>Type</th>
                       <th>Why</th>
                       <th>Outcome</th>
+                      ${r.responses?.length ? html`<th>Response</th>` : ""}
                       <th>Details</th>
                     </tr>
                   </thead>
@@ -227,6 +246,13 @@ export class ComSystemHistory extends LitElement {
                           <td>${x.type}</td>
                           <td>${renderReasons(this.hass, x.reasons)}</td>
                           <td class=${x.result}>${x.result}</td>
+                          ${
+                            r.responses?.length
+                              ? html`<td>
+                                  ${this.renderResponses(r, x.entry_id)}
+                                </td>`
+                              : ""
+                          }
                           <td>
                             ${[
                               x.reason,

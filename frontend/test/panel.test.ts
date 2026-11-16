@@ -220,10 +220,16 @@ describe("panel", () => {
     const badges = [...view.shadowRoot!.querySelectorAll("summary .count")];
     expect(badges.map((b) => b.textContent!.trim())).toEqual(["1 failed"]);
     expect(text).toContain("dropped");
-    const response = view.shadowRoot!.querySelector(".responses")!;
-    expect(response.textContent!.replace(/\s+/g, " ")).toContain(
-      "OPEN from Alice",
+    // The response is shown on the row of the receiver that sent it.
+    const headers = [...view.shadowRoot!.querySelectorAll("th")].map((th) =>
+      th.textContent!.trim(),
     );
+    expect(headers).toContain("Response");
+    const row = view.shadowRoot!.querySelector("tbody tr")!;
+    expect(
+      row.querySelector(".response")!.textContent!.replace(/\s+/g, " "),
+    ).toContain("OPEN by Alice");
+    expect(view.shadowRoot!.querySelector(".responses")).toBeNull();
   });
 
   it("lists receivers and discoveries and toggles enabled", async () => {

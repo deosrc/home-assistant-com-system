@@ -7,7 +7,7 @@ every receiver: delivered, failed or skipped, with the reason and any
 warnings about content a receiver dropped. Failures and skipped receivers are
 recorded too. A call that matches no receiver is rejected and not recorded.
 
-A record that had notification actions also lists the responses to them:
+A record that had notification actions also stores the responses to them:
 which action, from which receiver and person, and when (see
 [mobile app](receivers/mobile-app.md#actions-and-responses)).
 
