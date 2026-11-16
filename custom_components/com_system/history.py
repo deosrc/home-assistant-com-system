@@ -34,7 +34,18 @@ STORAGE_VERSION = 1
 SAVE_DELAY_SECONDS = 10
 
 # The notification fields kept in history.
-CONTENT_KEYS = ("title", "message", "priority", "image", "data", "channel")
+CONTENT_KEYS = (
+    "title",
+    "message",
+    "priority",
+    "image",
+    "click_action",
+    "actions",
+    "tag",
+    "car_ui",
+    "data",
+    "channel",
+)
 
 
 class NotificationHistory:
@@ -94,17 +105,35 @@ class NotificationHistory:
         await self.async_load()
         assert self._records is not None
         record = {
-            "id": uuid.uuid4().hex,
+            "id": notification.get("id") or uuid.uuid4().hex,
             "time": dt_util.utcnow().isoformat(),
             "notification": {
                 key: notification[key] for key in CONTENT_KEYS if key in notification
             },
             "results": [r.as_dict() for r in results],
+            "responses": [],
         }
         self._records.insert(0, record)
         self._prune()
         self._schedule_save()
         return record
+
+    async def async_add_response(
+        self, notification_id: str, response: Mapping[str, Any]
+    ) -> bool:
+        """Store a response to a notification's action.
+
+        Returns False when the notification is no longer in history (the
+        response is then only fired as an event).
+        """
+        await self.async_load()
+        assert self._records is not None
+        for record in self._records:
+            if record["id"] == notification_id:
+                record.setdefault("responses", []).append(dict(response))
+                self._schedule_save()
+                return True
+        return False
 
     async def async_list(self, limit: int | None = None) -> list[dict[str, Any]]:
         """Return the records, newest first (pruned by the current limits)."""

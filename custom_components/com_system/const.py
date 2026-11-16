@@ -77,3 +77,6 @@ CONF_HISTORY_MAX_COUNT = "history_max_count"
 CONF_HISTORY_MAX_AGE_DAYS = "history_max_age_days"
 DEFAULT_HISTORY_MAX_COUNT = 200
 DEFAULT_HISTORY_MAX_AGE_DAYS = 30
+
+# Fired when someone responds to a notification action.
+EVENT_ACTION = "com_system_action"

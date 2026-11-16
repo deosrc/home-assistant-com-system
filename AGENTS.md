@@ -19,10 +19,19 @@ records the conventions and how things work as built.
   for reading state.
 - Keep the content parameters of the channel actions (`create_channel`,
   `update_channel`) in sync with `notify.com_system`: `title`, `priority`,
-  `image` and `data` use the same selector, options, name, description and
+  `image`, `click_action`, `actions`, `tag`, `car_ui` and `data` use the
+  same selector, options, name, description and
   example (the notify ones are in `SERVICE_DESCRIPTION` in `notify.py`, the
   channel ones in `services.yaml` and `strings.json`). Change both together.
   `channel` and `message` are excluded.
+- Keep the field descriptions of `notify.com_system` and the channel actions
+  true to what the receiver types support. Fields such as `click_action`,
+  `actions`, `tag` and `car_ui` say which receiver types honour them (for
+  example "Supported by mobile apps and persistent notifications"). When a
+  receiver type gains or loses support for a field, update that description
+  in `SERVICE_DESCRIPTION` (`notify.py`), `strings.json` and
+  `translations/en.json` (both channel actions), and the tables in `docs/`
+  (`services.md`, `content.md` and the type's page), in the same change.
 
 ## Dev environment
 
@@ -105,9 +114,11 @@ records the conventions and how things work as built.
   Pushover, webOS TV and Alexa Media Player types have it).
   `PersistentNotificationReceiverType.async_deliver` calls
   `persistent_notification.create` (blocking) with `message` and, when
-  given, `title`, and never sends `notification_id`: HA then generates one,
-  so every notification is its own and Com System never replaces or
-  dismisses it. It declares no capabilities and returns no warnings. It sets
+  given, `title`, and, without a `tag`, no `notification_id`: HA then generates
+  one, so every notification is its own. With a `tag` it sends
+  `notification_id` `com_system_tag_<tag>` (`TAG_ID_PREFIX`), so the same
+  tag replaces the previous notification. Com System never dismisses one.
+  It declares the `title` and `tag` capabilities and returns no warnings. It sets
   `supports_people = False` on `ReceiverType` (default True): the options
   flow then shows an empty `no_options` step instead of the people field,
   and `associated_people` returns nothing even if people were stored. The
@@ -303,6 +314,51 @@ records the conventions and how things work as built.
   block over them. Alexa, persistent notification and webOS drop priority
   and image. The panel is not told what a type does with content beyond its
   capabilities.
+- Mobile app typed fields `click_action`, `actions`, `tag` and `car_ui` are
+  in the action schema (`content.py` validators, `SERVICE_DESCRIPTION`;
+  `actions` uses an `object` selector with `multiple` and `fields`, so the
+  form is a list editor with no panel code), the mobile app capabilities,
+  `CONTENT_KEYS` in `history.py`, the receiver entity attributes and the
+  channel defaults (`DEFAULT_KEYS`, `services.yaml`, `strings.json` and its
+  `translations/en.json` copy; `test_channel_actions_match_notify_content_fields`
+  checks the selectors agree). Delivery maps them to `clickAction`/`url`,
+  `actions` (items are `{id, label, uri?}`, sent as the app's `action` and
+  `title` by `_app_action`; `data.mobile_app.actions` is raw app format),
+  `tag` and `car_ui` before merging the `mobile_app` data block.
+- Notification IDs and action responses: `async_send` gives each
+  notification a uuid `id` (in the notification passed to dispatch, so
+  receivers and scripts see it, in the action response as `id`, and as the
+  history record id). The mobile app delivery encodes
+  each action that fires an event (no `uri`) as
+  `com_system:<notification id>:<receiver id>:<tag>:<action id>`
+  (`encode_action`; the tag is URL-encoded and empty when there is none),
+  for typed `actions` and raw `data.mobile_app.actions` alike. The companion
+  app returns only the pressed action's `action` string (its event also has
+  `action_N_key`/`action_N_title`, `message`, `device_id`, `webhook_id`, and
+  no `action_data`; checked on a real device), so the encoded string is the
+  only way to match a response. `async_setup_action_responses` (called from
+  `async_setup`) listens for `mobile_app_notification_action`;
+  `_async_handle_action` ignores events whose `action` does not `decode_action`
+  (logged at debug), stores the response with
+  `NotificationHistory.async_add_response` (record `responses`, newest last;
+  skipped if the record was pruned) and fires `com_system_action`
+  (`EVENT_ACTION`) with the original action id and the notification's `tag`
+  (decoded from the action id, so it survives pruning). Other
+  receiver types have no response mechanism. The Test page has no editor for
+  actions: its form must stay the action form of Developer tools > Actions
+  (minus the action picker), so actions are entered in the `data` field.
+  Recent shows each record's `responses` in a Response column on the row of
+  the receiver (`receiver_id`), and below the message when that receiver is
+  not in the results.
+- `trigger.py`, `triggers.yaml`, `icons.json`: the trigger platform (new
+  style: a `Trigger` class returned by `async_get_triggers`, fields in
+  `triggers.yaml`, texts in `strings.json` under `triggers`, copied to
+  `translations/en.json`, and each trigger's icon in `icons.json`; a test
+  checks every trigger has one). `com_system.action_received` listens for
+  `com_system_action` and matches `action` plus `notification_id` and/or
+  `tag` (both when both are given). Validation requires `action` and at
+  least one of the two others. It passes the event data as the trigger
+  variables.
 - `dispatcher.py`: `async_dispatch(hass, resolved, notification)` delivers
   to the enabled receivers concurrently (`asyncio.gather`); `_deliver`
   never raises, so one failure cannot affect another (unknown type,

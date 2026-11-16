@@ -132,7 +132,18 @@ class MobileAppReceiverType(DeviceReceiverType):
     type_id = RECEIVER_TYPE_MOBILE_APP
     name = "Mobile app"
     source_domain = "mobile_app"
-    capabilities = frozenset({"title", "priority", "image", "data"})
+    capabilities = frozenset(
+        {
+            "title",
+            "priority",
+            "image",
+            "click_action",
+            "actions",
+            "tag",
+            "car_ui",
+            "data",
+        }
+    )
     # The person comes from the registering user, not from the options.
     supports_people = False
 
@@ -196,13 +207,18 @@ class AlexaMediaReceiverType(DeviceReceiverType):
         return []
 
 
+# Prefix of the notification id made from a tag, so it cannot clash with
+# notifications other integrations create.
+TAG_ID_PREFIX = "com_system_tag_"
+
+
 class PersistentNotificationReceiverType(ReceiverType):
     """A single receiver that posts to the Home Assistant notification area."""
 
     type_id = RECEIVER_TYPE_PERSISTENT_NOTIFICATION
     name = "Persistent notification"
     discoverable = True
-    capabilities = frozenset({"title"})
+    capabilities = frozenset({"title", "tag"})
     # Every user sees the same notifications, so there is no person.
     supports_people = False
     SOURCE_ID = "persistent_notification"
@@ -216,11 +232,15 @@ class PersistentNotificationReceiverType(ReceiverType):
     ) -> list[str]:
         """Create a persistent notification.
 
-        Create-only: no ``notification_id`` is sent, so Home Assistant makes a
-        new notification each time and Com System never replaces or dismisses
-        one. Only the message and title are supported.
+        Without a tag no ``notification_id`` is sent, so Home Assistant makes
+        a new notification each time. A ``tag`` becomes the notification id
+        (``TAG_ID_PREFIX`` + tag), so a notification with the same tag
+        replaces the previous one. Com System never dismisses one. Only the
+        message, title and tag are supported.
         """
         data: dict[str, Any] = {"message": notification["message"]}
+        if notification.get("tag"):
+            data["notification_id"] = f"{TAG_ID_PREFIX}{notification['tag']}"
         if notification.get("title"):
             data["title"] = notification["title"]
         await hass.services.async_call(

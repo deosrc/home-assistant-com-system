@@ -7,7 +7,8 @@ mobile app: they are a way to reuse a set of options.
 
 ## Defaults
 
-A channel can default `title`, `priority`, `image` and `data`. Whatever a
+A channel can default `title`, `priority`, `image`, `click_action`,
+`actions`, `tag`, `car_ui` and `data`. Whatever a
 call sets itself wins. `data` is merged key by key, with the call's keys
 winning:
 
@@ -45,7 +46,8 @@ and no configuration or options dialog edits them. Each has a
 are its defaults.
 
 - `com_system.create_channel`: creates a channel. Fields: `name`, and any of
-  `title`, `priority`, `image` and `data`. Names are unique, ignoring case.
+  `title`, `priority`, `image`, `click_action`, `actions`, `tag`, `car_ui`
+  and `data`. Names are unique, ignoring case.
 - `com_system.update_channel`: renames a channel and **replaces** its
   defaults, so any that are not given are cleared. Fields: `channel` (the
   entity), an optional `name`, and any of the defaults.

@@ -94,6 +94,16 @@ function makeHass(): {
               id: "h1",
               time: "2026-11-11T10:00:00+00:00",
               notification: { title: "Laundry", message: "Done" },
+              responses: [
+                {
+                  time: "2026-11-11T10:05:00+00:00",
+                  receiver_id: "e1",
+                  receiver: "Office",
+                  person: "person.alice",
+                  action: "OPEN",
+                  reply_text: null,
+                },
+              ],
               results: [
                 {
                   entry_id: "e1",
@@ -210,6 +220,16 @@ describe("panel", () => {
     const badges = [...view.shadowRoot!.querySelectorAll("summary .count")];
     expect(badges.map((b) => b.textContent!.trim())).toEqual(["1 failed"]);
     expect(text).toContain("dropped");
+    // The response is shown on the row of the receiver that sent it.
+    const headers = [...view.shadowRoot!.querySelectorAll("th")].map((th) =>
+      th.textContent!.trim(),
+    );
+    expect(headers).toContain("Response");
+    const row = view.shadowRoot!.querySelector("tbody tr")!;
+    expect(
+      row.querySelector(".response")!.textContent!.replace(/\s+/g, " "),
+    ).toContain("OPEN by Alice");
+    expect(view.shadowRoot!.querySelector(".responses")).toBeNull();
   });
 
   it("lists receivers and discoveries and toggles enabled", async () => {

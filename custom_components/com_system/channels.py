@@ -40,14 +40,21 @@ from .const import (
     NOTIFICATION_CHANNEL_DOMAIN,
 )
 from .content import (
+    ATTR_ACTIONS,
+    ATTR_CAR_UI,
+    ATTR_CLICK_ACTION,
     ATTR_DATA,
     ATTR_IMAGE,
     ATTR_PRIORITY,
+    ATTR_TAG,
     ATTR_TITLE,
     merge,
+    validate_actions,
+    validate_click_action,
     validate_data,
     validate_image,
     validate_priority,
+    validate_tag,
 )
 from .mobile_app import async_remove_channel
 
@@ -55,13 +62,26 @@ _LOGGER = logging.getLogger(__name__)
 
 ATTR_CHANNEL = "channel"
 
-DEFAULT_KEYS = (ATTR_TITLE, ATTR_PRIORITY, ATTR_IMAGE, ATTR_DATA)
+DEFAULT_KEYS = (
+    ATTR_TITLE,
+    ATTR_PRIORITY,
+    ATTR_IMAGE,
+    ATTR_CLICK_ACTION,
+    ATTR_ACTIONS,
+    ATTR_TAG,
+    ATTR_CAR_UI,
+    ATTR_DATA,
+)
 
 DEFAULTS_SCHEMA = vol.Schema(
     {
         vol.Optional(ATTR_TITLE): cv.string,
         vol.Optional(ATTR_PRIORITY): validate_priority,
         vol.Optional(ATTR_IMAGE): validate_image,
+        vol.Optional(ATTR_CLICK_ACTION): validate_click_action,
+        vol.Optional(ATTR_ACTIONS): validate_actions,
+        vol.Optional(ATTR_TAG): validate_tag,
+        vol.Optional(ATTR_CAR_UI): cv.boolean,
         vol.Optional(ATTR_DATA): validate_data,
     }
 )
@@ -266,6 +286,10 @@ _DEFAULT_FIELDS = {
     vol.Optional(ATTR_TITLE): cv.string,
     vol.Optional(ATTR_PRIORITY): validate_priority,
     vol.Optional(ATTR_IMAGE): validate_image,
+    vol.Optional(ATTR_CLICK_ACTION): validate_click_action,
+    vol.Optional(ATTR_ACTIONS): validate_actions,
+    vol.Optional(ATTR_TAG): validate_tag,
+    vol.Optional(ATTR_CAR_UI): cv.boolean,
     vol.Optional(ATTR_DATA): validate_data,
 }
 

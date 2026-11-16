@@ -15,6 +15,10 @@ send a notification to the receivers that match its [targets](targets.md).
 | `channel` | no | A [channel](channels.md): its defaults fill what you leave out. |
 | `priority` | no | Low, Normal, High or Critical (Normal if not given). |
 | `image` | no | A URL, or an image or camera entity. |
+| `click_action` | no | What a tap opens: a URL or path (mobile app). |
+| `actions` | no | Buttons: `id`, `label`, optional `uri` (mobile app). |
+| `tag` | no | Same-tag notifications replace each other. |
+| `car_ui` | no | Show in Android Auto (mobile app). |
 | `data` | no | Receiver-specific content, keyed by receiver type. |
 
 `people` and `receivers` are the targets. They are combined as a union;
@@ -74,9 +78,10 @@ is also accepted and means Select. An `entity_id` that is not a Com System
 receiver matches nothing. See [targets](targets.md) for which receivers
 people and areas reach.
 
-Priority, image and `data` are described in [content](content.md); a
-receiver that does not support some of it drops it and reports a warning.
-Input that does not fit the fields is rejected before anything is sent.
+Priority, image, the mobile app fields and `data` are described in
+[content](content.md); a receiver that does not support some of it drops
+it and reports a warning. Input that does not fit the fields is rejected
+before anything is sent.
 
 ```yaml
 action: notify.com_system

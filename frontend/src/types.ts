@@ -118,6 +118,10 @@ export interface ChannelDefaults {
   title?: string;
   priority?: string;
   image?: string;
+  click_action?: string;
+  actions?: { id: string; label: string; uri?: string }[];
+  tag?: string;
+  car_ui?: boolean;
   data?: Record<string, unknown>;
 }
 
@@ -141,4 +145,17 @@ export interface HistoryRecord {
     data?: Record<string, unknown>;
   };
   results: SendResult[];
+  /** Responses to notification actions, oldest first. */
+  responses?: ActionResponse[];
+}
+
+export interface ActionResponse {
+  /** ISO timestamp (UTC). */
+  time: string;
+  receiver_id: string | null;
+  receiver: string | null;
+  /** The `person.*` entity of the device's owner, if it is personal. */
+  person: string | null;
+  action: string;
+  reply_text?: string | null;
 }

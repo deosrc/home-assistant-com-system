@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from collections.abc import Iterable
 from typing import Any
 
@@ -31,16 +32,23 @@ from .const import (
     RESULTS,
 )
 from .content import (
+    ATTR_ACTIONS,
+    ATTR_CAR_UI,
+    ATTR_CLICK_ACTION,
     ATTR_DATA,
     ATTR_IMAGE,
     ATTR_PRIORITY,
+    ATTR_TAG,
     CHOICE_ENTITY,
     CHOICE_URL,
     IMAGE_ENTITY_DOMAINS,
     PRIORITIES,
+    validate_actions,
+    validate_click_action,
     validate_data,
     validate_image,
     validate_priority,
+    validate_tag,
 )
 from .dispatcher import ReceiverResult, async_dispatch
 from .targets import ResolvedTargets, resolve_targets
@@ -127,6 +135,10 @@ SERVICE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_RECEIVERS): validate_receivers,
         vol.Optional(ATTR_PRIORITY): validate_priority,
         vol.Optional(ATTR_IMAGE): validate_image,
+        vol.Optional(ATTR_CLICK_ACTION): validate_click_action,
+        vol.Optional(ATTR_ACTIONS): validate_actions,
+        vol.Optional(ATTR_TAG): validate_tag,
+        vol.Optional(ATTR_CAR_UI): cv.boolean,
         vol.Optional(ATTR_DATA): validate_data,
         vol.Optional(ATTR_CHANNEL): validate_channel,
     }
@@ -255,6 +267,62 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
                 }
             },
         },
+        ATTR_CLICK_ACTION: {
+            "name": "Click action",
+            "description": (
+                "What happens when the notification is tapped: a URL or a "
+                "Home Assistant path such as /lovelace/cameras. Mobile apps "
+                "only."
+            ),
+            "example": "/lovelace/cameras",
+            "selector": {"text": None},
+        },
+        ATTR_ACTIONS: {
+            "name": "Actions",
+            "description": (
+                "Buttons on the notification. Pressing one fires the "
+                "com_system_action event. An action with a URI opens it "
+                "instead. Mobile apps only."
+            ),
+            "selector": {
+                "object": {
+                    "multiple": True,
+                    "label_field": "label",
+                    "description_field": "id",
+                    "fields": {
+                        "id": {
+                            "label": "ID",
+                            "required": True,
+                            "selector": {"text": None},
+                        },
+                        "label": {
+                            "label": "Label",
+                            "required": True,
+                            "selector": {"text": None},
+                        },
+                        "uri": {
+                            "label": "URI",
+                            "selector": {"text": None},
+                        },
+                    },
+                }
+            },
+        },
+        ATTR_TAG: {
+            "name": "Tag",
+            "description": (
+                "Notifications with the same tag replace each other. On mobile "
+                "apps the tag can also be used to clear a notification. "
+                "Supported by mobile apps and persistent notifications."
+            ),
+            "example": "front-door",
+            "selector": {"text": None},
+        },
+        ATTR_CAR_UI: {
+            "name": "Car UI",
+            "description": ("Show the notification in Android Auto. Mobile apps only."),
+            "selector": {"boolean": None},
+        },
         ATTR_DATA: {
             "name": "Data",
             "description": (
@@ -345,15 +413,22 @@ def notification_from(data: dict[str, Any]) -> dict[str, Any]:
         ATTR_MESSAGE,
         ATTR_PRIORITY,
         ATTR_IMAGE,
+        ATTR_CLICK_ACTION,
+        ATTR_ACTIONS,
+        ATTR_TAG,
+        ATTR_CAR_UI,
         ATTR_DATA,
         ATTR_CHANNEL,
     )
     return {k: data[k] for k in keys if k in data}
 
 
-def response_data(results: list[ReceiverResult]) -> dict[str, Any]:
+def response_data(
+    results: list[ReceiverResult], notification_id: str | None = None
+) -> dict[str, Any]:
     """Build the action's response data from per-receiver results."""
     return {
+        "id": notification_id,
         "results": [r.as_dict() for r in results],
         "counts": {k: sum(r.result == k for r in results) for k in RESULTS},
     }
@@ -378,8 +453,9 @@ async def async_send(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any
                 f"No receiver could be notified, they are disabled: {names}"
             )
         raise ServiceValidationError("No receiver matches the targets")
-    results = await async_dispatch(hass, resolved, notification_from(data))
-    return response_data(results)
+    notification = {"id": uuid.uuid4().hex, **notification_from(data)}
+    results = await async_dispatch(hass, resolved, notification)
+    return response_data(results, notification["id"])
 
 
 async def _handle(call: ServiceCall) -> ServiceResponse:

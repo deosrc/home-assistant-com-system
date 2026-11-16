@@ -4,21 +4,25 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, NamedTuple
+from urllib.parse import quote, unquote
 
 from homeassistant.components.person import persons_with_entity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
+from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify
 
 from .const import (
     AUDIENCE_PERSONAL,
     AUDIENCE_SHARED,
     DATA_ENTITIES,
+    DATA_HISTORY,
     DATA_REGISTRY,
     DOMAIN,
+    EVENT_ACTION,
     RECEIVER_TYPE_MOBILE_APP,
 )
 from .content import (
@@ -37,6 +41,42 @@ _LOGGER = logging.getLogger(__name__)
 MOBILE_APP_DOMAIN = "mobile_app"
 NOTIFY_DOMAIN = "notify"
 AUDIENCE_KEY = "audience"
+
+# The app's event for a pressed notification action. The app returns only the
+# pressed action's ID, so Com System encodes what it needs in the ID it sends
+# (``com_system:<notification id>:<receiver id>:<tag>:<action id>``, the tag
+# URL-encoded and empty when there is none) and decodes it when the event
+# comes back. Nothing then has to be looked up, so a response still has its
+# tag after the notification has left history.
+MOBILE_APP_ACTION_EVENT = "mobile_app_notification_action"
+ACTION_PREFIX = "com_system"
+
+
+class DecodedAction(NamedTuple):
+    """What an encoded action ID carries."""
+
+    notification_id: str
+    receiver_id: str
+    tag: str | None
+    action: str
+
+
+def encode_action(
+    notification_id: str, receiver_id: str, action: str, tag: str | None = None
+) -> str:
+    """Return the action ID the app is sent for a Com System notification."""
+    quoted = quote(tag, safe="") if tag else ""
+    return f"{ACTION_PREFIX}:{notification_id}:{receiver_id}:{quoted}:{action}"
+
+
+def decode_action(value: Any) -> DecodedAction | None:
+    """Return what an action ID carries, or None if Com System did not make it."""
+    if not isinstance(value, str):
+        return None
+    parts = value.split(":", 4)
+    if len(parts) != 5 or parts[0] != ACTION_PREFIX or not parts[1] or not parts[2]:
+        return None
+    return DecodedAction(parts[1], parts[2], unquote(parts[3]) or None, parts[4])
 
 
 def source_entry(hass: HomeAssistant, receiver: Receiver) -> ConfigEntry | None:
@@ -169,6 +209,18 @@ async def async_remove_channel(hass: HomeAssistant, channel: str) -> None:
         )
 
 
+def _app_action(action: Mapping[str, Any]) -> dict[str, Any]:
+    """Return an ``actions`` item as the companion app has it.
+
+    ``id`` is the app's ``action`` and ``label`` its ``title``; other keys
+    (``uri``, ``behavior`` and so on) are passed through.
+    """
+    result = {k: v for k, v in action.items() if k not in ("id", "label")}
+    result["action"] = action["id"]
+    result["title"] = action["label"]
+    return result
+
+
 async def async_deliver_mobile_app(
     hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
 ) -> list[str]:
@@ -196,8 +248,76 @@ async def async_deliver_mobile_app(
             warnings.append(f"The image was dropped: {err}")
     if notification.get("channel"):
         extra["channel"] = notification["channel"]
+    if notification.get("click_action"):
+        # Android reads clickAction, iOS reads url.
+        extra["clickAction"] = notification["click_action"]
+        extra["url"] = notification["click_action"]
+    if notification.get("actions"):
+        extra["actions"] = [_app_action(a) for a in notification["actions"]]
+    if notification.get("tag"):
+        extra["tag"] = notification["tag"]
+    if notification.get("car_ui"):
+        extra["car_ui"] = True
     extra = merge(extra, notification.get("data") or {})
+    if notification.get("id") and extra.get("actions"):
+        # Actions that open a URI send no response, so they are left alone.
+        extra["actions"] = [
+            action
+            if action.get("uri") or "action" not in action
+            else {
+                **action,
+                "action": encode_action(
+                    notification["id"],
+                    receiver.entry_id,
+                    str(action["action"]),
+                    extra.get("tag"),
+                ),
+            }
+            for action in extra["actions"]
+        ]
     if extra:
         data["data"] = extra
     await hass.services.async_call(NOTIFY_DOMAIN, service, data, blocking=True)
     return warnings
+
+
+async def _async_handle_action(hass: HomeAssistant, event: Event) -> None:
+    """Turn the app's action event into ``com_system_action`` and history."""
+    data = event.data
+    decoded = decode_action(data.get("action"))
+    if decoded is None:
+        # Not a Com System notification (or its actions were not encoded).
+        _LOGGER.debug("Ignoring mobile app action event: %s", dict(data))
+        return
+    notification_id, receiver_id, tag, action = decoded
+    receiver = hass.data[DOMAIN][DATA_REGISTRY].get(receiver_id)
+    person = None
+    if receiver is not None:
+        people = mobile_app_people(hass, receiver)
+        person = people[0] if people else None
+    response = {
+        "notification_id": notification_id,
+        "tag": tag,
+        "receiver_id": receiver_id,
+        "receiver": receiver.name if receiver else None,
+        "person": person,
+        "action": action,
+        "reply_text": data.get("reply_text"),
+    }
+    stored = await hass.data[DOMAIN][DATA_HISTORY].async_add_response(
+        response["notification_id"],
+        {**response, "time": dt_util.utcnow().isoformat()},
+    )
+    if not stored:
+        _LOGGER.debug("Response to %s: not in history", response["notification_id"])
+    hass.bus.async_fire(EVENT_ACTION, response, context=event.context)
+
+
+@callback
+def async_setup_action_responses(hass: HomeAssistant) -> None:
+    """Listen for pressed notification actions (once, from ``async_setup``)."""
+
+    async def _listener(event: Event) -> None:
+        await _async_handle_action(hass, event)
+
+    hass.bus.async_listen(MOBILE_APP_ACTION_EVENT, _listener)

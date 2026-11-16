@@ -61,7 +61,11 @@ time, and every receiver's result (delivered, failed or skipped) with the
 reason and any warnings. The **Why** column says why the receiver was
 included (see [Why a receiver was included](#why-a-receiver-was-included)).
 **Refresh** reloads the list. Only the most recent notifications are kept;
-see [history](history.md).
+see [history](history.md). When someone presses a
+notification action, the receivers table gains a **Response** column that
+shows the action on the row of the receiver that sent it, with any reply
+text, the person who responded and the time. A response from a receiver that
+is no longer listed is shown under the message.
 
 ## Test
 

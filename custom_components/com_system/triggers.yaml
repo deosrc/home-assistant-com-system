@@ -1,0 +1,14 @@
+action_received:
+  fields:
+    action:
+      required: true
+      example: OPEN
+      selector:
+        text:
+    notification_id:
+      selector:
+        text:
+    tag:
+      example: front-door
+      selector:
+        text:

@@ -137,7 +137,11 @@ async def test_delivers_to_each_receiver(hass: HomeAssistant, types) -> None:
         "reasons": [{"kind": "everyone"}],
     }
     types.deliver.assert_awaited_once()
-    assert types.deliver.await_args.args[1] == {"message": "Hello", "title": "Hi"}
+    assert types.deliver.await_args.args[1] == {
+        "id": response["id"],
+        "message": "Hello",
+        "title": "Hi",
+    }
 
 
 async def test_failure_does_not_block_others(hass: HomeAssistant, types) -> None:
@@ -347,6 +351,10 @@ async def test_description_order_and_people_selector(hass: HomeAssistant) -> Non
         "channel",
         "priority",
         "image",
+        "click_action",
+        "actions",
+        "tag",
+        "car_ui",
         "data",
     ]
     options = fields["priority"]["selector"]["select"]["options"]

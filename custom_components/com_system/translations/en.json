@@ -86,6 +86,22 @@
           "name": "Image",
           "description": "An image: a URL (http(s), a /local/ path or a media source ID), or an image or camera entity."
         },
+        "click_action": {
+          "name": "Click action",
+          "description": "What happens when the notification is tapped: a URL or a Home Assistant path such as /lovelace/cameras. Mobile apps only."
+        },
+        "actions": {
+          "name": "Actions",
+          "description": "Buttons on the notification. Pressing one fires the com_system_action event. An action with a URI opens it instead. Mobile apps only."
+        },
+        "tag": {
+          "name": "Tag",
+          "description": "Notifications with the same tag replace each other. On mobile apps the tag can also be used to clear a notification. Supported by mobile apps and persistent notifications."
+        },
+        "car_ui": {
+          "name": "Car UI",
+          "description": "Show the notification in Android Auto. Mobile apps only."
+        },
         "data": {
           "name": "Data",
           "description": "Receiver-specific content, keyed by receiver type, for example {mobile_app: {...}, pushover: {...}}. Each receiver reads only its own block."
@@ -116,6 +132,22 @@
           "name": "Image",
           "description": "An image: a URL (http(s), a /local/ path or a media source ID), or an image or camera entity."
         },
+        "click_action": {
+          "name": "Click action",
+          "description": "What happens when the notification is tapped: a URL or a Home Assistant path such as /lovelace/cameras. Mobile apps only."
+        },
+        "actions": {
+          "name": "Actions",
+          "description": "Buttons on the notification. Pressing one fires the com_system_action event. An action with a URI opens it instead. Mobile apps only."
+        },
+        "tag": {
+          "name": "Tag",
+          "description": "Notifications with the same tag replace each other. On mobile apps the tag can also be used to clear a notification. Supported by mobile apps and persistent notifications."
+        },
+        "car_ui": {
+          "name": "Car UI",
+          "description": "Show the notification in Android Auto. Mobile apps only."
+        },
         "data": {
           "name": "Data",
           "description": "Receiver-specific content, keyed by receiver type, for example {mobile_app: {...}, pushover: {...}}. Each receiver reads only its own block."
@@ -129,6 +161,26 @@
         "channel": {
           "name": "Channel",
           "description": "The channel to delete."
+        }
+      }
+    }
+  },
+  "triggers": {
+    "action_received": {
+      "name": "Com System notification action received",
+      "description": "Triggers when someone responds to a notification action, for example by pressing a button on a mobile app notification. Give the action ID and either the notification ID or the tag.",
+      "fields": {
+        "action": {
+          "name": "Action",
+          "description": "The ID of the action that was pressed."
+        },
+        "notification_id": {
+          "name": "Notification ID",
+          "description": "The ID of the notification, as returned by notify.com_system. Give this or a tag."
+        },
+        "tag": {
+          "name": "Tag",
+          "description": "The tag of the notification. Give this or a notification ID."
         }
       }
     }

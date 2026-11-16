@@ -285,3 +285,77 @@ async def test_ws_lists_channels(hass: HomeAssistant, hass_ws_client) -> None:
     channels = msg["result"]["channels"]
     assert [c["name"] for c in channels] == ["alpha", "Beta"]
     assert channels[0]["defaults"] == {"priority": "low"}
+
+
+async def test_channel_defaults_include_mobile_app_fields(hass: HomeAssistant) -> None:
+    """Click action, actions, tag and car UI are channel defaults."""
+    receiver, calls = await _setup(hass)
+    actions = [{"id": "OPEN", "label": "Open"}]
+    channel = await _add_channel(
+        hass,
+        "Doors",
+        click_action="/lovelace/cams",
+        actions=actions,
+        tag="door",
+        car_ui=True,
+    )
+    await async_send_to(
+        hass,
+        receiver.entry_id,
+        {"message": "Hi", "channel": channel["entity_id"], "tag": "mine"},
+    )
+    sent = calls[0].data["data"]
+    assert sent["clickAction"] == "/lovelace/cams"
+    [action] = sent["actions"]
+    assert action["title"] == "Open"
+    assert action["action"].endswith(":OPEN")  # encoded for responses
+    assert sent["car_ui"] is True
+    assert sent["tag"] == "mine"  # the call wins
+    assert sent["channel"] == "Doors"
+
+
+async def test_channel_actions_match_notify_content_fields(
+    hass: HomeAssistant,
+) -> None:
+    """AGENTS.md: the channel actions' content fields mirror notify's."""
+    from homeassistant.helpers.service import async_get_all_descriptions
+
+    assert await async_setup_component(hass, DOMAIN, {})
+    descriptions = await async_get_all_descriptions(hass)
+    notify = descriptions["notify"]["com_system"]["fields"]
+    for service in ("create_channel", "update_channel"):
+        fields = descriptions[DOMAIN][service]["fields"]
+        for key in (
+            "title",
+            "priority",
+            "image",
+            "click_action",
+            "actions",
+            "tag",
+            "car_ui",
+            "data",
+        ):
+            assert _covers(notify[key]["selector"], fields[key]["selector"]), (
+                service,
+                key,
+            )
+            assert fields[key].get("example") == notify[key].get("example")
+
+
+def _covers(expected, actual) -> bool:
+    """Whether ``actual`` has everything in ``expected`` (None is empty).
+
+    Home Assistant fills in defaults when it reads a selector from YAML, so
+    the two are compared on what the notify action declares.
+    """
+    if isinstance(expected, dict):
+        return isinstance(actual, dict) and all(
+            k in actual and _covers(v, actual[k]) for k, v in expected.items()
+        )
+    if isinstance(expected, list):
+        return (
+            isinstance(actual, list)
+            and len(expected) == len(actual)
+            and all(_covers(e, a) for e, a in zip(expected, actual, strict=True))
+        )
+    return expected is None or expected == actual

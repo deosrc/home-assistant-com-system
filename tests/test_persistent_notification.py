@@ -138,3 +138,21 @@ async def test_people_option_hidden(hass: HomeAssistant) -> None:
     registry = hass.data[DOMAIN]["registry"]
     [receiver] = registry.all()
     assert registry.people_of(receiver) == ()
+
+
+async def test_same_tag_replaces_previous(hass: HomeAssistant) -> None:
+    """A tag is the notification id: the same tag replaces, others add."""
+    assert await async_setup_component(hass, "persistent_notification", {})
+    assert await async_setup_component(hass, DOMAIN, {})
+    entry = await _add(hass)
+
+    await _send(hass, entry, message="One", tag="laundry")
+    await _send(hass, entry, message="Two", tag="laundry")
+    await _send(hass, entry, message="Other", tag="door")
+    await _send(hass, entry, message="Plain")
+    await _send(hass, entry, message="Plain")
+
+    stored = _stored(hass)
+    assert stored["com_system_tag_laundry"]["message"] == "Two"
+    assert stored["com_system_tag_door"]["message"] == "Other"
+    assert len(stored) == 4  # laundry, door and two untagged
