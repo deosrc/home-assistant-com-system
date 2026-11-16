@@ -102,7 +102,8 @@ data:
 
 Each receiver is delivered to independently and at the same time. One
 receiver failing, or raising an error, never stops the others. Receivers
-that matched but are disabled are skipped.
+that matched but are disabled, or whose [conditions](conditions.md) do not
+pass or error, are skipped.
 
 Every outcome is recorded on the receiver's `notification_receiver` entity
 (see [receivers](receivers/README.md)), including failed and skipped

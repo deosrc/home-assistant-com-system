@@ -87,7 +87,8 @@ The testing tool sends a test notification and shows what happens.
   shown as a warning in the result.
 - **Receivers reached** updates as you change the targets, without sending
   anything. Each matching receiver is `reached`, or `skipped` with the
-  reason (it is disabled).
+  reason (it is disabled, or its [conditions](conditions.md) did not pass
+  or errored). The conditions are evaluated with the content in the form.
 - **Send test** calls the [`notify.com_system` action](services.md), so it
   behaves exactly as an automation does, and may send real notifications.
   It is enabled once there is a message and at least one receiver would be
@@ -136,9 +137,9 @@ admin user.
   `name`, `entity_id` and `defaults`. Channels are written through the
   `com_system` channel actions, not websocket commands.
 - `com_system/notify/preview`: the receivers the targets (`people` and
-  `receivers`, as in the action) would reach, each `reached` or
-  `skipped` with a reason. Sends
-  nothing.
+  `receivers`, as in the action, and an optional `notification` object of
+  content for the [conditions](conditions.md)) would reach, each `reached`
+  or `skipped` with a reason. Sends nothing.
 - `com_system/notify/test`: sends through the `notify.com_system` action
   (`service_data`, the action's data) and returns its response.
   A failure to send is the error `send_failed`.

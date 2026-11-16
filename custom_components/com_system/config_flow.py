@@ -15,7 +15,9 @@ from homeassistant.config_entries import (
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
+from .conditions import RawConditionSelector
 from .const import (
+    CONF_CONDITIONS,
     CONF_DISCOVERY_TYPE,
     CONF_ENTRY_TYPE,
     CONF_HISTORY_MAX_AGE_DAYS,
@@ -137,7 +139,7 @@ class ComSystemConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class ComSystemOptionsFlow(OptionsFlow):
-    """Handle options: the hub's history limits and a receiver's people."""
+    """Handle options: the hub's history limits, a receiver's people and conditions."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -181,35 +183,31 @@ class ComSystemOptionsFlow(OptionsFlow):
         receiver_type = get_receiver_type(
             self.config_entry.data.get(CONF_RECEIVER_TYPE, RECEIVER_TYPE_CUSTOM)
         )
-        if receiver_type is not None and not receiver_type.supports_people:
-            if user_input is not None:
-                return self.async_create_entry(data=self.config_entry.options)
-            return self.async_show_form(step_id="no_options")
-
-        if user_input is not None:
-            return self.async_create_entry(data=user_input)
-
         options = self.config_entry.options
-        schema = vol.Schema(
-            {
-                vol.Optional(CONF_PEOPLE): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="person", multiple=True)
-                ),
+        fields: dict[Any, Any] = {}
+        if receiver_type is None or receiver_type.supports_people:
+            fields[vol.Optional(CONF_PEOPLE)] = selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="person", multiple=True)
+            )
+        fields[vol.Optional(CONF_CONDITIONS)] = RawConditionSelector()
+        if user_input is not None:
+            # A field the form offered and the user cleared is removed; other
+            # stored options (such as people of a type that ignores them)
+            # are kept.
+            kept = {
+                k: v for k, v in options.items() if all(k != str(f) for f in fields)
             }
-        )
+            return self.async_create_entry(data={**kept, **user_input})
+
         return self.async_show_form(
             step_id="receiver",
-            data_schema=self.add_suggested_values_to_schema(schema, options),
+            data_schema=self.add_suggested_values_to_schema(
+                vol.Schema(fields), options
+            ),
         )
 
     async def async_step_receiver(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Save the receiver's people."""
-        return await self.async_step_init(user_input)
-
-    async def async_step_no_options(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Finish the form of a type with nothing to configure."""
+        """Save the receiver's people and conditions."""
         return await self.async_step_init(user_input)

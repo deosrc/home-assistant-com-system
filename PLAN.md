@@ -164,90 +164,6 @@ Receiver type definitions are written in code, and each declares its
 capabilities: which typed fields and `data` keys it supports. The custom
 receiver (built) remains the fallback for anything not on this list.
 
-### 2.6 Notification conditions
-
-Each receiver can be configured with **notification conditions**. They
-decide, per notification, whether that receiver is used.
-
-- Conditions use Home Assistant's built-in conditions system (the same
-  format as automation and script conditions, including template, state,
-  time and logical `and`/`or`/`not` conditions).
-- Each condition is evaluated with these variables:
-  - `notification` – the notification details: ID, title, message,
-    priority, image, `data` and the requested targets.
-  - `receiver` – the receiver's own context: name, type, associated person
-    and area, and entity ID.
-  - `resolved_targets` – why the receiver matched: which person, area or
-    explicit target selected it.
-- Exact field names within these variables are **TBD** and will be
-  documented in `docs/conditions.md`.
-- If the conditions do not pass, the receiver is skipped for that
-  notification only. This is separate from the receiver's enabled state
-  (section 2.4), which blocks all notifications.
-- Example: skip a receiver when the notification message contains some
-  given text, using a template condition on the notification variable.
-- A receiver with no conditions always passes.
-- Conditions are stored and edited **per receiver only**, as part of its
-  config entry's options. There are no global or shared condition sets.
-- If a condition errors (e.g. a template fails to render), it is treated as
-  not passed: the receiver is skipped, the error is logged, and the result
-  is recorded as skipped (condition error) in history, the entity's last
-  result and the testing tool. This fails safe for rules such as
-  do-not-disturb.
-
-Evaluation order for a notification:
-
-1. Resolve targets to receivers (`docs/targets.md`).
-2. Drop receivers that are disabled (section 2.4).
-3. Drop receivers whose conditions do not pass.
-4. Deliver to the remaining receivers.
-
-**Spike #24 decisions** (verified with Home Assistant 2026.10.4 using the
-condition helpers; the feature that builds on this removes it from the
-plan):
-
-- **Evaluating:** validate with
-  `condition.async_validate_conditions_config(hass, cv.CONDITIONS_SCHEMA(raw))`,
-  build one checker per condition with `condition.async_from_config`, and
-  call `checker(hass, variables)` with
-  `{"notification": ..., "receiver": ..., "resolved_targets": ...}` (plain
-  dicts). Call `checker.async_unload()` when the checker is dropped.
-  Template (including the plain-string shorthand), state, numeric state, time
-  and `and`/`or`/`not` conditions all work, and templates see the three
-  variables (`{{ 'x' in notification.message }}`). A `state` condition's
-  `state` is **not** a template, so it cannot refer to the variables.
-- **Errors:** a failing condition raises `ConditionError` (for example
-  `ConditionErrorMessage` for `{{ 1/0 }}` or an undefined attribute such as
-  `notification.nope.deeper`, `ConditionErrorContainer` for a state condition
-  on a missing entity). Catch `ConditionError` per receiver and record
-  "skipped (condition error)". Do **not** use
-  `async_conditions_from_config`: its checker swallows errors, logs a warning
-  and returns `False`, so a condition error cannot be told from "did not
-  pass". `or` ignores an erroring branch if another branch is true. Templates
-  log "Template variable error" at error level on undefined variables;
-  document `notification.get('key')` / `| default` for optional fields.
-- **Validation:** an invalid template or unknown condition is rejected at
-  validation (`probatio.MultipleInvalid` or `HomeAssistantError`), so bad
-  conditions never reach evaluation from the UI. Revalidate stored
-  conditions when loading the receiver and treat a failure as a condition
-  error.
-- **Storage (important):** the condition selector's validated output is not
-  JSON serialisable (`Template`, `timedelta` and `time` objects), so it must
-  not be stored in the config entry options as returned. Store the **raw**
-  list of dicts. In the options or reconfigure flow use a selector subclass
-  that validates with `cv.CONDITIONS_SCHEMA` but returns its input unchanged
-  (`class RawConditionSelector(ConditionSelector)` with `__call__` returning
-  `data`). It still serialises as `{"selector": {"condition": {}}}` and
-  rejects invalid templates. Validate again with the helpers at evaluation.
-- **UI:** the selector's frontend element `ha-selector-condition` ships in the
-  Home Assistant frontend (2026.10.4 bundle), so the options flow renders the
-  standard automation condition editor, and the panel can use it the same way
-  as `ha-service-control` renders selectors. **Not verified in a running
-  frontend**: only the schema serialisation and the presence of the element
-  were checked; the editor cannot offer completion for our variables.
-- The spike test is kept outside the repository; nothing from it is
-  production code.
-
 ### 2.7 Associating receivers with people
 
 Targeting by person needs a way to decide which receivers belong to
@@ -271,8 +187,6 @@ with a person only set manually.
 The action, dispatcher and per-receiver response are built; see
 [docs/services.md](docs/services.md) and `AGENTS.md`. What remains:
 
-- Resolved receivers whose **conditions** do not pass are dropped before
-  delivery and reported as skipped (section 2.6).
 - Not verified: how the action renders in a real frontend (only the
   websocket description was checked).
 
@@ -302,7 +216,6 @@ Core components (names provisional):
 | Component | Responsibility |
 | --- | --- |
 | Receiver entities | Enabled switch and read-only `notification_receiver` |
-| Condition evaluator | Runs a receiver's conditions against a notification |
 | Config/options flow | UI for creating and editing receivers |
 
 ## 5. User interface
@@ -314,9 +227,7 @@ scope is:
 
 | View | Purpose |
 | --- | --- |
-| Receivers (extend) | Conditions editor (add, edit and remove are built) |
 | Dashboard (extend) | Recent activity (the history store is built) |
-| Testing tool (extend) | Conditions in the preview |
 
 Notes:
 
@@ -326,11 +237,6 @@ Notes:
 - Warnings about unsupported content are shown in recent notifications (built);
   the testing tool (which is also the notification designer, with content
   options per receiver type) already shows the warnings an action returns.
-- The testing tool (built, see [docs/ui.md](docs/ui.md)) must also show
-  receivers skipped because a condition did not pass, once conditions
-  exist.
-- The receiver editor needs a conditions editor. Home Assistant's condition
-  selector can likely be reused.
 - The pending discoveries list links to Devices & services to add or
   ignore. Doing that inside the panel is not done.
 - The release flow (`release.yml`, `zip_release` in `hacs.json`) has not run

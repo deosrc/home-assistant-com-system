@@ -36,15 +36,15 @@
           "history_max_age_days": "Days to keep them"
         }
       },
-      "no_options": {
-        "title": "Receiver options",
-        "description": "This receiver has no options."
-      },
       "receiver": {
         "title": "Receiver options",
-        "description": "Choose the people this receiver relates to. Its area is the area of its device.",
+        "description": "Choose the people this receiver relates to (if the receiver type uses them) and the conditions a notification must meet to be delivered to it. Its area is the area of its device. See the conditions documentation for the variables conditions can use.",
         "data": {
-          "people": "People"
+          "people": "People",
+          "conditions": "Conditions"
+        },
+        "data_description": {
+          "conditions": "All conditions must pass. A condition that errors skips the receiver. Leave empty to always deliver."
         }
       }
     }

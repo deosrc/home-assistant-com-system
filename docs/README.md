@@ -26,6 +26,8 @@ The hub's options set how much [history](history.md) is kept.
 - [Custom receivers](receivers/custom.md): scripts as receivers.
 - [Mobile app receivers](receivers/mobile-app.md): delivery, the person
   link and personal or shared devices.
+- [Notification conditions](conditions.md): rules that skip a receiver
+  for a notification, and the variables they can use.
 - [Targets](targets.md): how people, areas and receivers decide where a
   notification goes.
 - [The notify.com_system action](services.md): sending a notification, its

@@ -368,7 +368,36 @@ records the conventions and how things work as built.
   attempts do update the receiver entity). Results are
   `ReceiverResult(receiver, type_name, result, reason, warnings)`, ordered by
   name; `result` is one of `RESULTS` (`delivered`, `failed`, `skipped`).
-  Conditions are not evaluated yet.
+  After the type check and before capabilities are applied, `_deliver`
+  evaluates the receiver's conditions (`conditions.py`); a receiver that does
+  not pass is a `skipped` result with the reason. Disabled receivers never get
+  that far. `async_dispatch` takes `requested` (the call's `people` and
+  `receivers`) for `notification.targets`.
+- `conditions.py`: per-receiver notification conditions, stored as the
+  **raw** list of condition dicts in the receiver entry's options
+  (`conditions`, `CONF_CONDITIONS`). The validated output of the condition
+  selector holds `Template`/`timedelta` objects that cannot be stored, so
+  the options flow uses `RawConditionSelector` (validates with
+  `cv.CONDITIONS_SCHEMA`, returns the input unchanged) and the conditions
+  are validated again at every evaluation. `async_check_conditions` builds a
+  checker per condition with `condition.async_from_config`, requires all to
+  pass, and always unloads them. It does not use
+  `async_conditions_from_config`, whose checker swallows errors. A
+  `ConditionError`, `HomeAssistantError` or validation failure gives the
+  reason `Condition error: ...` (logged as a warning), a false result gives
+  `Conditions did not pass`; both are `skipped`. `condition_variables`
+  builds `notification` (defaults `id`, `title`, `message`, `priority` and
+  `image` to `None`, `data` to `{}`, plus `targets`), `receiver` and
+  `resolved_targets`; the field names are documented in
+  `docs/conditions.md`. A `state` condition's `state` is not a template. The
+  receiver options flow (`config_flow.py`, step `receiver`) offers
+  `people` (unless the type has `supports_people = False`) and
+  `conditions` for every type; there is no `no_options` step. Options it did
+  not offer are kept on save. `com_system/notify/preview` is async and takes
+  an optional `notification` (the form's content, sent by the Test page) so
+  the preview evaluates conditions. The panel has no conditions editor of its
+  own: editing is in the options flow, which renders HA's
+  `ha-selector-condition`; its rendering was not verified in a real frontend.
 - `channels.py` and `notification_channel.py`: channels are stored in the
   hub entry's data, `data["channels"] = {channel id: {name, defaults}}`
   (defaults are `title`, `priority`, `image`, `data`; ids are `uuid4().hex`,

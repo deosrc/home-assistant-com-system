@@ -41,12 +41,19 @@ describe("ComSystemApi", () => {
 
   it("previews and sends tests with only the chosen targets", async () => {
     const { hass, callWS } = fakeHass({ receivers: [] });
-    await new ComSystemApi(hass).previewNotify({
-      receivers: { active_choice: "Select", Select: { area_id: ["kitchen"] } },
-    });
+    await new ComSystemApi(hass).previewNotify(
+      {
+        receivers: {
+          active_choice: "Select",
+          Select: { area_id: ["kitchen"] },
+        },
+      },
+      { message: "Hi" },
+    );
     expect(callWS).toHaveBeenCalledWith({
       type: "com_system/notify/preview",
       receivers: { active_choice: "Select", Select: { area_id: ["kitchen"] } },
+      notification: { message: "Hi" },
     });
     await new ComSystemApi(hass).sendTest({ message: "Hi", priority: "high" });
     expect(callWS).toHaveBeenLastCalledWith({

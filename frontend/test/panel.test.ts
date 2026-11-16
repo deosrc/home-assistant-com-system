@@ -419,6 +419,7 @@ describe("testing tool", () => {
     expect(valueOf()).toEqual({ action: "notify.com_system" });
     expect(callWS).toHaveBeenCalledWith({
       type: "com_system/notify/preview",
+      notification: {},
     });
     const everyone = { active_choice: "Everyone", Everyone: true };
     const allAreas = { active_choice: "All Areas", "All Areas": true };
@@ -428,6 +429,7 @@ describe("testing tool", () => {
       type: "com_system/notify/preview",
       people: everyone,
       receivers: allAreas,
+      notification: {},
     });
     const rows = [...root.querySelectorAll(".preview tbody tr")];
     expect(rows.map((r) => r.textContent!.replace(/\s+/g, " ").trim())).toEqual(
@@ -466,6 +468,12 @@ describe("testing tool", () => {
       type: "com_system/notify/preview",
       people: ["person.alice"],
       receivers: selected,
+      notification: {
+        message: "Hello",
+        title: "Hi",
+        priority: "high",
+        data: { pushover: { sound: "siren" } },
+      },
     });
     expect(send().disabled).toBe(false);
 
@@ -507,6 +515,7 @@ describe("testing tool", () => {
     expect(callWS).toHaveBeenCalledWith({
       type: "com_system/notify/preview",
       receivers: allAreas,
+      notification: { message: "Hello" },
     });
   });
 
