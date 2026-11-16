@@ -5,6 +5,8 @@ import type {
   HomeAssistant,
   NotifyTargets,
   PreviewEntry,
+  ChannelDefaults,
+  ChannelInfo,
   ReceiverInfo,
   ScriptCheckResult,
   SendResponse,
@@ -76,6 +78,34 @@ export class ComSystemApi {
 
   rescanScripts(): Promise<void> {
     return this.hass.callWS({ type: "com_system/scripts/rescan" });
+  }
+
+  async channels(): Promise<ChannelInfo[]> {
+    const result = await this.hass.callWS<{ channels: ChannelInfo[] }>({
+      type: "com_system/channels/list",
+    });
+    return result.channels;
+  }
+
+  /** Creates a channel, or with `entryId` renames it and replaces its defaults. */
+  saveChannel(
+    name: string,
+    defaults: ChannelDefaults,
+    entryId?: string,
+  ): Promise<ChannelInfo> {
+    return this.hass.callWS({
+      type: "com_system/channels/set",
+      name,
+      defaults,
+      ...(entryId ? { entry_id: entryId } : {}),
+    });
+  }
+
+  removeChannel(entryId: string): Promise<void> {
+    return this.hass.callWS({
+      type: "com_system/channels/remove",
+      entry_id: entryId,
+    });
   }
 
   setEnabled(entryId: string, enabled: boolean): Promise<void> {

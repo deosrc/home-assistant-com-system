@@ -33,7 +33,7 @@ COMMANDS = [
     {"type": "com_system/history/list"},
     {"type": "com_system/channels/list"},
     {"type": "com_system/channels/set", "name": "x"},
-    {"type": "com_system/channels/remove", "name": "x"},
+    {"type": "com_system/channels/remove", "entry_id": "x"},
 ]
 
 

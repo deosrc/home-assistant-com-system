@@ -1,6 +1,6 @@
 # Channels
 
-A channel is a named set of default notification content. Name it in the
+A channel is a named set of default notification content. Select it in the
 `channel` field of [notify.com_system](services.md) and the channel's
 defaults fill anything the call leaves out. Channels are useful beyond the
 mobile app: they are a way to reuse a set of options.
@@ -19,7 +19,9 @@ data:
   priority: low   # beats the channel's priority
 ```
 
-A call that names a channel that does not exist fails and sends nothing.
+The field takes a `notification_channel` entity (`channel:
+notification_channel.doors`); the form's picker lists only channels. Any
+other entity fails the call and sends nothing.
 
 ## Mobile apps
 
@@ -34,6 +36,13 @@ that cannot be reached is logged and skipped; the channel is removed anyway.
 
 ## Managing channels
 
-Channels are managed with the `com_system/channels/*`
-[websocket commands](ui.md#websocket-commands). The panel does not have a
-channels page yet.
+Use the **Channels** page of the Com System panel. Each channel is a config
+entry with a `notification_channel` entity whose state is its name and whose
+attributes are its defaults.
+
+- **Add**: **Add channel**, then a name and any defaults. Names are unique,
+  ignoring case. `data` is JSON keyed by receiver type.
+- **Edit or rename**: **Edit**. A rename removes the old name from Android
+  devices.
+- **Delete**: **Delete**. Deleting the entry in Devices & services does the
+  same.

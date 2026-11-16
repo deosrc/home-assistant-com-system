@@ -300,19 +300,31 @@ records the conventions and how things work as built.
   `ReceiverResult(receiver, type_name, result, reason, warnings)`, ordered by
   name; `result` is one of `RESULTS` (`delivered`, `failed`, `skipped`).
   Conditions are not evaluated yet.
-- `channels.py`: `ChannelStore` (`hass.data[DOMAIN][DATA_CHANNELS]`, created
-  in `async_setup`) keeps channels by name in a `Store` (`com_system.channels`):
-  `{name: defaults}`, defaults being `title`, `priority`, `image`, `data`.
-  `async_send` calls `async_apply` first: a call's `channel` field adds the
-  defaults for anything the call omits (`data` deep-merged, call wins); an
-  unknown channel raises `ServiceValidationError`. `channel` travels in the
+- `channels.py` and `notification_channel.py`: a channel is a config entry
+  (`entry_type: channel`, title is the name, options are the defaults
+  `title`, `priority`, `image`, `data`) with one `notification_channel`
+  entity, from a second `EntityComponent` (`DATA_CHANNEL_COMPONENT`) set up
+  like the receiver one. Channels are managed only in the panel's Channels
+  view, through `channels/list|set|remove`. The user, options and
+  reconfigure flows do not touch them (reconfigure aborts `not_implemented`);
+  `async_create_channel` starts a flow with source `channel`, whose only step
+  (`async_step_channel`) has no form and creates the entry. Updates use
+  `async_update_entry` (the update listener reloads the entry); names are
+  unique ignoring case. The action's `channel` field is an entity selector
+  limited to domain `notification_channel` and this integration, so other
+  Com System entities never appear. `apply_channel` (called first by
+  `async_send`) resolves the entity through the entity registry to its
+  entry, adds the defaults for anything the call omits (`data` deep-merged,
+  call wins) and replaces `channel` with the name; anything that is not one
+  of ours raises `ServiceValidationError`. `channel` travels in the
   notification (history and the receiver entity record it) and is not
   filtered by capabilities. The mobile app type sends it as `data.channel`
-  (under the `mobile_app` block). Removing (or renaming) a channel calls
+  (before its `data` block). Deleting a channel (`async_remove_entry`, so
+  also from Devices & services) or renaming it calls
   `mobile_app.async_remove_channel`, which sends `message: remove_channel`,
   `data: {channel}` to the `notify.mobile_app_*` action of every registered
-  mobile app receiver whose entry has `os_name` Android. Websocket
-  commands `channels/list|set|remove`. The panel has no channels view yet.
+  mobile app receiver whose entry has `os_name` Android. The panel's
+  `channels-view.ts` uses native inputs; `data` is edited as JSON text.
 - `history.py`: `NotificationHistory` (`hass.data[DOMAIN][DATA_HISTORY]`,
   created in `async_setup`) keeps records newest first in a `Store`
   (`com_system.history`, saved with a delay). A record is `{id, time,

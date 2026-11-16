@@ -23,8 +23,13 @@ from homeassistant.helpers.target import (
     async_extract_referenced_entity_ids,
 )
 
-from .channels import ATTR_CHANNEL, validate_channel_name
-from .const import DATA_CHANNELS, DOMAIN, NOTIFICATION_RECEIVER_DOMAIN, RESULTS
+from .channels import ATTR_CHANNEL, apply_channel, validate_channel
+from .const import (
+    DOMAIN,
+    NOTIFICATION_CHANNEL_DOMAIN,
+    NOTIFICATION_RECEIVER_DOMAIN,
+    RESULTS,
+)
 from .content import (
     ATTR_DATA,
     ATTR_IMAGE,
@@ -123,7 +128,7 @@ SERVICE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_PRIORITY): validate_priority,
         vol.Optional(ATTR_IMAGE): validate_image,
         vol.Optional(ATTR_DATA): validate_data,
-        vol.Optional(ATTR_CHANNEL): validate_channel_name,
+        vol.Optional(ATTR_CHANNEL): validate_channel,
     }
 )
 
@@ -248,12 +253,17 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
         ATTR_CHANNEL: {
             "name": "Channel",
             "description": (
-                "A notification channel. Its default title, priority, image "
-                "and data are used for anything this call does not set. "
+                "A notification channel (add one under Devices & services). Its "
+                "default title, priority, image and data are used for anything "
+                "this call does not set. "
                 "Mobile apps also use it as the Android notification channel."
             ),
-            "example": "Doors",
-            "selector": {"text": None},
+            "selector": {
+                "entity": {
+                    "domain": NOTIFICATION_CHANNEL_DOMAIN,
+                    "integration": DOMAIN,
+                }
+            },
         },
     },
 }
@@ -359,7 +369,7 @@ async def async_send(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any
     """
     if ATTR_PEOPLE not in data and ATTR_RECEIVERS not in data:
         raise ServiceValidationError("No targets given: set people, receivers or both")
-    data = await hass.data[DOMAIN][DATA_CHANNELS].async_apply(data)
+    data = apply_channel(hass, data)
     resolved = resolve_call_targets(hass, data)
     if not resolved.receivers:
         if resolved.skipped:

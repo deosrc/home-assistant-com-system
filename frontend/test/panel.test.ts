@@ -108,6 +108,22 @@ function makeHass(): { hass: HomeAssistant; callWS: ReturnType<typeof vi.fn> } {
             },
           ],
         };
+      case "com_system/channels/list":
+        return {
+          channels: [
+            {
+              entry_id: "c1",
+              name: "Doors",
+              entity_id: "notification_channel.doors",
+              defaults: {
+                priority: "high",
+                data: { mobile_app: { tag: "d" } },
+              },
+            },
+          ],
+        };
+      case "com_system/channels/set":
+        return {};
       default:
         return null;
     }
@@ -189,6 +205,61 @@ describe("panel", () => {
     const badges = [...view.shadowRoot!.querySelectorAll("summary .count")];
     expect(badges.map((b) => b.textContent!.trim())).toEqual(["1 failed"]);
     expect(text).toContain("dropped");
+  });
+
+  it("lists channels and saves a new one", async () => {
+    const { hass, callWS } = makeHass();
+    const panel = await mount("/channels", hass);
+    const view = panel.shadowRoot!.querySelector("com-system-channels")!;
+    await settle(view);
+    const text = view.shadowRoot!.textContent!;
+    expect(text).toContain("Doors");
+    expect(text).toContain("notification_channel.doors");
+    expect(text).toContain("high");
+    const buttons = [...view.shadowRoot!.querySelectorAll("button")];
+    buttons.find((b) => b.textContent!.trim() === "Add channel")!.click();
+    await settle(view);
+    const inputs = view.shadowRoot!.querySelectorAll("input");
+    (inputs[0] as HTMLInputElement).value = "Alerts";
+    inputs[0].dispatchEvent(new Event("input"));
+    const select = view.shadowRoot!.querySelector("select")!;
+    select.value = "low";
+    select.dispatchEvent(new Event("change"));
+    await settle(view);
+    [...view.shadowRoot!.querySelectorAll("button")]
+      .find((b) => b.textContent!.trim() === "Save")!
+      .click();
+    await settle(view);
+    expect(callWS).toHaveBeenCalledWith({
+      type: "com_system/channels/set",
+      name: "Alerts",
+      defaults: { priority: "low" },
+    });
+  });
+
+  it("refuses data that is not a JSON object", async () => {
+    const { hass, callWS } = makeHass();
+    const panel = await mount("/channels", hass);
+    const view = panel.shadowRoot!.querySelector("com-system-channels")!;
+    await settle(view);
+    [...view.shadowRoot!.querySelectorAll("button")]
+      .find((b) => b.textContent!.trim() === "Add channel")!
+      .click();
+    await settle(view);
+    const area = view.shadowRoot!.querySelector("textarea")!;
+    area.value = "[1]";
+    area.dispatchEvent(new Event("input"));
+    await settle(view);
+    [...view.shadowRoot!.querySelectorAll("button")]
+      .find((b) => b.textContent!.trim() === "Save")!
+      .click();
+    await settle(view);
+    expect(view.shadowRoot!.querySelector(".error")!.textContent).toContain(
+      "object",
+    );
+    expect(callWS).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "com_system/channels/set" }),
+    );
   });
 
   it("lists receivers and discoveries and toggles enabled", async () => {

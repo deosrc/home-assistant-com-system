@@ -8,6 +8,8 @@ ENTRY_TYPE_HUB = "hub"
 ENTRY_TYPE_CUSTOM_RECEIVER = "custom_receiver"
 # A receiver of a built-in type, created from a discovery.
 ENTRY_TYPE_RECEIVER = "receiver"
+# A notification channel: named default content, one entry and entity each.
+ENTRY_TYPE_CHANNEL = "channel"
 
 # Entry types that are receivers. Each receiver type maps to one of these.
 RECEIVER_ENTRY_TYPES = (ENTRY_TYPE_CUSTOM_RECEIVER, ENTRY_TYPE_RECEIVER)
@@ -29,11 +31,14 @@ CONF_PEOPLE = "people"
 # The domain of the read-only receiver entity, which com_system provides.
 NOTIFICATION_RECEIVER_DOMAIN = "notification_receiver"
 
+# The domain of the channel entity, which com_system provides.
+NOTIFICATION_CHANNEL_DOMAIN = "notification_channel"
+
 # Keys of ``hass.data[DOMAIN]``.
 DATA_REGISTRY = "registry"
 DATA_COMPONENT = "notification_receiver_component"
 DATA_ENTITIES = "entities"
-DATA_CHANNELS = "channels"
+DATA_CHANNEL_COMPONENT = "notification_channel_component"
 
 # Delivery results, used as the event types of the receiver entity.
 RESULT_DELIVERED = "delivered"

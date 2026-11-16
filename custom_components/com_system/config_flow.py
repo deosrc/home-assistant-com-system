@@ -27,6 +27,7 @@ from .const import (
     DEFAULT_HISTORY_MAX_AGE_DAYS,
     DEFAULT_HISTORY_MAX_COUNT,
     DOMAIN,
+    ENTRY_TYPE_CHANNEL,
     ENTRY_TYPE_HUB,
     ENTRY_TYPE_RECEIVER,
     RECEIVER_ENTRY_TYPES,
@@ -63,6 +64,16 @@ class ComSystemConfigFlow(ConfigFlow, domain=DOMAIN):
                 data={CONF_ENTRY_TYPE: ENTRY_TYPE_HUB},
             )
         return self.async_show_form(step_id="user")
+
+    async def async_step_channel(self, data: dict[str, Any]) -> ConfigFlowResult:
+        """Create a channel entry. Only the panel starts this (source
+        ``channel``); it has no form and is not offered in the UI.
+        """
+        return self.async_create_entry(
+            title=data[CONF_NAME],
+            data={CONF_ENTRY_TYPE: ENTRY_TYPE_CHANNEL},
+            options=data["defaults"],
+        )
 
     async def async_step_integration_discovery(
         self, discovery_info: dict[str, Any]
@@ -143,6 +154,8 @@ class ComSystemOptionsFlow(OptionsFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Show the options form: the people for receivers."""
+        if self.config_entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_CHANNEL:
+            return self.async_abort(reason="managed_in_panel")
         if self.config_entry.data.get(CONF_ENTRY_TYPE) not in RECEIVER_ENTRY_TYPES:
             if user_input is not None:
                 return self.async_create_entry(data=user_input)

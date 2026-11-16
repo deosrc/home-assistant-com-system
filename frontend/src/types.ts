@@ -109,6 +109,21 @@ export interface ScriptCheckResult {
   can_rescan: boolean;
 }
 
+export interface ChannelDefaults {
+  title?: string;
+  priority?: string;
+  image?: string;
+  data?: Record<string, unknown>;
+}
+
+export interface ChannelInfo {
+  entry_id: string;
+  name: string;
+  /** The `notification_channel` entity the action's channel field takes. */
+  entity_id: string | null;
+  defaults: ChannelDefaults;
+}
+
 export interface HistoryRecord {
   id: string;
   /** ISO timestamp (UTC). */

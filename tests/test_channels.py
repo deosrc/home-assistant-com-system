@@ -9,14 +9,15 @@ from custom_components.com_system.const import (
     CONF_NAME,
     CONF_RECEIVER_TYPE,
     CONF_SOURCE_ID,
-    DATA_CHANNELS,
     DOMAIN,
+    ENTRY_TYPE_CHANNEL,
     ENTRY_TYPE_HUB,
     ENTRY_TYPE_RECEIVER,
     RECEIVER_TYPE_MOBILE_APP,
 )
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ServiceValidationError
+from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 
 
@@ -49,8 +50,21 @@ async def _setup(hass: HomeAssistant, os_name: str = "Android"):
     return receiver, calls
 
 
-def _store(hass: HomeAssistant):
-    return hass.data[DOMAIN][DATA_CHANNELS]
+async def _add_channel(hass: HomeAssistant, name: str, **options):
+    """Create a channel entry and return its entity id."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title=name,
+        data={CONF_ENTRY_TYPE: ENTRY_TYPE_CHANNEL},
+        options=options,
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    return entry, next(
+        e.entity_id
+        for e in er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id)
+    )
 
 
 def test_apply_defaults_call_wins() -> None:
@@ -71,35 +85,30 @@ def test_apply_defaults_call_wins() -> None:
     }
 
 
-async def test_store_crud(hass: HomeAssistant) -> None:
-    """Channels can be created, listed, renamed and removed."""
+async def test_channel_entity(hass: HomeAssistant) -> None:
+    """A channel is a notification_channel entity with its defaults."""
     await _setup(hass)
-    store = _store(hass)
-    await store.async_set("Doors", {"priority": "high"})
-    await store.async_set("Alerts", {})
-    assert [c["name"] for c in await store.async_list()] == ["Alerts", "Doors"]
-    await store.async_set("Entrances", {"priority": "high"}, previous_name="Doors")
-    assert await store.async_get("Doors") is None
-    assert await store.async_get("Entrances") == {"priority": "high"}
-    with pytest.raises(ServiceValidationError):
-        await store.async_set("Alerts", {}, previous_name="Entrances")
-    with pytest.raises(ServiceValidationError):
-        await store.async_set("New", {}, previous_name="Missing")
-    await store.async_remove("Alerts")
-    with pytest.raises(ServiceValidationError):
-        await store.async_remove("Alerts")
+    _, entity_id = await _add_channel(hass, "Doors", priority="high")
+    assert entity_id.startswith("notification_channel.")
+    state = hass.states.get(entity_id)
+    assert state.state == "Doors"
+    assert state.attributes["priority"] == "high"
 
 
 async def test_send_applies_channel_defaults(hass: HomeAssistant) -> None:
-    """The channel's defaults apply, the call wins, and the app gets the channel."""
+    """The channel's defaults apply, the call wins, and the app gets the name."""
     receiver, calls = await _setup(hass)
-    await _store(hass).async_set(
+    _, channel = await _add_channel(
+        hass,
         "Doors",
-        {"title": "Door", "priority": "high", "data": {"mobile_app": {"tag": "d"}}},
+        title="Door",
+        priority="high",
+        data={"mobile_app": {"tag": "d"}},
     )
-    entry_id = receiver.entry_id
     response = await async_send_to(
-        hass, entry_id, {"message": "Knock", "title": "Mine", "channel": "Doors"}
+        hass,
+        receiver.entry_id,
+        {"message": "Knock", "title": "Mine", "channel": channel},
     )
     assert response["counts"]["delivered"] == 1
     data = calls[0].data
@@ -133,19 +142,24 @@ async def async_send_to(hass, entry_id, data):
     )
 
 
-async def test_unknown_channel_is_rejected(hass: HomeAssistant) -> None:
-    """A call naming a missing channel fails and sends nothing."""
+async def test_non_channel_entity_is_rejected(hass: HomeAssistant) -> None:
+    """A channel entity that is not Com System's is rejected, sending nothing."""
     receiver, calls = await _setup(hass)
-    with pytest.raises(ServiceValidationError, match="does not exist"):
-        await async_send_to(hass, receiver.entry_id, {"message": "x", "channel": "No"})
+    hass.states.async_set("notification_channel.other", "x")
+    with pytest.raises(ServiceValidationError, match="not a Com System channel"):
+        await async_send_to(
+            hass,
+            receiver.entry_id,
+            {"message": "x", "channel": "notification_channel.other"},
+        )
     assert not calls
 
 
 async def test_remove_sends_remove_channel_to_android(hass: HomeAssistant) -> None:
     """Removing a channel tells Android receivers to delete it."""
     _, calls = await _setup(hass)
-    await _store(hass).async_set("Doors", {})
-    await _store(hass).async_remove("Doors")
+    entry, _ = await _add_channel(hass, "Doors")
+    await hass.config_entries.async_remove(entry.entry_id)
     assert len(calls) == 1
     assert calls[0].data == {"message": "remove_channel", "data": {"channel": "Doors"}}
 
@@ -153,6 +167,81 @@ async def test_remove_sends_remove_channel_to_android(hass: HomeAssistant) -> No
 async def test_remove_skips_ios(hass: HomeAssistant) -> None:
     """iOS devices are not sent remove_channel."""
     _, calls = await _setup(hass, os_name="iOS")
-    await _store(hass).async_set("Doors", {})
-    await _store(hass).async_remove("Doors")
+    entry, _ = await _add_channel(hass, "Doors")
+    await hass.config_entries.async_remove(entry.entry_id)
     assert not calls
+
+
+async def _call(client, msg: dict) -> dict:
+    client.next_id = getattr(client, "next_id", 0) + 1
+    await client.send_json({"id": client.next_id, **msg})
+    return await client.receive_json()
+
+
+async def test_ws_create_update_remove(hass: HomeAssistant, hass_ws_client) -> None:
+    """The panel creates, renames, lists and deletes channels."""
+    _, calls = await _setup(hass)
+    client = await hass_ws_client(hass)
+    created = await _call(
+        client,
+        {
+            "type": "com_system/channels/set",
+            "name": "Doors",
+            "defaults": {"priority": "high"},
+        },
+    )
+    assert created["success"]
+    info = created["result"]
+    assert info["name"] == "Doors"
+    assert info["defaults"] == {"priority": "high"}
+    assert hass.states.get(info["entity_id"]).state == "Doors"
+
+    dupe = await _call(client, {"type": "com_system/channels/set", "name": "doors"})
+    assert dupe["error"]["code"] == "channel_error"
+    bad = await _call(
+        client,
+        {
+            "type": "com_system/channels/set",
+            "name": "Bad",
+            "defaults": {"image": "nope"},
+        },
+    )
+    assert bad["error"]["code"] == "channel_error"
+
+    updated = await _call(
+        client,
+        {
+            "type": "com_system/channels/set",
+            "entry_id": info["entry_id"],
+            "name": "Entrances",
+            "defaults": {"priority": "low"},
+        },
+    )
+    assert updated["result"]["name"] == "Entrances"
+    # The old name is dropped from Android devices.
+    assert calls[-1].data == {"message": "remove_channel", "data": {"channel": "Doors"}}
+    await hass.async_block_till_done()
+    assert hass.states.get(info["entity_id"]).attributes["priority"] == "low"
+
+    listed = await _call(client, {"type": "com_system/channels/list"})
+    assert [c["name"] for c in listed["result"]["channels"]] == ["Entrances"]
+
+    removed = await _call(
+        client, {"type": "com_system/channels/remove", "entry_id": info["entry_id"]}
+    )
+    assert removed["success"]
+    assert calls[-1].data["data"] == {"channel": "Entrances"}
+    missing = await _call(
+        client, {"type": "com_system/channels/remove", "entry_id": info["entry_id"]}
+    )
+    assert missing["error"]["code"] == "not_found"
+
+
+async def test_options_flow_points_to_the_panel(hass: HomeAssistant) -> None:
+    """A channel is edited in the panel, not by the options flow."""
+    await _setup(hass)
+    entry, _ = await _add_channel(hass, "Doors", priority="high")
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] == "abort"
+    assert result["reason"] == "managed_in_panel"
+    assert dict(entry.options) == {"priority": "high"}

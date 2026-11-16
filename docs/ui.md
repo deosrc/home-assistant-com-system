@@ -48,6 +48,10 @@ them; see [receiver discovery](receivers/README.md#automatic-detection). The
 sources are not listed. A receiver with a type that is no longer known stays
 in the list, with the type id as its type.
 
+## Channels
+
+Create, edit and delete [channels](channels.md).
+
 ## Recent
 
 The notifications sent, newest first, each with its title and message, the
@@ -122,12 +126,12 @@ admin user.
 - `com_system/discoveries/list`: the pending discoveries.
 - `com_system/history/list`: the recent notifications, newest first
   (optional `limit`). Each has `id`, `time`, `notification` and `results`.
-- `com_system/channels/list`: the [channels](channels.md), each `name` and
-  `defaults`.
-- `com_system/channels/set`: creates or replaces a channel (`name`, optional
-  `defaults`); `previous_name` renames one. Errors are `channel_error`.
-- `com_system/channels/remove`: removes a channel (`name`) and sends
-  `remove_channel` to Android mobile apps.
+- `com_system/channels/list`: the [channels](channels.md), each `entry_id`,
+  `name`, `entity_id` and `defaults`.
+- `com_system/channels/set`: creates a channel (`name`, optional
+  `defaults`), or with `entry_id` renames it and replaces its defaults.
+  Errors are `channel_error`.
+- `com_system/channels/remove`: deletes a channel (`entry_id`).
 - `com_system/notify/preview`: the receivers the targets (`people` and
   `receivers`, as in the action) would reach, each `reached` or
   `skipped` with a reason. Sends
