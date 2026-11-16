@@ -24,6 +24,14 @@ records the conventions and how things work as built.
   example (the notify ones are in `SERVICE_DESCRIPTION` in `notify.py`, the
   channel ones in `services.yaml` and `strings.json`). Change both together.
   `channel` and `message` are excluded.
+- Keep the field descriptions of `notify.com_system` and the channel actions
+  true to what the receiver types support. Fields such as `click_action`,
+  `actions`, `tag` and `car_ui` say which receiver types honour them (for
+  example "Supported by mobile apps and persistent notifications"). When a
+  receiver type gains or loses support for a field, update that description
+  in `SERVICE_DESCRIPTION` (`notify.py`), `strings.json` and
+  `translations/en.json` (both channel actions), and the tables in `docs/`
+  (`services.md`, `content.md` and the type's page), in the same change.
 
 ## Dev environment
 

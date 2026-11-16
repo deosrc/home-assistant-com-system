@@ -35,16 +35,19 @@ How each type handles them:
 
 ## Mobile app fields
 
-Four typed fields are for mobile app notifications. Other receiver types
-drop them with a warning, as with any content they do not support.
+Four typed fields are for mobile app notifications; `tag` is also
+supported by persistent notifications. A receiver type that does not support
+a field drops it with a warning.
 
 - `click_action`: a URL or Home Assistant path (such as `/lovelace/cameras`)
   opened when the notification is tapped.
 - `actions`: buttons, each with an `id` and a `label` (the button text), and optionally
   a `uri` to open instead of firing an event. Pressing one fires
   [`com_system_action`](receivers/mobile-app.md#actions-and-responses).
-- `tag`: notifications with the same tag replace each other. The
-  persistent notification receiver supports it too.
+- `tag`: notifications with the same tag replace each other. Mobile apps
+  can also use it to clear a notification. The
+  [persistent notification](receivers/persistent-notification.md) receiver
+  supports it too.
 - `car_ui`: show the notification in Android Auto.
 
 They are sent to the app as `clickAction` (and `url` for iOS), `actions`,

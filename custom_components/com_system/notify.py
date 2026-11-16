@@ -311,8 +311,9 @@ SERVICE_DESCRIPTION: dict[str, Any] = {
         ATTR_TAG: {
             "name": "Tag",
             "description": (
-                "Notifications with the same tag replace each other. The tag "
-                "can also be used to clear a notification. Mobile apps only."
+                "Notifications with the same tag replace each other. On mobile "
+                "apps the tag can also be used to clear a notification. "
+                "Supported by mobile apps and persistent notifications."
             ),
             "example": "front-door",
             "selector": {"text": None},

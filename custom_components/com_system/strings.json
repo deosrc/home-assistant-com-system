@@ -96,7 +96,7 @@
         },
         "tag": {
           "name": "Tag",
-          "description": "Notifications with the same tag replace each other. The tag can also be used to clear a notification. Mobile apps only."
+          "description": "Notifications with the same tag replace each other. On mobile apps the tag can also be used to clear a notification. Supported by mobile apps and persistent notifications."
         },
         "car_ui": {
           "name": "Car UI",
@@ -142,7 +142,7 @@
         },
         "tag": {
           "name": "Tag",
-          "description": "Notifications with the same tag replace each other. The tag can also be used to clear a notification. Mobile apps only."
+          "description": "Notifications with the same tag replace each other. On mobile apps the tag can also be used to clear a notification. Supported by mobile apps and persistent notifications."
         },
         "car_ui": {
           "name": "Car UI",
