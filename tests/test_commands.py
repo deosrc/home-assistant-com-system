@@ -13,6 +13,7 @@ from custom_components.com_system.const import (
     DOMAIN,
     ENTRY_TYPE_HUB,
     ENTRY_TYPE_RECEIVER,
+    RECEIVER_TYPE_CUSTOM,
     RECEIVER_TYPE_MOBILE_APP,
     RECEIVER_TYPE_PERSISTENT_NOTIFICATION,
 )
@@ -91,16 +92,40 @@ async def test_clear_notification_works_on_ios(hass: HomeAssistant) -> None:
     assert len(calls) == 1
 
 
-async def test_unsupported_receiver_is_skipped(hass: HomeAssistant) -> None:
-    (mobile, persistent), calls = await _setup(hass)
+async def test_clear_notification_dismisses_persistent(hass: HomeAssistant) -> None:
+    (_, persistent), _ = await _setup(hass)
+    dismissed: list[ServiceCall] = []
+    hass.services.async_register("persistent_notification", "dismiss", dismissed.append)
     response = await _clear(
-        hass, {"tag": "door", "receivers": _target(hass, mobile, persistent)}
+        hass, {"tag": "door", "receivers": _target(hass, persistent)}
+    )
+    assert dismissed[0].data == {"notification_id": "com_system_tag_door"}
+    assert response["counts"]["delivered"] == 1
+
+
+async def test_unsupported_receiver_is_skipped(hass: HomeAssistant) -> None:
+    (mobile, _), calls = await _setup(hass)
+    script = MockConfigEntry(
+        domain=DOMAIN,
+        title="Script",
+        data={
+            CONF_ENTRY_TYPE: ENTRY_TYPE_RECEIVER,
+            CONF_RECEIVER_TYPE: RECEIVER_TYPE_CUSTOM,
+            CONF_SOURCE_ID: "notify_me",
+            CONF_NAME: "Script",
+        },
+    )
+    script.add_to_hass(hass)
+    await hass.config_entries.async_setup(script.entry_id)
+    await hass.async_block_till_done()
+    response = await _clear(
+        hass, {"tag": "door", "receivers": _target(hass, mobile, script)}
     )
     assert len(calls) == 1
     by_name = {r["name"]: r for r in response["results"]}
     assert by_name["Pixel"]["result"] == "delivered"
-    assert by_name["Persistent"]["result"] == "skipped"
-    assert "does not support" in by_name["Persistent"]["reason"]
+    assert by_name["Script"]["result"] == "skipped"
+    assert "does not support" in by_name["Script"]["reason"]
 
 
 async def test_missing_notify_action_fails_the_receiver(hass: HomeAssistant) -> None:

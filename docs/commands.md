@@ -23,7 +23,7 @@ confirmation.
 
 | Command | Fields | Receiver types |
 | --- | --- | --- |
-| `com_system.clear_notification` | `tag` (required) | Mobile app |
+| `com_system.clear_notification` | `tag` (required) | Mobile app, persistent |
 
 ### Clear a notification
 
@@ -40,7 +40,10 @@ data:
     Everyone: true
 ```
 
-It sends the app's `clear_notification` command with `data.tag`.
+On mobile apps it sends the app's `clear_notification` command with
+`data.tag`. For persistent notifications it dismisses the notification Com
+System made for that tag, so only notifications sent with a tag can be
+cleared there.
 
 ## Adding a command
 

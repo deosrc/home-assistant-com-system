@@ -124,7 +124,8 @@ records the conventions and how things work as built.
   given, `title`, and, without a `tag`, no `notification_id`: HA then generates
   one, so every notification is its own. With a `tag` it sends
   `notification_id` `com_system_tag_<tag>` (`TAG_ID_PREFIX`), so the same
-  tag replaces the previous notification. Com System never dismisses one.
+  tag replaces the previous notification. Only the `clear_notification`
+  command dismisses one (by tag).
   It declares the `title` and `tag` capabilities and returns no warnings. It sets
   `supports_people = False` on `ReceiverType` (default True): the options
   flow then shows an empty `no_options` step instead of the people field,

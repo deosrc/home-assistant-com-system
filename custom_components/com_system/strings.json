@@ -166,7 +166,7 @@
     },
     "clear_notification": {
       "name": "Clear a notification",
-      "description": "Removes the notification with a tag from the receivers that match the targets. Mobile apps only; a receiver that cannot clear notifications is skipped.",
+      "description": "Removes the notification with a tag from the receivers that match the targets. Supported by mobile apps and persistent notifications; other receivers are skipped.",
       "fields": {
         "people": {
           "name": "People",

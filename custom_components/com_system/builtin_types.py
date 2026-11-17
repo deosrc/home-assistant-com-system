@@ -241,6 +241,7 @@ class PersistentNotificationReceiverType(ReceiverType):
     name = "Persistent notification"
     discoverable = True
     capabilities = frozenset({"title", "tag"})
+    commands = frozenset({"clear_notification"})
     # Every user sees the same notifications, so there is no person.
     supports_people = False
     SOURCE_ID = "persistent_notification"
@@ -257,7 +258,7 @@ class PersistentNotificationReceiverType(ReceiverType):
         Without a tag no ``notification_id`` is sent, so Home Assistant makes
         a new notification each time. A ``tag`` becomes the notification id
         (``TAG_ID_PREFIX`` + tag), so a notification with the same tag
-        replaces the previous one. Com System never dismisses one. Only the
+        replaces the previous one. Only the
         message, title and tag are supported.
         """
         data: dict[str, Any] = {"message": notification["message"]}
@@ -267,6 +268,28 @@ class PersistentNotificationReceiverType(ReceiverType):
             data["title"] = notification["title"]
         await hass.services.async_call(
             "persistent_notification", "create", data, blocking=True
+        )
+        return []
+
+    async def async_command(
+        self,
+        hass: HomeAssistant,
+        receiver: Receiver,
+        command_id: str,
+        data: Mapping[str, Any],
+    ) -> list[str]:
+        """Dismiss the notification made for a tag (``clear_notification``).
+
+        Only notifications sent with a tag can be cleared. Dismissing one that
+        does not exist is not an error.
+        """
+        if command_id != "clear_notification":
+            raise NotImplementedError
+        await hass.services.async_call(
+            "persistent_notification",
+            "dismiss",
+            {"notification_id": f"{TAG_ID_PREFIX}{data['tag']}"},
+            blocking=True,
         )
         return []
 
