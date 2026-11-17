@@ -20,6 +20,7 @@ from homeassistant.helpers.typing import ConfigType
 
 from .builtin_types import register_builtin_receiver_types
 from .channels import async_register_channel_actions
+from .commands import async_register_command_actions
 from .const import (
     CONF_ENTRY_TYPE,
     DATA_CHANNEL_COMPONENT,
@@ -66,6 +67,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     }
     async_register_notify_action(hass)
     async_register_channel_actions(hass)
+    async_register_command_actions(hass)
     async_register_commands(hass)
     async_setup_action_responses(hass)
     await async_register_panel(hass)

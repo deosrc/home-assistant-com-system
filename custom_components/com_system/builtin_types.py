@@ -25,10 +25,13 @@ from .const import (
     RECEIVER_TYPE_WEBOSTV,
 )
 from .mobile_app import (
+    MOBILE_APP_COMMANDS,
     async_deliver_mobile_app,
+    async_run_mobile_app_command,
     audience_of,
     linked_person,
     mobile_app_people,
+    supports_mobile_app_command,
 )
 from .pushover import (
     PUSHOVER_DATA_KEYS,
@@ -146,12 +149,29 @@ class MobileAppReceiverType(DeviceReceiverType):
     )
     # The person comes from the registering user, not from the options.
     supports_people = False
+    commands = frozenset(MOBILE_APP_COMMANDS)
 
     async def async_deliver(
         self, hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
     ) -> list[str]:
         """Call the device's ``notify.mobile_app_*`` action."""
         return await async_deliver_mobile_app(hass, receiver, notification)
+
+    def supports_command(
+        self, hass: HomeAssistant, receiver: Receiver, command_id: str
+    ) -> bool:
+        """Return whether the device's OS takes the command."""
+        return supports_mobile_app_command(hass, receiver, command_id)
+
+    async def async_command(
+        self,
+        hass: HomeAssistant,
+        receiver: Receiver,
+        command_id: str,
+        data: Mapping[str, Any],
+    ) -> list[str]:
+        """Send the command through the device's notify action."""
+        return await async_run_mobile_app_command(hass, receiver, command_id, data)
 
     def linked_person(self, hass: HomeAssistant, receiver: Receiver) -> str | None:
         """Return the person the device's user or tracker links to."""

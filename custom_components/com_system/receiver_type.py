@@ -67,6 +67,29 @@ class ReceiverType:
         """
         raise NotImplementedError
 
+    # The ids of the commands (``commands.py``) the type can run.
+    commands: frozenset[str] = frozenset()
+
+    def supports_command(
+        self, hass: HomeAssistant, receiver: Receiver, command_id: str
+    ) -> bool:
+        """Return whether this receiver can run the command.
+
+        Defaults to the type's ``commands``. Override when it depends on the
+        receiver, for example the OS of a mobile device.
+        """
+        return command_id in self.commands
+
+    async def async_command(
+        self,
+        hass: HomeAssistant,
+        receiver: Receiver,
+        command_id: str,
+        data: Mapping[str, Any],
+    ) -> list[str]:
+        """Run a command on a receiver; return warnings, raise on failure."""
+        raise NotImplementedError
+
     def associated_people(
         self, hass: HomeAssistant, receiver: Receiver
     ) -> tuple[str, ...]:

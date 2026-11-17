@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass
 from typing import Any, NamedTuple
 from urllib.parse import quote, unquote
 
@@ -207,6 +208,66 @@ async def async_remove_channel(hass: HomeAssistant, channel: str) -> None:
             {"message": REMOVE_CHANNEL_MESSAGE, "data": {"channel": channel}},
             blocking=True,
         )
+
+
+@dataclass(frozen=True, slots=True)
+class MobileAppCommand:
+    """How a command is sent to the companion app.
+
+    The app's notification commands are a notify call whose ``message`` is the
+    command name. ``os_names`` limits it to those operating systems (lower
+    case, as the app registers them); None means every OS. ``data`` builds the
+    call's ``data`` from the command's parameters.
+    """
+
+    message: str
+    data: Callable[[Mapping[str, Any]], dict[str, Any]] = lambda _: {}
+    os_names: frozenset[str] | None = None
+
+
+# The commands a mobile app receiver runs, by Com System command id. Add an
+# entry here to support a new command (and its Command in ``commands.py``).
+# https://companion.home-assistant.io/docs/notifications/notification-commands/
+MOBILE_APP_COMMANDS: dict[str, MobileAppCommand] = {
+    "clear_notification": MobileAppCommand(
+        "clear_notification", lambda params: {"tag": params["tag"]}
+    ),
+}
+
+
+def supports_mobile_app_command(
+    hass: HomeAssistant, receiver: Receiver, command_id: str
+) -> bool:
+    """Return whether the device's app (and OS) takes the command."""
+    command = MOBILE_APP_COMMANDS.get(command_id)
+    if command is None:
+        return False
+    if command.os_names is None:
+        return True
+    entry = source_entry(hass, receiver)
+    os_name = str(entry.data.get("os_name", "")).lower() if entry else ""
+    return os_name in command.os_names
+
+
+async def async_run_mobile_app_command(
+    hass: HomeAssistant,
+    receiver: Receiver,
+    command_id: str,
+    params: Mapping[str, Any],
+) -> list[str]:
+    """Send a command to the device through its notify action."""
+    command = MOBILE_APP_COMMANDS[command_id]
+    entry = source_entry(hass, receiver)
+    if entry is None:
+        raise HomeAssistantError("The mobile app device is no longer registered")
+    service = f"mobile_app_{slugify(entry.data['device_name'])}"
+    if not hass.services.has_service(NOTIFY_DOMAIN, service):
+        raise HomeAssistantError(f"The action notify.{service} is not available")
+    data: dict[str, Any] = {"message": command.message}
+    if extra := command.data(params):
+        data["data"] = extra
+    await hass.services.async_call(NOTIFY_DOMAIN, service, data, blocking=True)
+    return []
 
 
 def _app_action(action: Mapping[str, Any]) -> dict[str, Any]:

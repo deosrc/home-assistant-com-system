@@ -163,6 +163,24 @@
           "description": "The channel to delete."
         }
       }
+    },
+    "clear_notification": {
+      "name": "Clear a notification",
+      "description": "Removes the notification with a tag from the receivers that match the targets. Mobile apps only; a receiver that cannot clear notifications is skipped.",
+      "fields": {
+        "people": {
+          "name": "People",
+          "description": "Notify receivers associated with individual people, or with everyone."
+        },
+        "receivers": {
+          "name": "Receivers",
+          "description": "Notify the receivers you select (by receiver, area, device, floor or label), or every receiver that has an area."
+        },
+        "tag": {
+          "name": "Tag",
+          "description": "The tag of the notification to clear, as given when it was sent."
+        }
+      }
     }
   },
   "triggers": {
