@@ -1,0 +1,34 @@
+name: Feature request
+description: Suggest a new feature or improvement
+labels: [enhancement]
+body:
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have read the documentation to check the feature does not already exist.
+          required: true
+        - label: I have searched the existing issues to check this has not already been suggested.
+          required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggestion
+      description: What you want it to do, e.g. use TTS when connected to Android Auto.
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: >-
+        What you are trying to do, e.g. send a todo list, which would be unsafe to display
+        on-screen while driving.
+    validations:
+      required: true
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else
+      description: Any other context, screenshots or details.
