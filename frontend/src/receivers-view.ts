@@ -9,6 +9,11 @@ import type {
 } from "./types";
 
 /** Configured receivers, a script checker and a pending discoveries alert. */
+/** The Devices & services page of a receiver's config entry. */
+function entryUrl(r: ReceiverInfo): string {
+  return `/config/integrations/integration/com_system#config_entry=${r.entry_id}`;
+}
+
 export class ComSystemReceivers extends LitElement {
   declare hass: HomeAssistant;
   declare private receivers?: ReceiverInfo[];
@@ -306,6 +311,14 @@ export class ComSystemReceivers extends LitElement {
   }
 
   /** Open the receiver's device page, where it is edited. */
+  /** Opens the receiver's entry, where Configure edits its conditions. */
+  private openEntry(ev: MouseEvent, r: ReceiverInfo): void {
+    if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return;
+    ev.preventDefault();
+    history.pushState(null, "", entryUrl(r));
+    window.dispatchEvent(new CustomEvent("location-changed"));
+  }
+
   private openDevice(r: ReceiverInfo): void {
     if (!r.device_id) return;
     history.pushState(null, "", `/config/devices/device/${r.device_id}`);
@@ -350,10 +363,14 @@ export class ComSystemReceivers extends LitElement {
               <td>${r.name}</td>
               <td>${r.type}</td>
               <td>${this.renderTargets(r)}</td>
-              <td class="conditions">
-                ${r.conditions
-                  ? `${r.conditions} ${r.conditions === 1 ? "condition" : "conditions"}`
-                  : "None"}
+              <td class="conditions" @click=${(ev: Event) => ev.stopPropagation()}>
+                <a
+                  href=${entryUrl(r)}
+                  @click=${(ev: MouseEvent) => this.openEntry(ev, r)}
+                  >${r.conditions
+                    ? `${r.conditions} ${r.conditions === 1 ? "condition" : "conditions"}`
+                    : "None"}</a
+                >
               </td>
             </tr>
           `,

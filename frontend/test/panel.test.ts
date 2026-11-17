@@ -244,6 +244,11 @@ describe("panel", () => {
     expect(
       view.shadowRoot!.querySelector("td.conditions")!.textContent!.trim(),
     ).toBe("2 conditions");
+    expect(
+      view.shadowRoot!.querySelector("td.conditions a")!.getAttribute("href"),
+    ).toBe(
+      "/config/integrations/integration/com_system#config_entry=e1",
+    );
     // Discoveries are an alert with a link, not a list.
     expect(text).not.toContain("Pixel");
     const alert = view.shadowRoot!.querySelector("#discoveries")!;

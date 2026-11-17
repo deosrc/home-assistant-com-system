@@ -26,7 +26,9 @@ Targets are shown as badges, one for each area (with an area icon) and
 person (with a person icon) the receiver is linked to, by name. A
 receiver's area is the area of its device; change it in Home Assistant.
 The **Conditions** column says how many [notification
-conditions](conditions.md) the receiver has, or **None**.
+conditions](conditions.md) the receiver has, or **None**. It links to the
+receiver's entry on Devices & services, where **Configure** edits them (the
+panel cannot open that dialog itself).
 
 The switch operates the receiver's enabled switch, so it is the same as
 using the switch entity or an automation, and the list updates when that
