@@ -25,10 +25,13 @@ from .const import (
     RECEIVER_TYPE_WEBOSTV,
 )
 from .mobile_app import (
+    MOBILE_APP_COMMANDS,
     async_deliver_mobile_app,
+    async_run_mobile_app_command,
     audience_of,
     linked_person,
     mobile_app_people,
+    supports_mobile_app_command,
 )
 from .pushover import (
     PUSHOVER_DATA_KEYS,
@@ -146,12 +149,29 @@ class MobileAppReceiverType(DeviceReceiverType):
     )
     # The person comes from the registering user, not from the options.
     supports_people = False
+    commands = frozenset(MOBILE_APP_COMMANDS)
 
     async def async_deliver(
         self, hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
     ) -> list[str]:
         """Call the device's ``notify.mobile_app_*`` action."""
         return await async_deliver_mobile_app(hass, receiver, notification)
+
+    def supports_command(
+        self, hass: HomeAssistant, receiver: Receiver, command_id: str
+    ) -> bool:
+        """Return whether the device's OS takes the command."""
+        return supports_mobile_app_command(hass, receiver, command_id)
+
+    async def async_command(
+        self,
+        hass: HomeAssistant,
+        receiver: Receiver,
+        command_id: str,
+        data: Mapping[str, Any],
+    ) -> list[str]:
+        """Send the command through the device's notify action."""
+        return await async_run_mobile_app_command(hass, receiver, command_id, data)
 
     def linked_person(self, hass: HomeAssistant, receiver: Receiver) -> str | None:
         """Return the person the device's user or tracker links to."""
@@ -221,6 +241,7 @@ class PersistentNotificationReceiverType(ReceiverType):
     name = "Persistent notification"
     discoverable = True
     capabilities = frozenset({"title", "tag"})
+    commands = frozenset({"clear_notification"})
     # Every user sees the same notifications, so there is no person.
     supports_people = False
     SOURCE_ID = "persistent_notification"
@@ -237,7 +258,7 @@ class PersistentNotificationReceiverType(ReceiverType):
         Without a tag no ``notification_id`` is sent, so Home Assistant makes
         a new notification each time. A ``tag`` becomes the notification id
         (``TAG_ID_PREFIX`` + tag), so a notification with the same tag
-        replaces the previous one. Com System never dismisses one. Only the
+        replaces the previous one. Only the
         message, title and tag are supported.
         """
         data: dict[str, Any] = {"message": notification["message"]}
@@ -247,6 +268,28 @@ class PersistentNotificationReceiverType(ReceiverType):
             data["title"] = notification["title"]
         await hass.services.async_call(
             "persistent_notification", "create", data, blocking=True
+        )
+        return []
+
+    async def async_command(
+        self,
+        hass: HomeAssistant,
+        receiver: Receiver,
+        command_id: str,
+        data: Mapping[str, Any],
+    ) -> list[str]:
+        """Dismiss the notification made for a tag (``clear_notification``).
+
+        Only notifications sent with a tag can be cleared. Dismissing one that
+        does not exist is not an error.
+        """
+        if command_id != "clear_notification":
+            raise NotImplementedError
+        await hass.services.async_call(
+            "persistent_notification",
+            "dismiss",
+            {"notification_id": f"{TAG_ID_PREFIX}{data['tag']}"},
+            blocking=True,
         )
         return []
 

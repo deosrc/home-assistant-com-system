@@ -3,5 +3,10 @@
     "action_received": {
       "trigger": "mdi:gesture-tap-button"
     }
+  },
+  "services": {
+    "clear_notification": {
+      "service": "mdi:bell-off"
+    }
   }
 }

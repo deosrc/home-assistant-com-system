@@ -31,8 +31,9 @@ Delivery calls `persistent_notification.create`. Without a `tag` each
 notification creates its own entry in the notification area. With a `tag`
 the notification's ID is made from it (`com_system_tag_<tag>`), so the next
 notification with the same tag replaces the previous one instead of adding
-another. Com System never dismisses one: dismiss notifications in the Home
-Assistant UI as normal.
+another. Notifications sent with a tag can be removed with the
+[clear notification command](../commands.md#clear-a-notification); dismiss
+others in the Home Assistant UI as normal.
 
 ## Example
 

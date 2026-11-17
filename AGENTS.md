@@ -124,7 +124,8 @@ records the conventions and how things work as built.
   given, `title`, and, without a `tag`, no `notification_id`: HA then generates
   one, so every notification is its own. With a `tag` it sends
   `notification_id` `com_system_tag_<tag>` (`TAG_ID_PREFIX`), so the same
-  tag replaces the previous notification. Com System never dismisses one.
+  tag replaces the previous notification. Only the `clear_notification`
+  command dismisses one (by tag).
   It declares the `title` and `tag` capabilities and returns no warnings. It sets
   `supports_people = False` on `ReceiverType` (default True): the options
   flow then shows an empty `no_options` step instead of the people field,
@@ -357,6 +358,22 @@ records the conventions and how things work as built.
   Recent shows each record's `responses` in a Response column on the row of
   the receiver (`receiver_id`), and below the message when that receiver is
   not in the results.
+- `commands.py`: commands, actions that control receivers (see
+  `docs/commands.md`). `COMMANDS` maps a command id to a `Command` (the
+  action schema for its own parameters); `async_register_command_actions`
+  (from `async_setup`) registers `com_system.<id>` with the `people` and
+  `receivers` targets of `notify.com_system` added. Their UI description is
+  in `services.yaml`, `strings.json` (copied to `translations/en.json`) and
+  `icons.json` (the domain has a `services.yaml`, so
+  `async_set_service_schema` is ignored); `test_every_command_is_described`
+  checks they agree. `async_run_command` resolves with
+  `resolve_call_targets`, runs the receivers concurrently and returns
+  `response_data`. A receiver type lists its `commands`, may override
+  `supports_command` (a skipped result, "The receiver does not support this
+  command") and implements `async_command`. The mobile app uses
+  `MOBILE_APP_COMMANDS` (`MobileAppCommand`: app message, `data` builder and
+  optional `os_names` for OS-specific commands). Commands skip conditions,
+  history and the receiver entity.
 - `trigger.py`, `triggers.yaml`, `icons.json`: the trigger platform (new
   style: a `Trigger` class returned by `async_get_triggers`, fields in
   `triggers.yaml`, texts in `strings.json` under `triggers`, copied to

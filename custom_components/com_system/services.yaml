@@ -152,3 +152,46 @@ delete_channel:
         entity:
           domain: notification_channel
           integration: com_system
+
+clear_notification:
+  fields:
+    people:
+      default:
+        active_choice: Everyone
+        Everyone: true
+      selector:
+        choose:
+          choices:
+            Individuals:
+              selector:
+                entity:
+                  domain: person
+                  multiple: true
+            Everyone:
+              selector:
+                constant:
+                  value: true
+                  label: Everyone
+    receivers:
+      default:
+        active_choice: All Areas
+        All Areas: true
+      selector:
+        choose:
+          choices:
+            Select:
+              selector:
+                target:
+                  entity:
+                    domain: notification_receiver
+                    integration: com_system
+            All Areas:
+              selector:
+                constant:
+                  value: true
+                  label: All Areas
+    tag:
+      required: true
+      example: front-door
+      selector:
+        text: null
