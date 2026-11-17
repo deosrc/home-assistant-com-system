@@ -1,0 +1,75 @@
+name: Bug report
+description: Something is not working
+labels: [bug]
+body:
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have read the documentation to check this is not expected behaviour.
+          required: true
+        - label: I have searched the existing issues to check this has not already been reported.
+          required: true
+        - label: I have attempted to diagnose and fix the issue myself.
+          required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Problem summary
+      description: What happened, and what did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: action-call
+    attributes:
+      label: Action call details
+      description: If applicable, the action (service) call that caused the problem, including its data.
+      render: yaml
+  - type: input
+    id: ha-version
+    attributes:
+      label: Home Assistant version
+      placeholder: e.g. 2025.1.0
+    validations:
+      required: true
+  - type: input
+    id: integration-version
+    attributes:
+      label: Com System integration version
+      placeholder: e.g. 0.1.0
+    validations:
+      required: true
+  - type: textarea
+    id: related-versions
+    attributes:
+      label: Related integration versions
+      description: "Any related integrations and thier version numbers, e.g. Alexa Media Player: 5.21.0"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant log output. Debug logging may need enabling for the integration.
+      render: text
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics file
+      description: >-
+        Attach the diagnostics file by dragging it into this box. It can be downloaded from the
+        integration page (Settings > Devices & services > Com System > ⋮ > Download diagnostics).
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else
+      description: Any other context, screenshots or details.
