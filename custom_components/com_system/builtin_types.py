@@ -175,6 +175,8 @@ class AlexaMediaReceiverType(DeviceReceiverType):
     name = "Alexa Media Player"
     source_domain = "alexa_media"
     capabilities = frozenset({"title"})
+    # Spoken. The text is spoken too when there is no speech content.
+    message_types = ("tts", "text")
 
     async def async_deliver(
         self, hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]

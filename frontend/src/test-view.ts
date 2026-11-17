@@ -179,6 +179,11 @@ export class ComSystemTest extends LitElement {
 
   private get message(): string {
     const message = this.data.message;
+    if (Array.isArray(message)) {
+      return message
+        .map((m) => String((m as { content?: unknown })?.content ?? ""))
+        .join(" ");
+    }
     return message === undefined ? "" : String(message);
   }
 
