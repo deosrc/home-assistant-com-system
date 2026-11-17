@@ -67,7 +67,7 @@ body:
       label: Diagnostics file
       description: >-
         Attach the diagnostics file by dragging it into this box. It can be downloaded from the
-        integration page.
+        integration page (Settings > Devices & services > Com System > ⋮ > Download diagnostics).
   - type: textarea
     id: additional
     attributes:
