@@ -80,3 +80,7 @@ DEFAULT_HISTORY_MAX_AGE_DAYS = 30
 
 # Fired when someone responds to a notification action.
 EVENT_ACTION = "com_system_action"
+
+# Receiver entry option: the notification conditions, the raw list of
+# condition dicts as the condition selector returned it.
+CONF_CONDITIONS = "conditions"

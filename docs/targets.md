@@ -49,6 +49,12 @@ were targeted. A matching receiver that is disabled, including one named
 explicitly, is skipped and reported as skipped. A receiver that is not
 loaded counts as disabled.
 
+## Conditions
+
+After targeting and the enabled check, each receiver's
+[conditions](conditions.md) are evaluated; one that does not pass is
+skipped for that notification.
+
 ## Seeing a receiver's targets
 
 The [Receivers](ui.md#receivers) page shows the person and area of each

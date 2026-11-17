@@ -130,8 +130,8 @@ async def test_people_option_hidden(hass: HomeAssistant) -> None:
     entry = await _add(hass, people=["person.alice"])
 
     result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert result["step_id"] == "no_options"
-    assert not result["data_schema"]
+    assert result["step_id"] == "receiver"
+    assert "people" not in result["data_schema"].schema
     result = await hass.config_entries.options.async_configure(result["flow_id"], {})
     assert result["type"] is FlowResultType.CREATE_ENTRY
 

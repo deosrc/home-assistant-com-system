@@ -40,10 +40,18 @@ export class ComSystemApi {
     return result.discoveries;
   }
 
-  async previewNotify(targets: NotifyTargets): Promise<PreviewEntry[]> {
+  /**
+   * `notification` is the content the receivers' conditions are evaluated
+   * with (message, title and so on from the form).
+   */
+  async previewNotify(
+    targets: NotifyTargets,
+    notification: Record<string, unknown> = {},
+  ): Promise<PreviewEntry[]> {
     const result = await this.hass.callWS<{ receivers: PreviewEntry[] }>({
       type: "com_system/notify/preview",
       ...targets,
+      notification,
     });
     return result.receivers;
   }

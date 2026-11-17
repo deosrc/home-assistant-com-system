@@ -497,7 +497,8 @@ async def async_send(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any
             )
         raise ServiceValidationError("No receiver matches the targets")
     notification = {"id": uuid.uuid4().hex, **notification_from(data)}
-    results = await async_dispatch(hass, resolved, notification)
+    requested = {k: data[k] for k in (ATTR_PEOPLE, ATTR_RECEIVERS) if k in data}
+    results = await async_dispatch(hass, resolved, notification, requested)
     return response_data(results, notification["id"])
 
 

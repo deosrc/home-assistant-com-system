@@ -163,8 +163,9 @@ async def test_options_flow_has_no_people_field(hass: HomeAssistant) -> None:
     _phone(hass)
     entry = await _receiver(hass)
     result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert result["step_id"] == "no_options"
-    assert not result.get("data_schema")
+    assert result["step_id"] == "receiver"
+    assert "people" not in result["data_schema"].schema
+    assert "conditions" in result["data_schema"].schema
 
 
 async def test_audience_is_restored(hass: HomeAssistant) -> None:

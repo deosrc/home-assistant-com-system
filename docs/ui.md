@@ -20,10 +20,15 @@ An overview of the receivers:
 ## Receivers
 
 A table of every receiver. The first column is a switch that turns the
-receiver on or off; the other columns are its name, type and targets.
+receiver on or off; the other columns are its name, type, targets and
+conditions.
 Targets are shown as badges, one for each area (with an area icon) and
 person (with a person icon) the receiver is linked to, by name. A
 receiver's area is the area of its device; change it in Home Assistant.
+The **Conditions** column says how many [notification
+conditions](conditions.md) the receiver has, or **None**. It links to the
+receiver's entry on Devices & services, where **Configure** edits them (the
+panel cannot open that dialog itself).
 
 The switch operates the receiver's enabled switch, so it is the same as
 using the switch entity or an automation, and the list updates when that
@@ -87,7 +92,8 @@ The testing tool sends a test notification and shows what happens.
   shown as a warning in the result.
 - **Receivers reached** updates as you change the targets, without sending
   anything. Each matching receiver is `reached`, or `skipped` with the
-  reason (it is disabled).
+  reason (it is disabled, or its [conditions](conditions.md) did not pass
+  or errored). The conditions are evaluated with the content in the form.
 - **Send test** calls the [`notify.com_system` action](services.md), so it
   behaves exactly as an automation does, and may send real notifications.
   It is enabled once there is a message and at least one receiver would be
@@ -123,7 +129,8 @@ admin user.
 - `com_system/receivers/list`: each receiver's name, type, enabled state,
   availability, switch entity id, `notification_receiver` entity id
   (`receiver_entity_id`), device id (`device_id`, the page a row opens),
-  people, areas.
+  people, areas and `conditions` (how many
+  [conditions](conditions.md) it has).
 - `com_system/receivers/set_enabled`: turns the receiver's enabled switch on
   or off (`entry_id`, `enabled`).
 - `com_system/scripts/check`: checks a script (`entity_id`) and returns
@@ -136,9 +143,9 @@ admin user.
   `name`, `entity_id` and `defaults`. Channels are written through the
   `com_system` channel actions, not websocket commands.
 - `com_system/notify/preview`: the receivers the targets (`people` and
-  `receivers`, as in the action) would reach, each `reached` or
-  `skipped` with a reason. Sends
-  nothing.
+  `receivers`, as in the action, and an optional `notification` object of
+  content for the [conditions](conditions.md)) would reach, each `reached`
+  or `skipped` with a reason. Sends nothing.
 - `com_system/notify/test`: sends through the `notify.com_system` action
   (`service_data`, the action's data) and returns its response.
   A failure to send is the error `send_failed`.

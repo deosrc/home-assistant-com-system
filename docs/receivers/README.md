@@ -68,6 +68,10 @@ no user link, so its person is [chosen here](pushover.md#person-and-area).
 Com System uses this to find the receivers for a person. Leave it empty if the
 receiver is not tied to anyone.
 
+The same form has the receiver's
+[notification conditions](../conditions.md), which are offered for every
+receiver type.
+
 A receiver's area is not set here. It is the area of the receiver's device
 in Home Assistant (or of its entity, if that has its own area). To change
 it, change the area of the device.

@@ -20,6 +20,11 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.service import async_get_all_descriptions
 
 from .channels import channel_list
+from .conditions import (
+    async_check_conditions,
+    condition_variables,
+    receiver_conditions,
+)
 from .const import (
     CONF_ENTRY_TYPE,
     CONF_RECEIVER_TYPE,
@@ -116,6 +121,8 @@ def _receiver_info(hass: HomeAssistant, receiver: Receiver) -> dict[str, Any]:
         "device_id": receiver_entity.device_id if receiver_entity else None,
         "people": list(registry.people_of(receiver)),
         "areas": list(registry.areas_of(receiver)),
+        # How many notification conditions the receiver has.
+        "conditions": len(receiver_conditions(hass, receiver)),
     }
 
 
@@ -243,21 +250,30 @@ _TARGET_FIELDS = {
 
 @websocket_api.require_admin
 @websocket_api.websocket_command(
-    {vol.Required("type"): "com_system/notify/preview", **_TARGET_FIELDS}
+    {
+        vol.Required("type"): "com_system/notify/preview",
+        # The content the conditions are evaluated with; without it they see
+        # an empty notification.
+        vol.Optional("notification"): dict,
+        **_TARGET_FIELDS,
+    }
 )
-@callback
-def ws_notify_preview(
+@websocket_api.async_response
+async def ws_notify_preview(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
     """Show which receivers a notification with these targets would reach.
 
-    Takes the same target fields as the action and sends nothing. Each entry
-    is ``reached`` (enabled) or ``skipped`` (disabled, with the reason).
+    Takes the same target fields as the action, and optionally the content,
+    and sends nothing. Each entry is ``reached`` or ``skipped`` (disabled, or
+    its conditions did not pass or errored, with the reason).
     """
     registry = hass.data[DOMAIN][DATA_REGISTRY]
     resolved = resolve_call_targets(hass, msg)
+    notification = msg.get("notification") or {}
+    requested = {k: msg[k] for k in (ATTR_PEOPLE, ATTR_RECEIVERS) if k in msg}
 
     def describe(receiver: Receiver, outcome: str, reason: str | None) -> dict:
         receiver_type = registry.type_of(receiver)
@@ -270,9 +286,27 @@ def ws_notify_preview(
             "reasons": list(resolved.reasons.get(receiver.entry_id, [])),
         }
 
-    entries = [describe(r, "reached", None) for r in resolved.receivers] + [
-        describe(r, "skipped", REASON_DISABLED) for r in resolved.skipped
-    ]
+    entries = []
+    for receiver in resolved.receivers:
+        outcome = await async_check_conditions(
+            hass,
+            receiver,
+            condition_variables(
+                hass,
+                receiver,
+                notification,
+                resolved.reasons.get(receiver.entry_id, []),
+                requested,
+            ),
+        )
+        entries.append(
+            describe(
+                receiver,
+                "reached" if outcome.passed else "skipped",
+                outcome.reason,
+            )
+        )
+    entries += [describe(r, "skipped", REASON_DISABLED) for r in resolved.skipped]
     entries.sort(key=lambda e: (e["name"].casefold(), e["entry_id"]))
     connection.send_result(msg["id"], {"receivers": entries})
 

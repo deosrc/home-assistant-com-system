@@ -10,6 +10,7 @@ from typing import Any
 
 from homeassistant.core import HomeAssistant
 
+from .conditions import async_check_conditions, condition_variables
 from .const import (
     DATA_ENTITIES,
     DATA_HISTORY,
@@ -73,12 +74,23 @@ async def _deliver(
     registry: ReceiverRegistry,
     receiver: Receiver,
     notification: Mapping[str, Any],
+    reasons: list[dict[str, str]],
+    requested: Mapping[str, Any] | None,
 ) -> ReceiverResult:
     """Deliver to one receiver. Never raises: failures become results."""
     receiver_type = registry.type_of(receiver)
     if receiver_type is None:
         return ReceiverResult(
             receiver, receiver.type_id, RESULT_FAILED, REASON_UNKNOWN_TYPE
+        )
+    outcome = await async_check_conditions(
+        hass,
+        receiver,
+        condition_variables(hass, receiver, notification, reasons, requested),
+    )
+    if not outcome.passed:
+        return ReceiverResult(
+            receiver, receiver_type.name, RESULT_SKIPPED, outcome.reason
         )
     if message_for(receiver_type, notification) is None:
         return ReceiverResult(
@@ -110,11 +122,15 @@ async def async_dispatch(
     hass: HomeAssistant,
     resolved: ResolvedTargets,
     notification: Mapping[str, Any],
+    requested: Mapping[str, Any] | None = None,
 ) -> list[ReceiverResult]:
     """Deliver to every resolved receiver independently.
 
     Receivers are delivered to concurrently; one failing or raising never
-    affects another. Skipped (disabled) receivers get a skipped result. Every
+    affects another. Disabled receivers, and those whose conditions do not
+    pass or error, get a skipped result (the conditions are evaluated after
+    targeting and the enabled check, with ``requested`` as the targets the
+    call asked for). Every
     attempt is recorded on the receiver's entity and in the history store.
     Results are ordered by
     receiver name, then entry id.
@@ -126,7 +142,17 @@ async def async_dispatch(
         return receiver_type.name if receiver_type else receiver.type_id
 
     delivered = await asyncio.gather(
-        *(_deliver(hass, registry, r, notification) for r in resolved.receivers)
+        *(
+            _deliver(
+                hass,
+                registry,
+                r,
+                notification,
+                resolved.reasons.get(r.entry_id, []),
+                requested,
+            )
+            for r in resolved.receivers
+        )
     )
     skipped = [
         ReceiverResult(r, type_name(r), RESULT_SKIPPED, REASON_DISABLED)

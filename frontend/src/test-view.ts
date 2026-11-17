@@ -199,6 +199,14 @@ export class ComSystemTest extends LitElement {
     await this.refreshPreview();
   }
 
+  /** The content fields of the form, for the receivers' conditions. */
+  private get content(): Record<string, unknown> {
+    const { people, receivers, ...content } = this.data;
+    void people;
+    void receivers;
+    return content;
+  }
+
   /** Only the fields the form gives are sent. */
   private get targets(): NotifyTargets {
     const targets: NotifyTargets = {};
@@ -230,6 +238,7 @@ export class ComSystemTest extends LitElement {
     try {
       this.preview = await new ComSystemApi(this.hass).previewNotify(
         this.targets,
+        this.content,
       );
       this.error = undefined;
     } catch (err) {
