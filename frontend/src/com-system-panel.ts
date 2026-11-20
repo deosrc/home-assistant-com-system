@@ -17,11 +17,11 @@ if (import.meta.env.MODE === "development") {
 }
 
 const VIEWS = [
-  { path: "dashboard", label: "Dashboard" },
-  { path: "receivers", label: "Receivers" },
-  { path: "channels", label: "Channels" },
-  { path: "history", label: "Recent" },
-  { path: "test", label: "Test" },
+  { path: "dashboard", label: "Dashboard", icon: "mdi:view-dashboard" },
+  { path: "receivers", label: "Receivers", icon: "mdi:bell-ring" },
+  { path: "channels", label: "Channels", icon: "mdi:bullhorn" },
+  { path: "history", label: "Recent", icon: "mdi:history" },
+  { path: "test", label: "Test", icon: "mdi:send" },
 ] as const;
 
 /** The admin-only Com System panel: navigation and the active view. */
@@ -85,52 +85,68 @@ export class ComSystemPanel extends LitElement {
         color: var(--sidebar-text-color);
         white-space: nowrap;
       }
-      nav {
+      /* Same structure and class names as hass-tabs-subpage. */
+      .tabs {
         display: flex;
         flex: 1;
         justify-content: center;
         overflow: hidden;
         font-size: 14px;
       }
-      nav.bottom-bar {
+      :host([narrow]) .tabs {
         position: fixed;
         bottom: 0;
         left: 0;
         z-index: 2;
         width: 100%;
         box-sizing: border-box;
-        padding: 0 16px;
+        padding: 0 16px env(safe-area-inset-bottom);
         justify-content: space-around;
         font-size: 12px;
-        background-color: var(--sidebar-background-color);
+        background-color: var(
+          --ha-tabs-background-color,
+          var(--sidebar-background-color)
+        );
         border-top: 1px solid var(--divider-color);
       }
-      nav a {
+      .tab {
         box-sizing: border-box;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         height: var(--header-height, 56px);
         padding: 0 32px;
-        max-width: 45%;
         overflow: hidden;
         white-space: nowrap;
-        text-overflow: ellipsis;
         text-decoration: none;
         color: var(--sidebar-text-color);
         outline: none;
       }
-      nav.bottom-bar a {
-        width: 25%;
+      :host([narrow]) .tab {
+        flex: 1;
+        min-width: 0;
         padding: 0 4px;
       }
-      nav a.active {
+      .tab ha-icon {
+        display: none;
+      }
+      :host([narrow]) .tab ha-icon {
+        display: block;
+        --mdc-icon-size: 24px;
+      }
+      .tab .name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+      }
+      .tab.active {
         color: var(--primary-color);
       }
-      nav:not(.bottom-bar) a.active {
+      :host(:not([narrow])) .tab.active {
         border-bottom: 2px solid var(--primary-color);
       }
-      nav a:focus-visible {
+      .tab:focus-visible {
         background-color: rgba(127, 127, 127, 0.08);
       }
       main {
@@ -159,17 +175,20 @@ export class ComSystemPanel extends LitElement {
     const active = this.activePath;
     const prefix = this.route?.prefix ?? "/com-system";
     const tabs = html`
-      <nav class=${this.narrow ? "bottom-bar" : ""}>
+      <div class="tabs" role="tablist">
         ${VIEWS.map(
           (v) =>
             html`<a
-              class=${v.path === active ? "active" : ""}
+              class="tab ${v.path === active ? "active" : ""}"
+              role="tab"
+              aria-selected=${v.path === active}
               href="${prefix}/${v.path}"
               @click=${(ev: Event) => this.navigate(ev, v.path)}
-              >${v.label}</a
+              ><ha-icon .icon=${v.icon}></ha-icon
+              ><span class="name">${v.label}</span></a
             >`,
         )}
-      </nav>
+      </div>
     `;
     return html`
       <div class="toolbar">

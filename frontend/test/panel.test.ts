@@ -197,7 +197,7 @@ describe("panel", () => {
   it("marks the active navigation entry", async () => {
     const { hass } = makeHass();
     const panel = await mount("/receivers", hass);
-    const active = panel.shadowRoot!.querySelector("nav a.active")!;
+    const active = panel.shadowRoot!.querySelector(".tabs a.active")!;
     expect(active.textContent).toBe("Receivers");
   });
 
@@ -246,9 +246,7 @@ describe("panel", () => {
     ).toBe("2 conditions");
     expect(
       view.shadowRoot!.querySelector("td.conditions a")!.getAttribute("href"),
-    ).toBe(
-      "/config/integrations/integration/com_system#config_entry=e1",
-    );
+    ).toBe("/config/integrations/integration/com_system#config_entry=e1");
     // Discoveries are an alert with a link, not a list.
     expect(text).not.toContain("Pixel");
     const alert = view.shadowRoot!.querySelector("#discoveries")!;
@@ -371,13 +369,15 @@ describe("panel layout", () => {
   it("puts the tabs in a bottom bar when narrow", async () => {
     const { hass } = makeHass();
     const panel = await mount("", hass);
-    expect(panel.shadowRoot!.querySelector("nav.bottom-bar")).toBeNull();
+    expect(panel.hasAttribute("narrow")).toBe(false);
     // Wide screens have the tabs in the toolbar instead of a title.
     expect(panel.shadowRoot!.querySelector("h1")).toBeNull();
     panel.narrow = true;
     await panel.updateComplete;
     expect(panel.hasAttribute("narrow")).toBe(true);
-    expect(panel.shadowRoot!.querySelector("nav.bottom-bar")).not.toBeNull();
+    expect(
+      panel.shadowRoot!.querySelectorAll(".tabs .tab ha-icon"),
+    ).toHaveLength(5);
     expect(panel.shadowRoot!.querySelector("h1")!.textContent).toBe(
       "Com System",
     );
