@@ -13,8 +13,10 @@ from custom_components.com_system.const import (
     ENTRY_TYPE_RECEIVER,
     RECEIVER_TYPE_WEBOSTV,
 )
+from custom_components.com_system.receiver_type import ReceiverSkipped
 from custom_components.com_system.webostv import async_deliver_webostv
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
@@ -142,4 +144,65 @@ async def test_removed_tv_fails(hass: HomeAssistant) -> None:
     for source in hass.config_entries.async_entries("webostv"):
         hass.config_entries.async_update_entry(source, unique_id="other")
     with pytest.raises(Exception, match="no longer configured"):
+        await async_deliver_webostv(hass, receiver, {"message": "Hi"})
+
+
+async def _add_media_player(hass: HomeAssistant, entry, state: str) -> None:
+    source = hass.config_entries.async_entries("webostv")[0]
+    registry = er.async_get(hass)
+    entity = registry.async_get_or_create(
+        "media_player", "webostv", "tv1", config_entry=source
+    )
+    hass.states.async_set(entity.entity_id, state)
+
+
+@pytest.mark.parametrize("state", ["off", "unavailable"])
+async def test_tv_off_is_skipped(hass: HomeAssistant, state: str) -> None:
+    """A TV that is off is skipped, with no call to the notify action."""
+    entry, _ = await _setup_tv(hass)
+    await _add_media_player(hass, entry, state)
+    calls = _calls(hass)
+    receiver = hass.data[DOMAIN]["registry"].get(entry.entry_id)
+    with pytest.raises(ReceiverSkipped, match="Device is off"):
+        await async_deliver_webostv(hass, receiver, {"message": "Hi"})
+    assert calls == []
+
+
+async def test_tv_on_delivers(hass: HomeAssistant) -> None:
+    """A TV that is on is delivered to."""
+    entry, _ = await _setup_tv(hass)
+    await _add_media_player(hass, entry, "on")
+    calls = _calls(hass)
+    receiver = hass.data[DOMAIN]["registry"].get(entry.entry_id)
+    await async_deliver_webostv(hass, receiver, {"message": "Hi"})
+    assert len(calls) == 1
+
+
+async def test_notify_error_while_on_fails(hass: HomeAssistant) -> None:
+    """A notify error with the TV on is still a failure."""
+    entry, _ = await _setup_tv(hass)
+    await _add_media_player(hass, entry, "on")
+
+    async def handler(call: ServiceCall) -> None:
+        raise HomeAssistantError("boom")
+
+    hass.services.async_register("notify", "living_room_tv", handler)
+    receiver = hass.data[DOMAIN]["registry"].get(entry.entry_id)
+    with pytest.raises(HomeAssistantError, match="boom"):
+        await async_deliver_webostv(hass, receiver, {"message": "Hi"})
+
+
+async def test_notify_error_after_off_is_skipped(hass: HomeAssistant) -> None:
+    """A notify error once the TV has gone off is skipped."""
+    entry, _ = await _setup_tv(hass)
+    await _add_media_player(hass, entry, "on")
+    entity_id = hass.states.async_entity_ids("media_player")[0]
+
+    async def handler(call: ServiceCall) -> None:
+        hass.states.async_set(entity_id, "off")
+        raise HomeAssistantError("off")
+
+    hass.services.async_register("notify", "living_room_tv", handler)
+    receiver = hass.data[DOMAIN]["registry"].get(entry.entry_id)
+    with pytest.raises(ReceiverSkipped):
         await async_deliver_webostv(hass, receiver, {"message": "Hi"})

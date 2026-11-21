@@ -117,7 +117,7 @@ export class ComSystemTest extends LitElement {
         border-bottom: 1px solid var(--divider-color, #e0e0e0);
       }
       .delivered,
-      .reached {
+      .targeted {
         color: var(--success-color, #43a047);
       }
       .failed {
@@ -355,7 +355,7 @@ export class ComSystemTest extends LitElement {
     const canSend =
       !this.sending &&
       this.message.trim() !== "" &&
-      (this.preview?.some((p) => p.outcome === "reached") ?? false);
+      (this.preview?.some((p) => p.outcome === "targeted") ?? false);
     return html`
       <ha-card>
         <div class="card-header">
@@ -387,7 +387,7 @@ export class ComSystemTest extends LitElement {
         <div class="card-actions">${this.renderSendButton(canSend)}</div>
       </ha-card>
       <ha-card>
-        <div class="card-header">Receivers reached</div>
+        <div class="card-header">Receivers</div>
         <div class="card-content">${this.renderPreview()}</div>
       </ha-card>
       <div class="response">${this.renderResponse()}</div>

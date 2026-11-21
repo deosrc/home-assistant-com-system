@@ -21,6 +21,7 @@ from .const import (
 )
 from .content import apply_capabilities, message_for
 from .receiver import Receiver
+from .receiver_type import ReceiverSkipped
 from .registry import ReceiverRegistry
 from .targets import ResolvedTargets
 
@@ -105,6 +106,11 @@ async def _deliver(
         )
         return ReceiverResult(
             receiver, receiver_type.name, RESULT_FAILED, REASON_NOT_IMPLEMENTED
+        )
+    except ReceiverSkipped as err:
+        _LOGGER.debug("Delivery to %s skipped: %s", receiver.name, err)
+        return ReceiverResult(
+            receiver, receiver_type.name, RESULT_SKIPPED, str(err) or None
         )
     except Exception as err:
         _LOGGER.warning("Delivery to %s failed: %s", receiver.name, err)

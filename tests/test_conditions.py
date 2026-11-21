@@ -199,7 +199,7 @@ async def test_preview_evaluates_conditions(
         return msg["result"]["receivers"][0]
 
     outcome.n = 1
-    assert (await outcome(message="hi"))["outcome"] == "reached"
+    assert (await outcome(message="hi"))["outcome"] == "targeted"
     skipped = await outcome(message="a secret")
     assert skipped["outcome"] == "skipped"
     assert skipped["reason"] == "Conditions did not pass"

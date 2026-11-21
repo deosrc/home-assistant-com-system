@@ -37,9 +37,13 @@ and, when given, `data.icon`. If that action does not exist (the TV was
 removed, or the integration is not loaded) the delivery fails for that
 receiver only, with the reason in the result.
 
-The webOS TV integration logs an error instead of reporting one when the TV
-is off or unreachable, so Com System records such a notification as
-delivered. The notification is not queued: it is lost.
+A TV that is off or unavailable is expected, so it is not an error: the
+result is `skipped` with the reason `Device is off`. This is decided from
+the state of the TV's media player, and also when the notify action fails
+after the TV went off. The notification is not queued: it is lost. Other
+errors from the action are `failed`. Older versions of the webOS TV
+integration only log an error when the TV is unreachable, and are recorded
+as delivered.
 
 ## Example
 

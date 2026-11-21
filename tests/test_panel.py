@@ -325,7 +325,7 @@ async def test_notify_preview_and_test(hass: HomeAssistant, hass_ws_client) -> N
             "entry_id": on.entry_id,
             "name": "Alpha",
             "type": "Script",
-            "outcome": "reached",
+            "outcome": "targeted",
             "reason": None,
             "reasons": [{"kind": "receiver", "id": on.entry_id}],
         },
