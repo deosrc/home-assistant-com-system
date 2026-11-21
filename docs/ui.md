@@ -35,8 +35,13 @@ Receivers page.
 ## Receivers
 
 A table of every receiver. The first column is a switch that turns the
-receiver on or off; the other columns are its name, type, targets and
-conditions.
+receiver on or off; the other columns are its name, status, type, targets
+and conditions.
+The **Status** column shows **Disabled** when the receiver is switched off
+and **Unavailable** when it is not loaded or its source device is gone
+(both can show), and **Available** otherwise. Available does not mean
+a notification will succeed: a receiver can still fail when one is sent to
+it, which shows in the [history](history.md).
 Targets are shown as badges, one for each area (with an area icon) and
 person (with a person icon) the receiver is linked to, by name. A
 receiver's area is the area of its device; change it in Home Assistant.
@@ -47,9 +52,9 @@ panel cannot open that dialog itself).
 
 The switch operates the receiver's enabled switch, so it is the same as
 using the switch entity or an automation, and the list updates when that
-switch changes. It is disabled, and the row dimmed, for a receiver that is
-unavailable (not loaded, or its source device is gone) or whose state
-cannot be read.
+switch changes. An unavailable receiver can still be switched on or off. The
+switch is disabled only when the receiver's state cannot be read (for
+example while it is not loaded). Unavailable rows are dimmed.
 
 Click a row (not its switch) to open the receiver's device page, where you
 rename it, set its people or delete it (see

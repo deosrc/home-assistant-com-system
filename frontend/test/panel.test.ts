@@ -272,7 +272,9 @@ describe("panel", () => {
     );
     // Areas first, then people, each sorted by name (the API order is not
     // the name order); unknown ids fall back to the id.
-    const badges = [...view.shadowRoot!.querySelectorAll(".badge")];
+    const badges = [
+      ...view.shadowRoot!.querySelectorAll("tbody td:nth-child(5) .badge"),
+    ];
     expect(badges.map((b) => b.textContent!.trim())).toEqual([
       "Office",
       "unknown_area",
@@ -364,20 +366,51 @@ describe("panel", () => {
 });
 
 describe("receivers switch", () => {
-  it("is off and disabled for an unavailable receiver", async () => {
+  async function mountWith(receiver: object) {
     const { hass, callWS } = makeHass();
     const base = callWS.getMockImplementation()!;
     callWS.mockImplementation(async (msg: { type: string }) =>
       msg.type === "com_system/receivers/list"
-        ? { receivers: [{ ...RECEIVER, available: false, enabled: null }] }
+        ? { receivers: [{ ...RECEIVER, ...receiver }] }
         : base(msg),
     );
     const panel = await mount("/receivers", hass);
     const view = panel.shadowRoot!.querySelector("com-system-receivers")!;
     await settle(view);
+    return view;
+  }
+
+  it("is disabled when the state cannot be read", async () => {
+    const view = await mountWith({ available: false, enabled: null });
     const control = view.shadowRoot!.querySelector("ha-switch")!;
     expect(control.hasAttribute("disabled")).toBe(true);
     expect(view.shadowRoot!.querySelector("tr.unavailable")).not.toBeNull();
+  });
+
+  it("can be changed for an unavailable receiver", async () => {
+    const view = await mountWith({ available: false, enabled: true });
+    const control = view.shadowRoot!.querySelector("ha-switch")!;
+    expect(control.hasAttribute("disabled")).toBe(false);
+  });
+
+  it("shows Disabled, Unavailable or Available as the status", async () => {
+    const status = async (receiver: object) =>
+      [
+        ...(await mountWith(receiver)).shadowRoot!.querySelectorAll(
+          "tbody td:nth-child(3) .badge",
+        ),
+      ].map((b) => b.textContent!.trim());
+    expect(await status({})).toEqual(["Available"]);
+    const ok = await mountWith({});
+    expect(
+      ok.shadowRoot!.querySelector(".badge.success")!.textContent,
+    ).toContain("Available");
+    expect(await status({ enabled: false })).toEqual(["Disabled"]);
+    expect(await status({ available: false })).toEqual(["Unavailable"]);
+    expect(await status({ enabled: false, available: false })).toEqual([
+      "Disabled",
+      "Unavailable",
+    ]);
   });
 });
 

@@ -113,6 +113,14 @@ export class ComSystemReceivers extends LitElement {
         background: var(--secondary-background-color, #f0f0f0);
         color: var(--primary-text-color);
       }
+      .badge.success {
+        background: color-mix(
+          in srgb,
+          var(--success-color, #43a047) 20%,
+          transparent
+        );
+        color: var(--success-color, #43a047);
+      }
       .badge ha-icon {
         --mdc-icon-size: 16px;
         display: inline-flex;
@@ -310,6 +318,23 @@ export class ComSystemReceivers extends LitElement {
     </div>`;
   }
 
+  /** Disabled and/or Unavailable, or Available when neither applies. */
+  private renderStatus(r: ReceiverInfo) {
+    const statuses = [
+      r.enabled === false ? "Disabled" : "",
+      r.available ? "" : "Unavailable",
+    ].filter(Boolean);
+    if (!statuses.length) statuses.push("Available");
+    return html`<div class="badges">
+      ${statuses.map(
+        (s) =>
+          html`<span class="badge ${s === "Available" ? "success" : ""}"
+            >${s}</span
+          >`,
+      )}
+    </div>`;
+  }
+
   /** Open the receiver's device page, where it is edited. */
   /** Opens the receiver's entry, where Configure edits its conditions. */
   private openEntry(ev: MouseEvent, r: ReceiverInfo): void {
@@ -331,6 +356,7 @@ export class ComSystemReceivers extends LitElement {
         <tr>
           <th class="switch" aria-label="Enabled"></th>
           <th>Name</th>
+          <th>Status</th>
           <th>Type</th>
           <th>Targets</th>
           <th>Conditions</th>
@@ -355,12 +381,12 @@ export class ComSystemReceivers extends LitElement {
               <td class="switch" @click=${(ev: Event) => ev.stopPropagation()}>
                 <ha-switch
                   .checked=${r.enabled === true}
-                  ?disabled=${!r.available || r.enabled === null}
-                  title=${r.available ? "" : "Unavailable"}
+                  ?disabled=${r.enabled === null}
                   @change=${(ev: Event) => this.toggle(r, ev)}
                 ></ha-switch>
               </td>
               <td>${r.name}</td>
+              <td>${this.renderStatus(r)}</td>
               <td>${r.type}</td>
               <td>${this.renderTargets(r)}</td>
               <td class="conditions" @click=${(ev: Event) => ev.stopPropagation()}>
