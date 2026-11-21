@@ -90,8 +90,8 @@ The testing tool sends a test notification and shows what happens.
   to the action appears here with no change to the panel. What a receiver
   type does with content is in [content](content.md); content it drops is
   shown as a warning in the result.
-- **Receivers reached** updates as you change the targets, without sending
-  anything. Each matching receiver is `reached`, or `skipped` with the
+- **Receivers** updates as you change the targets, without sending
+  anything. Each matching receiver is `targeted`, or `skipped` with the
   reason (it is disabled, or its [conditions](conditions.md) did not pass
   or errored). The conditions are evaluated with the content in the form.
 - **Send test** calls the [`notify.com_system` action](services.md), so it
@@ -144,7 +144,7 @@ admin user.
   `com_system` channel actions, not websocket commands.
 - `com_system/notify/preview`: the receivers the targets (`people` and
   `receivers`, as in the action, and an optional `notification` object of
-  content for the [conditions](conditions.md)) would reach, each `reached`
+  content for the [conditions](conditions.md)) would reach, each `targeted`
   or `skipped` with a reason. Sends nothing.
 - `com_system/notify/test`: sends through the `notify.com_system` action
   (`service_data`, the action's data) and returns its response.

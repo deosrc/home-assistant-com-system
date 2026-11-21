@@ -58,7 +58,7 @@ function makeHass(): {
               entry_id: "e1",
               name: "Office",
               type: "Custom",
-              outcome: "reached",
+              outcome: "targeted",
               reason: null,
               reasons: [
                 { kind: "area", id: "office" },
@@ -443,7 +443,7 @@ describe("testing tool", () => {
     const rows = [...root.querySelectorAll(".preview tbody tr")];
     expect(rows.map((r) => r.textContent!.replace(/\s+/g, " ").trim())).toEqual(
       [
-        "Office Custom OfficeNamed reached",
+        "Office Custom OfficeNamed targeted",
         "Den Custom None skipped (Receiver is disabled)",
       ],
     );

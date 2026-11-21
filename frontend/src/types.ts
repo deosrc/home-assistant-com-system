@@ -83,7 +83,7 @@ export interface PreviewEntry {
   entry_id: string;
   name: string;
   type: string;
-  outcome: "reached" | "skipped";
+  outcome: "targeted" | "skipped";
   reason: string | null;
   reasons?: MatchReason[];
 }

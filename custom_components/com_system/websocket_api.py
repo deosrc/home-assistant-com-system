@@ -267,7 +267,7 @@ async def ws_notify_preview(
     """Show which receivers a notification with these targets would reach.
 
     Takes the same target fields as the action, and optionally the content,
-    and sends nothing. Each entry is ``reached`` or ``skipped`` (disabled, or
+    and sends nothing. Each entry is ``targeted`` or ``skipped`` (disabled, or
     its conditions did not pass or errored, with the reason).
     """
     registry = hass.data[DOMAIN][DATA_REGISTRY]
@@ -302,7 +302,7 @@ async def ws_notify_preview(
         entries.append(
             describe(
                 receiver,
-                "reached" if outcome.passed else "skipped",
+                "targeted" if outcome.passed else "skipped",
                 outcome.reason,
             )
         )
