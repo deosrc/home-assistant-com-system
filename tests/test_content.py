@@ -103,8 +103,7 @@ def test_apply_capabilities_drops_with_warnings() -> None:
     )
     assert content == {"message": "m", "priority": "high", "data": {"a": 1}}
     assert warnings == [
-        "T does not support these properties, which were dropped: "
-        "title, image, data.b"
+        "T does not support these properties, which were dropped: title, image, data.b"
     ]
 
 
@@ -252,8 +251,7 @@ async def test_webostv_icon_from_its_block(hass: HomeAssistant) -> None:
 
     assert calls[0].data == {"message": "m", "data": {"icon": "/a.png"}}
     assert response["results"][0]["warnings"] == [
-        "webOS TV does not support these properties, which were dropped: "
-        "title, data.x"
+        "webOS TV does not support these properties, which were dropped: title, data.x"
     ]
 
 

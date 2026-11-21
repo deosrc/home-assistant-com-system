@@ -132,12 +132,12 @@ before delivery and the receiver is still notified with the rest. Delivery
 is not a failure.
 
 All dropped items for a receiver are listed in one warning, such as
-`webOS TV does not support these properties, which were dropped: priority, data.x`. Warnings are
-logged, returned in the [action's response](services.md#response) and
-recorded on the receiver's entity. A `priority` of `normal` is the default
-and is never reported as dropped. Content a type supports but cannot use
-(for example an image that is not a local file for Pushover) is a warning
-too.
+`webOS TV does not support these properties, which were dropped: priority,
+data.x`. Warnings are logged, returned in the
+[action's response](services.md#response) and recorded on the receiver's
+entity. A `priority` of `normal` is the default and is never reported as
+dropped. Content a type supports but cannot use (for example an image that is
+not a local file for Pushover) is a warning too.
 
 ## Designing a notification
 
