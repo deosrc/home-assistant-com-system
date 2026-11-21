@@ -40,6 +40,11 @@ records the conventions and how things work as built.
   `translations/en.json` (both channel actions), and the tables in `docs/`
   (`services.md`, `content.md` and the type's page), in the same change.
 
+- A receiver type's `async_deliver` raises `ReceiverSkipped` (in
+  `receiver_type.py`) for an expected unreachable state, such as a webOS TV
+  that is off. The dispatcher records it as `skipped` with the message as
+  the reason, not as a failure.
+
 ## Dev environment
 
 - Work in the devcontainer. See the

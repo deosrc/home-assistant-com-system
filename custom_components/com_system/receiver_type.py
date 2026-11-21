@@ -14,6 +14,12 @@ from .const import RECEIVER_TYPE_CUSTOM, SCRIPT_FIELD
 from .receiver import Receiver
 
 
+class ReceiverSkipped(Exception):
+    """Raised by delivery when the receiver cannot be reached for an expected
+    reason (for example a TV that is off). The result is skipped, not failed,
+    with the exception's message as the reason."""
+
+
 @dataclass(frozen=True, slots=True)
 class DiscoveryCandidate:
     """A receiver a type found that could be offered as a discovery."""
