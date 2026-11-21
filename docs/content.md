@@ -131,8 +131,8 @@ Scripts accept anything. Content outside a type's capabilities is dropped
 before delivery and the receiver is still notified with the rest. Delivery
 is not a failure.
 
-Each dropped item is a warning, such as
-`The priority is not supported by webOS TV and was dropped`. Warnings are
+All dropped items for a receiver are listed in one warning, such as
+`webOS TV does not support these properties, which were dropped: priority, data.x`. Warnings are
 logged, returned in the [action's response](services.md#response) and
 recorded on the receiver's entity. A `priority` of `normal` is the default
 and is never reported as dropped. Content a type supports but cannot use

@@ -246,7 +246,7 @@ def apply_capabilities(
 ) -> tuple[dict[str, Any], list[str]]:
     """Return the notification as one receiver type receives it, and warnings.
 
-    Content the type does not support is dropped and named in a warning.
+    Content the type does not support is dropped and listed in one warning.
     ``data`` becomes the type's own block (absent when empty). A priority of
     ``normal`` is the default, so it is never reported as dropped. A type
     that accepts any content (scripts) gets everything.
@@ -269,7 +269,7 @@ def apply_capabilities(
 
     caps = receiver_type.capabilities
     name = receiver_type.name
-    warnings: list[str] = []
+    dropped: list[str] = []
     for field, cap in (
         (ATTR_TITLE, CAP_TITLE),
         (ATTR_PRIORITY, CAP_PRIORITY),
@@ -285,20 +285,24 @@ def apply_capabilities(
             del content[field]
             continue
         del content[field]
-        warnings.append(f"The {field} is not supported by {name} and was dropped")
+        dropped.append(field)
     if block:
         any_key, keys = data_capabilities(caps)
         if not any_key:
             kept = {k: v for k, v in block.items() if k in keys}
             for key in block:
                 if key not in keys:
-                    warnings.append(
-                        f"The data key {key} is not supported by {name} and was dropped"
-                    )
+                    dropped.append(f"data.{key}")
             if kept:
                 content[ATTR_DATA] = kept
             else:
                 del content[ATTR_DATA]
+    warnings: list[str] = []
+    if dropped:
+        warnings.append(
+            f"{name} does not support these properties, which were dropped: "
+            + ", ".join(dropped)
+        )
     return content, warnings
 
 

@@ -494,4 +494,7 @@ async def test_action_fields_validated_and_dropped_elsewhere(
         Plain(), {"message": "m", "tag": "t", "car_ui": True, "actions": TYPED}
     )
     assert content == {"message": "m"}
-    assert len(warnings) == 3
+    assert warnings == [
+        "Plain does not support these properties, which were dropped: "
+        "actions, tag, car_ui"
+    ]
