@@ -103,9 +103,7 @@ def test_apply_capabilities_drops_with_warnings() -> None:
     )
     assert content == {"message": "m", "priority": "high", "data": {"a": 1}}
     assert warnings == [
-        "The title is not supported by T and was dropped",
-        "The image is not supported by T and was dropped",
-        "The data key b is not supported by T and was dropped",
+        "T does not support these properties, which were dropped: title, image, data.b"
     ]
 
 
@@ -227,8 +225,8 @@ async def test_persistent_notification_drops_rich_content(hass: HomeAssistant) -
 
     assert response["counts"]["delivered"] == 1
     assert response["results"][0]["warnings"] == [
-        "The priority is not supported by Persistent notification and was dropped",
-        "The image is not supported by Persistent notification and was dropped",
+        "Persistent notification does not support these properties, which were "
+        "dropped: priority, image"
     ]
     assert calls[0].data == {"message": "m", "title": "t"}
     state = hass.states.get("notification_receiver.pn")
@@ -253,8 +251,7 @@ async def test_webostv_icon_from_its_block(hass: HomeAssistant) -> None:
 
     assert calls[0].data == {"message": "m", "data": {"icon": "/a.png"}}
     assert response["results"][0]["warnings"] == [
-        "The title is not supported by webOS TV and was dropped",
-        "The data key x is not supported by webOS TV and was dropped",
+        "webOS TV does not support these properties, which were dropped: title, data.x"
     ]
 
 
@@ -413,7 +410,10 @@ async def test_alexa_drops_everything_but_title(hass: HomeAssistant) -> None:
         "target": ["echo1"],
         "data": {"type": "announce"},
     }
-    assert len(response["results"][0]["warnings"]) == 2
+    assert response["results"][0]["warnings"] == [
+        "Alexa Media Player does not support these properties, which were "
+        "dropped: priority, image"
+    ]
 
 
 async def test_mobile_app_image_entity_uses_entity_picture(

@@ -311,7 +311,8 @@ records the conventions and how things work as built.
   (`data: {mobile_app: {...}}`; settled, documented in `docs/content.md`).
   `apply_capabilities(type, notification)` builds what a type receives: its
   own data block as `data`, and drops unsupported fields and block keys with
-  warnings (`The <field> is not supported by <type> and was dropped`);
+  one warning listing them (`<type> does not support these properties, which
+  were dropped: <field>, data.<key>`);
   `normal` priority is never reported and other types' blocks are ignored
   silently. The dispatcher calls it before `async_deliver` and records the
   original notification on the entity. `async_image_url` resolves a media
