@@ -103,7 +103,7 @@ async def test_renamed_source_updates_pending_discovery(hass: HomeAssistant) -> 
 
     placeholders = _flows(hass)["mobile_app_abc"]["context"]["title_placeholders"]
     assert placeholders["name"] == "Renamed"
-    assert len(hass.config_entries.flow.async_progress()) == 3
+    assert len(hass.config_entries.flow.async_progress()) == 2
 
 
 async def test_removed_source_drops_pending_discovery(hass: HomeAssistant) -> None:
