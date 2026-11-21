@@ -6,16 +6,31 @@ websocket commands behind it reject them with `unauthorized`.
 
 ## Dashboard
 
-An overview of the receivers:
+An overview of the receivers and of the [history](history.md):
 
-- **Receivers**: how many exist.
-- **Enabled** and **Disabled**: by the state of each receiver's enabled
-  switch. A receiver whose switch cannot be read is in neither.
+- **Receivers enabled**: enabled receivers out of all, such as `11/13`,
+  by the state of each receiver's enabled switch. A receiver whose switch
+  cannot be read is not counted as enabled.
+- **Notifications per day** or **per hour**: the number of notifications in
+  history divided by the days kept. When the history has reached its count
+  limit it covers less than that, so the average is per hour over whole
+  hours only (the partial first hour is left out). If the full history
+  covers less than one whole hour, a warning is shown instead.
+- **Notification success**: the share of notifications in history where
+  every receiver succeeded or was skipped.
+- **Receiver success**: the share of receiver results in history that
+  succeeded or were skipped.
+- **Stopped by a condition**: the share of notifications where at least one
+  receiver was skipped because its conditions did not pass (or errored).
 - **Unavailable**: receivers that are not loaded or whose source device is
   gone. These also count as enabled or disabled.
-- **Pending discoveries**: sources found by detection that are waiting to
-  be added or ignored.
 - **Receivers by type**.
+
+The history figures show **–** while the history is empty.
+
+When sources are waiting to be added, an alert at the top of the page says
+how many, with a link to **Review in Devices & services**, as on the
+Receivers page.
 
 ## Receivers
 
@@ -125,7 +140,8 @@ The panel talks to Home Assistant through these commands. All require an
 admin user.
 
 - `com_system/ping`: returns `{"pong": true}`.
-- `com_system/dashboard`: the counts shown on the dashboard.
+- `com_system/dashboard`: the counts and history statistics shown on the
+  dashboard.
 - `com_system/receivers/list`: each receiver's name, type, enabled state,
   availability, switch entity id, `notification_receiver` entity id
   (`receiver_entity_id`), device id (`device_id`, the page a row opens),

@@ -118,6 +118,14 @@ async def test_dashboard_empty(hass: HomeAssistant, hass_ws_client) -> None:
         "unavailable": 0,
         "pending_discoveries": 1,
         "by_type": {},
+        "history": {
+            "notifications": 0,
+            "rate": 0,
+            "rate_unit": "day",
+            "notification_success_rate": None,
+            "receiver_success_rate": None,
+            "stopped_by_condition_rate": None,
+        },
     }
 
 

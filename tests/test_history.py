@@ -112,3 +112,78 @@ async def test_hub_options_flow_sets_limits(hass: HomeAssistant) -> None:
     )
     assert hub.options == {CONF_HISTORY_MAX_COUNT: 50, CONF_HISTORY_MAX_AGE_DAYS: 7}
     assert hass.data[DOMAIN][DATA_HISTORY].limits() == (50, 7)
+
+
+def _rec(time, *outcomes):
+    """A record with one result per ``(result, reason)`` pair."""
+    return {
+        "id": time.isoformat(),
+        "time": time.isoformat(),
+        "notification": {},
+        "results": [
+            {"entry_id": f"e{i}", "result": r, "reason": why}
+            for i, (r, why) in enumerate(outcomes)
+        ],
+    }
+
+
+async def test_stats_per_day_and_success_rates(hass: HomeAssistant) -> None:
+    """Under the count limit the rate is per day over the age limit."""
+    await _setup(hass, {CONF_HISTORY_MAX_AGE_DAYS: 10})
+    history = hass.data[DOMAIN][DATA_HISTORY]
+    await history.async_load()
+    now = dt_util.utcnow()
+    history._records = [
+        _rec(now, ("delivered", None), ("skipped", "Conditions did not pass")),
+        _rec(now, ("delivered", None), ("failed", "boom")),
+        _rec(now, ("skipped", "Receiver is disabled")),
+        _rec(now, ("delivered", None)),
+    ]
+    stats = await history.async_stats()
+    assert stats == {
+        "notifications": 4,
+        "rate": 0.4,
+        "rate_unit": "day",
+        "notification_success_rate": 0.75,
+        "receiver_success_rate": 5 / 6,
+        "stopped_by_condition_rate": 0.25,
+    }
+
+
+async def test_stats_empty(hass: HomeAssistant) -> None:
+    """With no history nothing has a rate."""
+    await _setup(hass)
+    stats = await hass.data[DOMAIN][DATA_HISTORY].async_stats()
+    assert stats["notification_success_rate"] is None
+    assert stats["receiver_success_rate"] is None
+    assert stats["stopped_by_condition_rate"] is None
+
+
+async def test_stats_per_hour_when_full(hass: HomeAssistant) -> None:
+    """At the count limit the rate is per whole hour, skipping the first."""
+    await _setup(hass, {CONF_HISTORY_MAX_COUNT: 3})
+    history = hass.data[DOMAIN][DATA_HISTORY]
+    await history.async_load()
+    now = dt_util.utcnow().replace(minute=30, second=0, microsecond=0)
+    # Oldest is in a partial hour (xx:30); whole hours start 2.5h ago.
+    history._records = [
+        _rec(now - timedelta(hours=1)),
+        _rec(now - timedelta(hours=2)),
+        _rec(now - timedelta(hours=3)),
+    ]
+    stats = await history.async_stats(now)
+    assert stats["rate_unit"] == "hour"
+    # Two whole hours hold two notifications; the oldest is not counted.
+    assert stats["rate"] == 1.0
+
+
+async def test_stats_full_without_a_whole_hour(hass: HomeAssistant) -> None:
+    """A full history under an hour has no rate."""
+    await _setup(hass, {CONF_HISTORY_MAX_COUNT: 2})
+    history = hass.data[DOMAIN][DATA_HISTORY]
+    await history.async_load()
+    now = dt_util.utcnow()
+    history._records = [_rec(now), _rec(now)]
+    stats = await history.async_stats(now)
+    assert stats["rate_unit"] == "hour"
+    assert stats["rate"] is None

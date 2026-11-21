@@ -16,6 +16,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .conditions import REASON_CONDITION_ERROR, REASON_CONDITIONS
 from .const import (
     CONF_ENTRY_TYPE,
     CONF_HISTORY_MAX_AGE_DAYS,
@@ -24,6 +25,8 @@ from .const import (
     DEFAULT_HISTORY_MAX_COUNT,
     DOMAIN,
     ENTRY_TYPE_HUB,
+    RESULT_FAILED,
+    RESULT_SKIPPED,
 )
 
 if TYPE_CHECKING:
@@ -155,8 +158,71 @@ class NotificationHistory:
                     }
         return None
 
+    async def async_stats(self, now: datetime | None = None) -> dict[str, Any]:
+        """Summarise the history for the dashboard.
+
+        Rates are ``None`` when there is nothing to base them on. While the
+        history is under its count limit it covers the whole age limit, so
+        ``rate`` is notifications per day over that period (``rate_unit``
+        ``"day"``). Once at the count limit the history covers only part of
+        that period, so ``rate`` is per hour over the whole hours since the
+        first hour boundary after the oldest record (``"hour"``); with no
+        whole hour yet ``rate`` is ``None`` and ``rate_unit`` is ``"hour"``.
+        A notification succeeded when none of its receivers failed (all
+        success or skipped). ``stopped_by_condition`` counts notifications
+        where a receiver was skipped by its conditions.
+        """
+        records = await self.async_list()
+        now = now or dt_util.utcnow()
+        max_count, max_age_days = self.limits()
+        count = len(records)
+        results = [r for rec in records for r in rec["results"]]
+        notifications_ok = sum(
+            all(r["result"] != RESULT_FAILED for r in rec["results"]) for rec in records
+        )
+        receivers_ok = sum(r["result"] != RESULT_FAILED for r in results)
+        stopped = sum(
+            any(_stopped_by_condition(r) for r in rec["results"]) for rec in records
+        )
+        rate: float | None = None
+        rate_unit = "day"
+        if count and count >= max_count:
+            rate_unit = "hour"
+            oldest = dt_util.parse_datetime(records[-1]["time"])
+            if oldest is not None:
+                start = oldest.replace(minute=0, second=0, microsecond=0)
+                if start < oldest:
+                    start += timedelta(hours=1)
+                hours = int((now - start) / timedelta(hours=1))
+                if hours >= 1:
+                    in_window = sum(
+                        1
+                        for rec in records
+                        if (t := dt_util.parse_datetime(rec["time"])) is not None
+                        and t >= start
+                    )
+                    rate = in_window / hours
+        elif max_age_days > 0:
+            rate = count / max_age_days
+        return {
+            "notifications": count,
+            "rate": rate,
+            "rate_unit": rate_unit,
+            "notification_success_rate": notifications_ok / count if count else None,
+            "receiver_success_rate": receivers_ok / len(results) if results else None,
+            "stopped_by_condition_rate": stopped / count if count else None,
+        }
+
     async def async_clear(self) -> None:
         """Remove every record."""
         await self.async_load()
         self._records = []
         await self._store.async_save(self._data_to_save())
+
+
+def _stopped_by_condition(result: Mapping[str, Any]) -> bool:
+    """Whether a receiver's result was skipped by its conditions."""
+    reason = result.get("reason") or ""
+    return result["result"] == RESULT_SKIPPED and reason.startswith(
+        (REASON_CONDITIONS, REASON_CONDITION_ERROR)
+    )

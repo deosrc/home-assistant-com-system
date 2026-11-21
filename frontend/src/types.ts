@@ -19,6 +19,17 @@ export interface PanelRoute {
   path: string;
 }
 
+export interface HistoryStats {
+  notifications: number;
+  /** Notifications per `rate_unit`; null when there is no basis for one. */
+  rate: number | null;
+  rate_unit: "day" | "hour";
+  /** Fractions from 0 to 1; null when the history is empty. */
+  notification_success_rate: number | null;
+  receiver_success_rate: number | null;
+  stopped_by_condition_rate: number | null;
+}
+
 export interface DashboardData {
   total: number;
   enabled: number;
@@ -26,6 +37,7 @@ export interface DashboardData {
   unavailable: number;
   pending_discoveries: number;
   by_type: Record<string, number>;
+  history: HistoryStats;
 }
 
 export interface ReceiverInfo {

@@ -210,8 +210,8 @@ def ws_discoveries_list(
 
 @websocket_api.require_admin
 @websocket_api.websocket_command({vol.Required("type"): "com_system/dashboard"})
-@callback
-def ws_dashboard(
+@websocket_api.async_response
+async def ws_dashboard(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
@@ -238,6 +238,7 @@ def ws_dashboard(
             "unavailable": sum(not r["available"] for r in receivers),
             "pending_discoveries": len(_pending_discoveries(hass)),
             "by_type": by_type,
+            "history": await hass.data[DOMAIN][DATA_HISTORY].async_stats(),
         },
     )
 

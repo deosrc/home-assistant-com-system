@@ -33,6 +33,14 @@ function makeHass(): {
           unavailable: 0,
           pending_discoveries: 2,
           by_type: { Custom: 1 },
+          history: {
+            notifications: 4,
+            rate: 0.1,
+            rate_unit: "day",
+            notification_success_rate: 0.75,
+            receiver_success_rate: 1,
+            stopped_by_condition_rate: 0.25,
+          },
         };
       case "com_system/receivers/list":
         return { receivers: [RECEIVER] };
@@ -181,8 +189,16 @@ describe("panel", () => {
     const panel = await mount("", hass);
     const view = panel.shadowRoot!.querySelector("com-system-dashboard")!;
     await settle(view);
-    expect(view.shadowRoot!.textContent).toContain("Pending discoveries");
+    expect(view.shadowRoot!.textContent).not.toContain("Pending discoveries");
+    expect(
+      view.shadowRoot!.querySelector("#discoveries")!.textContent,
+    ).toContain("2 receivers are waiting to be added.");
     expect(view.shadowRoot!.textContent).toContain("Custom: 1");
+    const text = view.shadowRoot!.textContent!;
+    expect(text).toContain("1/1");
+    expect(text).toContain("0.1/day");
+    expect(text).toContain("75%");
+    expect(text).toContain("25%");
   });
 
   it("loads when there are no switch entities", async () => {
