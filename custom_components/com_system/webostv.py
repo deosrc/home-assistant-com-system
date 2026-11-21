@@ -30,9 +30,7 @@ def source_entry(hass: HomeAssistant, receiver: Receiver) -> ConfigEntry | None:
 
 def _is_off(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Return whether the TV's media player is off or unavailable."""
-    for entity in er.async_entries_for_config_entry(
-        er.async_get(hass), entry.entry_id
-    ):
+    for entity in er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id):
         if entity.domain != MEDIA_PLAYER_DOMAIN:
             continue
         state = hass.states.get(entity.entity_id)
