@@ -32,7 +32,6 @@ function makeHass(): {
           disabled: 1,
           unavailable: 1,
           pending_discoveries: 2,
-          by_type: { Custom: 1 },
           history: {
             notifications: 4,
             rate: 0.1,
@@ -193,7 +192,6 @@ describe("panel", () => {
     expect(
       view.shadowRoot!.querySelector("#discoveries")!.textContent,
     ).toContain("2 receivers are waiting to be added.");
-    expect(view.shadowRoot!.textContent).toContain("Custom: 1");
     const text = view.shadowRoot!.textContent!;
     expect(text).toContain("2/3");
     expect(text).not.toContain("Unavailable");

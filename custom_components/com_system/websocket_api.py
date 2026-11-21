@@ -221,14 +221,11 @@ async def ws_dashboard(
     ``enabled`` and ``disabled`` count by the enabled switch; a receiver
     whose state cannot be read is in neither. ``unavailable`` counts
     receivers that are not loaded or whose source is gone, and overlaps the
-    other two. ``by_type`` counts receivers per type name.
+    other two.
     """
     receivers = [
         _receiver_info(hass, r) for r in hass.data[DOMAIN][DATA_REGISTRY].all()
     ]
-    by_type: dict[str, int] = {}
-    for receiver in receivers:
-        by_type[receiver["type"]] = by_type.get(receiver["type"], 0) + 1
     connection.send_result(
         msg["id"],
         {
@@ -237,7 +234,6 @@ async def ws_dashboard(
             "disabled": sum(r["enabled"] is False for r in receivers),
             "unavailable": sum(not r["available"] for r in receivers),
             "pending_discoveries": len(_pending_discoveries(hass)),
-            "by_type": by_type,
             "history": await hass.data[DOMAIN][DATA_HISTORY].async_stats(),
         },
     )

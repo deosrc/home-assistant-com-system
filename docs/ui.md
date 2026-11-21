@@ -22,7 +22,6 @@ An overview of the receivers and of the [history](history.md):
   succeeded or were skipped.
 - **Filtered by condition**: the share of notifications where at least one
   receiver was skipped because its conditions did not pass (or errored).
-- **Receivers by type**.
 
 The history figures show **–** while the history is empty.
 

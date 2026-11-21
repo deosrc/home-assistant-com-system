@@ -36,7 +36,6 @@ export interface DashboardData {
   disabled: number;
   unavailable: number;
   pending_discoveries: number;
-  by_type: Record<string, number>;
   history: HistoryStats;
 }
 

@@ -32,10 +32,6 @@ export class ComSystemDashboard extends LitElement {
         font-size: 2rem;
         font-weight: 500;
       }
-      ul {
-        margin: 8px 0 0;
-        padding-left: 20px;
-      }
     `,
   ];
 
@@ -90,7 +86,6 @@ export class ComSystemDashboard extends LitElement {
       ["Receiver success", pct(h.receiver_success_rate)],
       ["Filtered by condition", pct(h.stopped_by_condition_rate)],
     ];
-    const types = Object.entries(data.by_type);
     const pending = data.pending_discoveries;
     return html`
       <div>
@@ -118,16 +113,6 @@ export class ComSystemDashboard extends LitElement {
             </div>
           `,
         )}
-      </div>
-      <div class="card">
-        <strong>Receivers by type</strong>
-        ${
-          types.length
-            ? html`<ul>
-                ${types.map(([t, n]) => html`<li>${t}: ${n}</li>`)}
-              </ul>`
-            : html`<p class="muted">No receivers yet.</p>`
-        }
       </div>
     `;
   }
