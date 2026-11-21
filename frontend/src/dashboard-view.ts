@@ -88,7 +88,7 @@ export class ComSystemDashboard extends LitElement {
       ],
       ["Notification success", pct(h.notification_success_rate)],
       ["Receiver success", pct(h.receiver_success_rate)],
-      ["Stopped by a condition", pct(h.stopped_by_condition_rate)],
+      ["Filtered by condition", pct(h.stopped_by_condition_rate)],
     ];
     const types = Object.entries(data.by_type);
     const pending = data.pending_discoveries;

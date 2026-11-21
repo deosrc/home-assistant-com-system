@@ -20,7 +20,7 @@ An overview of the receivers and of the [history](history.md):
   every receiver succeeded or was skipped.
 - **Receiver success**: the share of receiver results in history that
   succeeded or were skipped.
-- **Stopped by a condition**: the share of notifications where at least one
+- **Filtered by condition**: the share of notifications where at least one
   receiver was skipped because its conditions did not pass (or errored).
 - **Receivers by type**.
 
