@@ -94,18 +94,15 @@ async def test_renamed_source_updates_pending_discovery(hass: HomeAssistant) -> 
     """A pending discovery takes the new name when its source is renamed."""
     device = _add_phone(hass, "abc", "Pixel")
     hub = await _setup_hub(hass)
-    assert _flows(hass)["mobile_app_abc"]["context"]["title_placeholders"][
-        "name"
-    ] == "Pixel"
+    placeholders = _flows(hass)["mobile_app_abc"]["context"]["title_placeholders"]
+    assert placeholders["name"] == "Pixel"
 
     dr.async_get(hass).async_update_device(device.id, name_by_user="Renamed")
     await hub.runtime_data.async_detect()
     await hass.async_block_till_done()
 
-    flows = _flows(hass)
-    assert flows["mobile_app_abc"]["context"]["title_placeholders"]["name"] == (
-        "Renamed"
-    )
+    placeholders = _flows(hass)["mobile_app_abc"]["context"]["title_placeholders"]
+    assert placeholders["name"] == "Renamed"
     assert len(hass.config_entries.flow.async_progress()) == 3
 
 
