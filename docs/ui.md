@@ -8,9 +8,9 @@ websocket commands behind it reject them with `unauthorized`.
 
 An overview of the receivers and of the [history](history.md):
 
-- **Receivers enabled**: enabled receivers out of all, such as `11/13`,
-  by the state of each receiver's enabled switch. A receiver whose switch
-  cannot be read is not counted as enabled.
+- **Receivers**: available receivers out of all, such as `11/13`. A
+  receiver is unavailable when it is not loaded or its source device is
+  gone.
 - **Notifications per day** or **per hour**: the number of notifications in
   history divided by the days kept. When the history has reached its count
   limit it covers less than that, so the average is per hour over whole
@@ -22,8 +22,6 @@ An overview of the receivers and of the [history](history.md):
   succeeded or were skipped.
 - **Stopped by a condition**: the share of notifications where at least one
   receiver was skipped because its conditions did not pass (or errored).
-- **Unavailable**: receivers that are not loaded or whose source device is
-  gone. These also count as enabled or disabled.
 - **Receivers by type**.
 
 The history figures show **–** while the history is empty.

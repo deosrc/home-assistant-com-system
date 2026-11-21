@@ -27,10 +27,10 @@ function makeHass(): {
     switch (msg.type) {
       case "com_system/dashboard":
         return {
-          total: 1,
-          enabled: 1,
-          disabled: 0,
-          unavailable: 0,
+          total: 3,
+          enabled: 2,
+          disabled: 1,
+          unavailable: 1,
           pending_discoveries: 2,
           by_type: { Custom: 1 },
           history: {
@@ -195,7 +195,8 @@ describe("panel", () => {
     ).toContain("2 receivers are waiting to be added.");
     expect(view.shadowRoot!.textContent).toContain("Custom: 1");
     const text = view.shadowRoot!.textContent!;
-    expect(text).toContain("1/1");
+    expect(text).toContain("2/3");
+    expect(text).not.toContain("Unavailable");
     expect(text).toContain("0.1/day");
     expect(text).toContain("75%");
     expect(text).toContain("25%");

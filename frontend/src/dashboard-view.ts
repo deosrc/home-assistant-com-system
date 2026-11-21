@@ -78,7 +78,7 @@ export class ComSystemDashboard extends LitElement {
     const rate =
       h.rate === null ? "–" : `${Math.round(h.rate * 10) / 10}/${h.rate_unit}`;
     const tiles: [string, string | number, string?][] = [
-      ["Receivers enabled", `${data.enabled}/${data.total}`],
+      ["Receivers", `${data.total - data.unavailable}/${data.total}`],
       [
         "Notifications per " + h.rate_unit,
         rateWarning ? "⚠" : rate,
@@ -89,7 +89,6 @@ export class ComSystemDashboard extends LitElement {
       ["Notification success", pct(h.notification_success_rate)],
       ["Receiver success", pct(h.receiver_success_rate)],
       ["Stopped by a condition", pct(h.stopped_by_condition_rate)],
-      ["Unavailable", data.unavailable],
     ];
     const types = Object.entries(data.by_type);
     const pending = data.pending_discoveries;
