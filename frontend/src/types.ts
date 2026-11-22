@@ -19,13 +19,26 @@ export interface PanelRoute {
   path: string;
 }
 
+export interface HistoryStats {
+  notifications: number;
+  /** Notifications per `rate_unit`; null when there is no basis for one. */
+  rate: number | null;
+  rate_unit: "day" | "hour";
+  /** Fractions from 0 to 1; null when the history is empty. */
+  notification_success_rate: number | null;
+  receiver_success_rate: number | null;
+  stopped_by_condition_rate: number | null;
+}
+
 export interface DashboardData {
   total: number;
   enabled: number;
   disabled: number;
   unavailable: number;
+  /** Receivers that are available and whose device is not off. */
+  available: number;
   pending_discoveries: number;
-  by_type: Record<string, number>;
+  history: HistoryStats;
 }
 
 export interface ReceiverInfo {
@@ -37,6 +50,8 @@ export interface ReceiverInfo {
   /** The enabled switch; null when it cannot be read. */
   enabled: boolean | null;
   available: boolean;
+  /** The device (such as a TV) is off; notifications are skipped. */
+  device_off: boolean;
   entity_id: string | null;
   /** The read-only `notification_receiver` entity; the action's target. */
   receiver_entity_id: string | null;

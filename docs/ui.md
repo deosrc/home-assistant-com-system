@@ -6,22 +6,42 @@ websocket commands behind it reject them with `unauthorized`.
 
 ## Dashboard
 
-An overview of the receivers:
+An overview of the receivers and of the [history](history.md):
 
-- **Receivers**: how many exist.
-- **Enabled** and **Disabled**: by the state of each receiver's enabled
-  switch. A receiver whose switch cannot be read is in neither.
-- **Unavailable**: receivers that are not loaded or whose source device is
-  gone. These also count as enabled or disabled.
-- **Pending discoveries**: sources found by detection that are waiting to
-  be added or ignored.
-- **Receivers by type**.
+- **Receivers**: available receivers out of all, such as `11/13`. A
+  receiver is not counted when it is unavailable (not loaded, or its source
+  device is gone) or when its device is known to be off, such as a
+  [webOS TV](receivers/webostv.md) that is switched off.
+- **Notifications per day** or **per hour**: the number of notifications in
+  history divided by the days kept. When the history has reached its count
+  limit it covers less than that, so the average is per hour over whole
+  hours only (the partial first hour is left out). If the full history
+  covers less than one whole hour, a warning is shown instead.
+- **Notification success**: the share of notifications in history where
+  every receiver succeeded or was skipped.
+- **Receiver success**: the share of receiver results in history that
+  succeeded or were skipped.
+- **Filtered by condition**: the share of notifications where at least one
+  receiver was skipped because its conditions did not pass (or errored).
+
+The history figures show **–** while the history is empty.
+
+When sources are waiting to be added, an alert at the top of the page says
+how many, with a link to **Review in Devices & services**, as on the
+Receivers page.
 
 ## Receivers
 
 A table of every receiver. The first column is a switch that turns the
-receiver on or off; the other columns are its name, type, targets and
-conditions.
+receiver on or off; the other columns are its name, status, type, targets
+and conditions.
+The **Status** column shows **Disabled** when the receiver is switched off,
+**Unavailable** when it is not loaded or its source device is gone, and
+**Device off** when its device is known to be off (a webOS TV; its
+notifications are skipped). More than one can show. **Available** shows
+when none apply. Available does not mean a notification will succeed: a
+receiver can still fail when one is sent to it, which shows in the
+[history](history.md).
 Targets are shown as badges, one for each area (with an area icon) and
 person (with a person icon) the receiver is linked to, by name. A
 receiver's area is the area of its device; change it in Home Assistant.
@@ -32,9 +52,9 @@ panel cannot open that dialog itself).
 
 The switch operates the receiver's enabled switch, so it is the same as
 using the switch entity or an automation, and the list updates when that
-switch changes. It is disabled, and the row dimmed, for a receiver that is
-unavailable (not loaded, or its source device is gone) or whose state
-cannot be read.
+switch changes. An unavailable receiver can still be switched on or off. The
+switch is disabled only when the receiver's state cannot be read (for
+example while it is not loaded). Unavailable rows are dimmed.
 
 Click a row (not its switch) to open the receiver's device page, where you
 rename it, set its people or delete it (see
@@ -125,7 +145,8 @@ The panel talks to Home Assistant through these commands. All require an
 admin user.
 
 - `com_system/ping`: returns `{"pong": true}`.
-- `com_system/dashboard`: the counts shown on the dashboard.
+- `com_system/dashboard`: the counts and history statistics shown on the
+  dashboard.
 - `com_system/receivers/list`: each receiver's name, type, enabled state,
   availability, switch entity id, `notification_receiver` entity id
   (`receiver_entity_id`), device id (`device_id`, the page a row opens),

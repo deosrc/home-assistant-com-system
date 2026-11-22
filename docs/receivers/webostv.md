@@ -45,6 +45,10 @@ errors from the action are `failed`. Older versions of the webOS TV
 integration only log an error when the TV is unreachable, and are recorded
 as delivered.
 
+The panel shows a TV in that state with a **Device off** status, and does
+not count it in the available receivers on the dashboard. The receiver is
+not unavailable, and its enabled switch still works.
+
 ## Example
 
 ```yaml

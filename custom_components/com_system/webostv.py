@@ -39,6 +39,12 @@ def _is_off(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return False
 
 
+def is_tv_off(hass: HomeAssistant, receiver: Receiver) -> bool:
+    """Return whether the receiver's TV is off or unavailable."""
+    entry = source_entry(hass, receiver)
+    return entry is not None and _is_off(hass, entry)
+
+
 async def async_deliver_webostv(
     hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]
 ) -> list[str]:

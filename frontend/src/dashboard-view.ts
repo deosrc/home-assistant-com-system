@@ -24,13 +24,18 @@ export class ComSystemDashboard extends LitElement {
         gap: 12px;
         margin-bottom: 16px;
       }
+      .alert {
+        display: block;
+        margin-bottom: 16px;
+      }
       .value {
         font-size: 2rem;
         font-weight: 500;
       }
-      ul {
-        margin: 8px 0 0;
-        padding-left: 20px;
+      .value .suffix {
+        font-size: 1.25rem;
+        font-weight: 400;
+        color: var(--secondary-text-color);
       }
     `,
   ];
@@ -59,6 +64,16 @@ export class ComSystemDashboard extends LitElement {
     }
   }
 
+  /** The "/" and what follows it (as in 2/3 or 0.1/day) is smaller and muted. */
+  private renderValue(value: string | number) {
+    const text = String(value);
+    const i = text.indexOf("/");
+    if (i < 0) return text;
+    const head = text.slice(0, i);
+    const tail = text.slice(i);
+    return html`<span>${head}</span><span class="suffix">${tail}</span>`;
+  }
+
   protected render() {
     if (this.error) {
       return html`<p class="error">${this.error}</p>`;
@@ -67,32 +82,52 @@ export class ComSystemDashboard extends LitElement {
     if (!data) {
       return html`<p class="muted">Loading…</p>`;
     }
-    const tiles: [string, number][] = [
-      ["Receivers", data.total],
-      ["Enabled", data.enabled],
-      ["Disabled", data.disabled],
-      ["Unavailable", data.unavailable],
-      ["Pending discoveries", data.pending_discoveries],
+    const h = data.history;
+    const pct = (v: number | null) =>
+      v === null ? "–" : `${Math.round(v * 1000) / 10}%`;
+    const rateWarning = h.rate === null && h.rate_unit === "hour";
+    const rate =
+      h.rate === null ? "–" : `${Math.round(h.rate * 10) / 10}/${h.rate_unit}`;
+    const tiles: [string, string | number, string?][] = [
+      ["Receivers", `${data.available}/${data.total}`],
+      [
+        "Notifications per " + h.rate_unit,
+        rateWarning ? "⚠" : rate,
+        rateWarning
+          ? "History is full but covers less than one whole hour."
+          : undefined,
+      ],
+      ["Notification success", pct(h.notification_success_rate)],
+      ["Receiver success", pct(h.receiver_success_rate)],
+      ["Filtered by condition", pct(h.stopped_by_condition_rate)],
     ];
-    const types = Object.entries(data.by_type);
+    const pending = data.pending_discoveries;
     return html`
+      <div>
+        ${
+          pending
+            ? html`<ha-alert class="alert" alert-type="info" id="discoveries">
+                ${
+                  pending === 1
+                    ? "1 receiver is waiting to be added."
+                    : `${pending} receivers are waiting to be added.`
+                }
+                <a href="/config/integrations/integration/com_system"
+                  >Review in Devices &amp; services</a
+                >
+              </ha-alert>`
+            : html``
+        }
+      </div>
       <div class="tiles">
         ${tiles.map(
-          ([label, value]) => html`
-            <div class="card">
-              <div class="value">${value}</div>
+          ([label, value, title]) => html`
+            <div class="card" title=${title ?? ""}>
+              <div class="value">${this.renderValue(value)}</div>
               <div class="muted">${label}</div>
             </div>
           `,
         )}
-      </div>
-      <div class="card">
-        <strong>Receivers by type</strong>
-        ${types.length
-          ? html`<ul>
-              ${types.map(([t, n]) => html`<li>${t}: ${n}</li>`)}
-            </ul>`
-          : html`<p class="muted">No receivers yet.</p>`}
       </div>
     `;
   }

@@ -116,8 +116,16 @@ async def test_dashboard_empty(hass: HomeAssistant, hass_ws_client) -> None:
         "enabled": 0,
         "disabled": 0,
         "unavailable": 0,
+        "available": 0,
         "pending_discoveries": 1,
-        "by_type": {},
+        "history": {
+            "notifications": 0,
+            "rate": 0,
+            "rate_unit": "day",
+            "notification_success_rate": None,
+            "receiver_success_rate": None,
+            "stopped_by_condition_rate": None,
+        },
     }
 
 
@@ -159,7 +167,6 @@ async def test_receivers_list_and_enable_disable(
     assert msg["result"]["total"] == 1
     assert msg["result"]["enabled"] == 0
     assert msg["result"]["disabled"] == 1
-    assert msg["result"]["by_type"] == {"Script": 1}
 
     await _call(
         client,

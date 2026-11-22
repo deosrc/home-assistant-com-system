@@ -14,6 +14,12 @@ function entryUrl(r: ReceiverInfo): string {
   return `/config/integrations/integration/com_system#config_entry=${r.entry_id}`;
 }
 
+/** The badge style of each status; the others use the plain badge. */
+const STATUS_STYLES: Record<string, string> = {
+  Available: "success",
+  "Device off": "warning",
+};
+
 export class ComSystemReceivers extends LitElement {
   declare hass: HomeAssistant;
   declare private receivers?: ReceiverInfo[];
@@ -112,6 +118,22 @@ export class ComSystemReceivers extends LitElement {
         white-space: nowrap;
         background: var(--secondary-background-color, #f0f0f0);
         color: var(--primary-text-color);
+      }
+      .badge.success {
+        background: color-mix(
+          in srgb,
+          var(--success-color, #43a047) 20%,
+          transparent
+        );
+        color: var(--success-color, #43a047);
+      }
+      .badge.warning {
+        background: color-mix(
+          in srgb,
+          var(--warning-color, #ffa600) 20%,
+          transparent
+        );
+        color: var(--warning-color, #ffa600);
       }
       .badge ha-icon {
         --mdc-icon-size: 16px;
@@ -310,6 +332,22 @@ export class ComSystemReceivers extends LitElement {
     </div>`;
   }
 
+  /** Disabled, Unavailable and/or Device off, or Available when none apply. */
+  private renderStatus(r: ReceiverInfo) {
+    const statuses = [
+      r.enabled === false ? "Disabled" : "",
+      r.available ? "" : "Unavailable",
+      r.device_off ? "Device off" : "",
+    ].filter(Boolean);
+    if (!statuses.length) statuses.push("Available");
+    return html`<div class="badges">
+      ${statuses.map(
+        (s) =>
+          html`<span class="badge ${STATUS_STYLES[s] ?? ""}">${s}</span>`,
+      )}
+    </div>`;
+  }
+
   /** Open the receiver's device page, where it is edited. */
   /** Opens the receiver's entry, where Configure edits its conditions. */
   private openEntry(ev: MouseEvent, r: ReceiverInfo): void {
@@ -331,6 +369,7 @@ export class ComSystemReceivers extends LitElement {
         <tr>
           <th class="switch" aria-label="Enabled"></th>
           <th>Name</th>
+          <th>Status</th>
           <th>Type</th>
           <th>Targets</th>
           <th>Conditions</th>
@@ -355,12 +394,12 @@ export class ComSystemReceivers extends LitElement {
               <td class="switch" @click=${(ev: Event) => ev.stopPropagation()}>
                 <ha-switch
                   .checked=${r.enabled === true}
-                  ?disabled=${!r.available || r.enabled === null}
-                  title=${r.available ? "" : "Unavailable"}
+                  ?disabled=${r.enabled === null}
                   @change=${(ev: Event) => this.toggle(r, ev)}
                 ></ha-switch>
               </td>
               <td>${r.name}</td>
+              <td>${this.renderStatus(r)}</td>
               <td>${r.type}</td>
               <td>${this.renderTargets(r)}</td>
               <td class="conditions" @click=${(ev: Event) => ev.stopPropagation()}>
