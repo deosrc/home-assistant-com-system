@@ -32,6 +32,11 @@ export class ComSystemDashboard extends LitElement {
         font-size: 2rem;
         font-weight: 500;
       }
+      .value .suffix {
+        font-size: 1.25rem;
+        font-weight: 400;
+        color: var(--secondary-text-color);
+      }
     `,
   ];
 
@@ -57,6 +62,16 @@ export class ComSystemDashboard extends LitElement {
     } catch (err) {
       this.error = errorMessage(err);
     }
+  }
+
+  /** The "/" and what follows it (as in 2/3 or 0.1/day) is smaller and muted. */
+  private renderValue(value: string | number) {
+    const text = String(value);
+    const i = text.indexOf("/");
+    if (i < 0) return text;
+    const head = text.slice(0, i);
+    const tail = text.slice(i);
+    return html`<span>${head}</span><span class="suffix">${tail}</span>`;
   }
 
   protected render() {
@@ -108,7 +123,7 @@ export class ComSystemDashboard extends LitElement {
         ${tiles.map(
           ([label, value, title]) => html`
             <div class="card" title=${title ?? ""}>
-              <div class="value">${value}</div>
+              <div class="value">${this.renderValue(value)}</div>
               <div class="muted">${label}</div>
             </div>
           `,

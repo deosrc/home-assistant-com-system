@@ -196,6 +196,8 @@ describe("panel", () => {
     ).toContain("2 receivers are waiting to be added.");
     const text = view.shadowRoot!.textContent!;
     expect(text).toContain("2/3");
+    const suffixes = [...view.shadowRoot!.querySelectorAll(".value .suffix")];
+    expect(suffixes.map((s) => s.textContent)).toEqual(["/3", "/day"]);
     expect(text).not.toContain("Unavailable");
     expect(text).toContain("0.1/day");
     expect(text).toContain("75%");
