@@ -104,7 +104,10 @@ records the conventions and how things work as built.
 - `receiver.py`: frozen `Receiver` dataclass built by `Receiver.from_entry`.
 - `receiver_type.py`: `ReceiverType` is the extension point (id, name,
   capabilities, `async_deliver`, association hooks, `async_detect`,
-  `is_source_available`, `discoverable`). Subclass it and call
+  `is_source_available`, `is_device_off`, `discoverable`). `is_device_off`
+  (default false; webOS TV: its media player is off or unavailable) makes
+  the panel show **Device off** and leaves the receiver out of the
+  dashboard's available count; delivery to it is skipped. Subclass it and call
   `register_receiver_type()` to add a type; ids are unique.
   `CustomReceiverType` is the generic type. `capabilities` lists what a type
   supports beyond the message (`title`, `priority`, `image`, `data`, and
@@ -485,7 +488,9 @@ records the conventions and how things work as built.
   options `history_max_count` (default 200) and `history_max_age_days`
   (default 30), read by `limits()` each time, so the hub has no update
   listener and nothing reloads. Pruning happens on record and on list.
-  `async_last_attempt(entry_id)` finds a receiver's latest result. The hub's
+  `async_last_attempt(entry_id)` finds a receiver's latest result.
+  `async_stats()` summarises the history for the dashboard (rates, success
+  rates and the share stopped by conditions; see `docs/ui.md`). The hub's
   options flow edits the limits. Docs: `docs/history.md`.
 - `websocket_api.py`: the commands behind the panel
   (`com_system/ping`, `dashboard`, `receivers/list`, `receivers/set_enabled`,
