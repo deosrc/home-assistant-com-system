@@ -116,6 +116,7 @@ async def test_dashboard_empty(hass: HomeAssistant, hass_ws_client) -> None:
         "enabled": 0,
         "disabled": 0,
         "unavailable": 0,
+        "available": 0,
         "pending_discoveries": 1,
         "history": {
             "notifications": 0,

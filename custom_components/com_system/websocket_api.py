@@ -84,6 +84,8 @@ def _receiver_info(hass: HomeAssistant, receiver: Receiver) -> dict[str, Any]:
     ``enabled`` is the state of the enabled switch (null when it cannot be
     read, for example while the receiver is not loaded). ``available`` is
     false when the receiver is not loaded or its source is gone.
+    ``device_off`` is true when its device (such as a TV) is known to be off;
+    the receiver is then still available, but notifications are skipped.
     """
     registry = hass.data[DOMAIN][DATA_REGISTRY]
     receiver_type = registry.type_of(receiver)
@@ -115,6 +117,9 @@ def _receiver_info(hass: HomeAssistant, receiver: Receiver) -> dict[str, Any]:
         "type_known": receiver_type is not None,
         "enabled": enabled,
         "available": available,
+        "device_off": available
+        and receiver_type is not None
+        and receiver_type.is_device_off(hass, receiver),
         "entity_id": entity_id,
         "receiver_entity_id": receiver_entity_id,
         # The device page is where a receiver is edited.
@@ -221,7 +226,8 @@ async def ws_dashboard(
     ``enabled`` and ``disabled`` count by the enabled switch; a receiver
     whose state cannot be read is in neither. ``unavailable`` counts
     receivers that are not loaded or whose source is gone, and overlaps the
-    other two.
+    other two. ``available`` counts receivers that are neither unavailable
+    nor have their device off.
     """
     receivers = [
         _receiver_info(hass, r) for r in hass.data[DOMAIN][DATA_REGISTRY].all()
@@ -233,6 +239,9 @@ async def ws_dashboard(
             "enabled": sum(r["enabled"] is True for r in receivers),
             "disabled": sum(r["enabled"] is False for r in receivers),
             "unavailable": sum(not r["available"] for r in receivers),
+            "available": sum(
+                r["available"] and not r["device_off"] for r in receivers
+            ),
             "pending_discoveries": len(_pending_discoveries(hass)),
             "history": await hass.data[DOMAIN][DATA_HISTORY].async_stats(),
         },

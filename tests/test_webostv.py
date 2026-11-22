@@ -14,13 +14,15 @@ from custom_components.com_system.const import (
     RECEIVER_TYPE_WEBOSTV,
 )
 from custom_components.com_system.receiver_type import ReceiverSkipped
-from custom_components.com_system.webostv import async_deliver_webostv
+from custom_components.com_system.webostv import async_deliver_webostv, is_tv_off
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
+
+from .test_panel import _call
 
 
 async def _setup_tv(hass: HomeAssistant, area: str | None = None):
@@ -206,3 +208,22 @@ async def test_notify_error_after_off_is_skipped(hass: HomeAssistant) -> None:
     receiver = hass.data[DOMAIN]["registry"].get(entry.entry_id)
     with pytest.raises(ReceiverSkipped):
         await async_deliver_webostv(hass, receiver, {"message": "Hi"})
+
+
+@pytest.mark.parametrize(("state", "off"), [("on", False), ("off", True)])
+async def test_panel_shows_device_off(
+    hass: HomeAssistant, hass_ws_client, state: str, off: bool
+) -> None:
+    """An off TV is available but flagged off, and is not in the available count."""
+    entry, _ = await _setup_tv(hass)
+    await _add_media_player(hass, entry, state)
+    receiver = hass.data[DOMAIN]["registry"].get(entry.entry_id)
+    assert is_tv_off(hass, receiver) is off
+    client = await hass_ws_client(hass)
+    listed = (await _call(client, {"type": "com_system/receivers/list"}))["result"]
+    info = next(r for r in listed["receivers"] if r["entry_id"] == entry.entry_id)
+    assert info["available"] is True
+    assert info["device_off"] is off
+    dashboard = (await _call(client, {"type": "com_system/dashboard"}))["result"]
+    assert dashboard["total"] == 1
+    assert dashboard["available"] == (0 if off else 1)

@@ -10,6 +10,7 @@ const RECEIVER = {
   type_known: true,
   enabled: true,
   available: true,
+  device_off: false,
   entity_id: "switch.office_notifications_enabled",
   receiver_entity_id: "notification_receiver.office",
   device_id: "dev1",
@@ -31,6 +32,7 @@ function makeHass(): {
           enabled: 2,
           disabled: 1,
           unavailable: 1,
+          available: 2,
           pending_discoveries: 2,
           history: {
             notifications: 4,
@@ -406,6 +408,11 @@ describe("receivers switch", () => {
     ).toContain("Available");
     expect(await status({ enabled: false })).toEqual(["Disabled"]);
     expect(await status({ available: false })).toEqual(["Unavailable"]);
+    expect(await status({ device_off: true })).toEqual(["Device off"]);
+    const off = await mountWith({ device_off: true });
+    expect(
+      off.shadowRoot!.querySelector(".badge.warning")!.textContent,
+    ).toContain("Device off");
     expect(await status({ enabled: false, available: false })).toEqual([
       "Disabled",
       "Unavailable",

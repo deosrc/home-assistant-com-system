@@ -123,6 +123,15 @@ class ReceiverType:
         """
         return True
 
+    def is_device_off(self, hass: HomeAssistant, receiver: Receiver) -> bool:
+        """Return whether the receiver's device is known to be off.
+
+        Only for types that can tell (such as a TV). The receiver is still
+        available, but notifications to it are skipped, and the panel shows
+        it as off.
+        """
+        return False
+
 
 def notification_script_problems(description: Mapping[str, Any]) -> list[str]:
     """Return why a script's service description is not a notification script.

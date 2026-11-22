@@ -74,7 +74,7 @@ export class ComSystemDashboard extends LitElement {
     const rate =
       h.rate === null ? "–" : `${Math.round(h.rate * 10) / 10}/${h.rate_unit}`;
     const tiles: [string, string | number, string?][] = [
-      ["Receivers", `${data.total - data.unavailable}/${data.total}`],
+      ["Receivers", `${data.available}/${data.total}`],
       [
         "Notifications per " + h.rate_unit,
         rateWarning ? "⚠" : rate,

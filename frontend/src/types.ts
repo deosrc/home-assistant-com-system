@@ -35,6 +35,8 @@ export interface DashboardData {
   enabled: number;
   disabled: number;
   unavailable: number;
+  /** Receivers that are available and whose device is not off. */
+  available: number;
   pending_discoveries: number;
   history: HistoryStats;
 }
@@ -48,6 +50,8 @@ export interface ReceiverInfo {
   /** The enabled switch; null when it cannot be read. */
   enabled: boolean | null;
   available: boolean;
+  /** The device (such as a TV) is off; notifications are skipped. */
+  device_off: boolean;
   entity_id: string | null;
   /** The read-only `notification_receiver` entity; the action's target. */
   receiver_entity_id: string | null;

@@ -48,7 +48,7 @@ from .receiver_type import (
     get_receiver_type,
     register_receiver_type,
 )
-from .webostv import async_deliver_webostv
+from .webostv import async_deliver_webostv, is_tv_off
 
 ALEXA_NOTIFY_SERVICE = "alexa_media"
 
@@ -351,6 +351,10 @@ class WebOSTVReceiverType(EntryReceiverType):
         if receiver.source_id is None:
             return None
         return {(self.source_domain, receiver.source_id)}
+
+    def is_device_off(self, hass: HomeAssistant, receiver: Receiver) -> bool:
+        """Return whether the TV's media player is off or unavailable."""
+        return is_tv_off(hass, receiver)
 
     async def async_deliver(
         self, hass: HomeAssistant, receiver: Receiver, notification: Mapping[str, Any]

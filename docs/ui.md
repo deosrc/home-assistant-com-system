@@ -9,8 +9,9 @@ websocket commands behind it reject them with `unauthorized`.
 An overview of the receivers and of the [history](history.md):
 
 - **Receivers**: available receivers out of all, such as `11/13`. A
-  receiver is unavailable when it is not loaded or its source device is
-  gone.
+  receiver is not counted when it is unavailable (not loaded, or its source
+  device is gone) or when its device is known to be off, such as a
+  [webOS TV](receivers/webostv.md) that is switched off.
 - **Notifications per day** or **per hour**: the number of notifications in
   history divided by the days kept. When the history has reached its count
   limit it covers less than that, so the average is per hour over whole
@@ -34,11 +35,13 @@ Receivers page.
 A table of every receiver. The first column is a switch that turns the
 receiver on or off; the other columns are its name, status, type, targets
 and conditions.
-The **Status** column shows **Disabled** when the receiver is switched off
-and **Unavailable** when it is not loaded or its source device is gone
-(both can show), and **Available** otherwise. Available does not mean
-a notification will succeed: a receiver can still fail when one is sent to
-it, which shows in the [history](history.md).
+The **Status** column shows **Disabled** when the receiver is switched off,
+**Unavailable** when it is not loaded or its source device is gone, and
+**Device off** when its device is known to be off (a webOS TV; its
+notifications are skipped). More than one can show. **Available** shows
+when none apply. Available does not mean a notification will succeed: a
+receiver can still fail when one is sent to it, which shows in the
+[history](history.md).
 Targets are shown as badges, one for each area (with an area icon) and
 person (with a person icon) the receiver is linked to, by name. A
 receiver's area is the area of its device; change it in Home Assistant.
