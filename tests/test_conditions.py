@@ -96,6 +96,20 @@ async def test_all_conditions_must_pass(hass: HomeAssistant) -> None:
     assert (await _send(hass, entry, "hi"))["result"] == "skipped"
 
 
+async def test_disabled_condition_is_ignored(hass: HomeAssistant) -> None:
+    entry = await _add(
+        hass,
+        [
+            {
+                "condition": "template",
+                "value_template": "{{ false }}",
+                "enabled": False,
+            }
+        ],
+    )
+    assert (await _send(hass, entry, "hi"))["result"] == "delivered"
+
+
 async def test_error_skips_and_is_recorded(
     hass: HomeAssistant, caplog: pytest.LogCaptureFixture
 ) -> None:

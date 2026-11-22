@@ -104,6 +104,19 @@ def condition_variables(
     }
 
 
+def _without_disabled(raw: Any) -> Any:
+    """Drop conditions switched off with ``enabled: false``, at any depth."""
+    if isinstance(raw, list):
+        return [
+            _without_disabled(item)
+            for item in raw
+            if not (isinstance(item, dict) and item.get("enabled") is False)
+        ]
+    if isinstance(raw, dict) and "conditions" in raw:
+        return {**raw, "conditions": _without_disabled(raw["conditions"])}
+    return raw
+
+
 async def async_check_conditions(
     hass: HomeAssistant, receiver: Receiver, variables: dict[str, Any]
 ) -> ConditionOutcome:
@@ -113,7 +126,7 @@ async def async_check_conditions(
     conditions that no longer validate, do not pass and are logged; the
     reason says it was an error.
     """
-    raw = receiver_conditions(hass, receiver)
+    raw = _without_disabled(receiver_conditions(hass, receiver))
     if not raw:
         return PASSED
     checkers: list[condition.ConditionChecker] = []

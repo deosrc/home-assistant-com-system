@@ -21,6 +21,7 @@ from homeassistant.config_entries import SOURCE_INTEGRATION_DISCOVERY, ConfigEnt
 from homeassistant.const import EVENT_SERVICE_REGISTERED, EVENT_SERVICE_REMOVED
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.debounce import Debouncer
 from homeassistant.helpers.event import async_track_time_interval
 
@@ -68,6 +69,11 @@ class ReceiverDetector:
                 dr.EVENT_DEVICE_REGISTRY_UPDATED, self._registry_updated
             )
         )
+        self._unsubscribers.append(
+            self._hass.bus.async_listen(
+                er.EVENT_ENTITY_REGISTRY_UPDATED, self._entity_registry_updated
+            )
+        )
         for event_type in (EVENT_SERVICE_REGISTERED, EVENT_SERVICE_REMOVED):
             self._unsubscribers.append(
                 self._hass.bus.async_listen(event_type, self._service_changed)
@@ -98,6 +104,12 @@ class ReceiverDetector:
         self._debouncer.async_schedule_call()
 
     @callback
+    def _entity_registry_updated(self, event: Event) -> None:
+        """Script names come from their entities, so detect when one changes."""
+        if str(event.data.get("entity_id", "")).startswith("script."):
+            self._debouncer.async_schedule_call()
+
+    @callback
     def _service_changed(self, event: Event) -> None:
         """Scripts are services, so detect again when one is (un)registered."""
         if event.data.get("domain") == "script":
@@ -118,6 +130,14 @@ class ReceiverDetector:
             for entry in hass.config_entries.async_entries(DOMAIN)
             if entry.unique_id is not None
         }
+        pending = {
+            flow["context"].get("unique_id"): flow
+            for flow in hass.config_entries.flow.async_progress_by_handler(
+                DOMAIN, match_context={"source": SOURCE_INTEGRATION_DISCOVERY}
+            )
+        }
+        offered: dict[str, str] = {}
+        complete = True
         for receiver_type in receiver_types():
             if not receiver_type.discoverable:
                 continue
@@ -127,15 +147,24 @@ class ReceiverDetector:
                 _LOGGER.exception(
                     "Detecting %s receivers failed", receiver_type.type_id
                 )
+                complete = False
                 continue
             for candidate in candidates:
                 unique_id = discovery_unique_id(
                     receiver_type.type_id, candidate.source_id
                 )
+                offered[unique_id] = candidate.name
                 # Configured and ignored receivers are entries, so they are
                 # skipped here; a deleted receiver is not, so it is offered.
                 if unique_id in known:
                     continue
+                flow = pending.get(unique_id)
+                if flow is not None:
+                    name = (flow["context"].get("title_placeholders") or {}).get("name")
+                    if name == candidate.name:
+                        continue
+                    # The source was renamed: replace the stale pending flow.
+                    hass.config_entries.flow.async_abort(flow["flow_id"])
                 await hass.config_entries.flow.async_init(
                     DOMAIN,
                     context={"source": SOURCE_INTEGRATION_DISCOVERY},
@@ -145,6 +174,13 @@ class ReceiverDetector:
                         CONF_NAME: candidate.name,
                     },
                 )
+
+        if not complete:
+            return
+        # Drop pending discoveries whose source no longer exists.
+        for unique_id, flow in pending.items():
+            if unique_id not in offered:
+                hass.config_entries.flow.async_abort(flow["flow_id"])
 
     async def _async_reattach(self) -> None:
         """Reload receivers whose source device came back."""

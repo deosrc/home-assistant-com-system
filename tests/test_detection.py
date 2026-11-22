@@ -90,6 +90,34 @@ async def test_unimplemented_types_not_offered(hass: HomeAssistant) -> None:
     assert set(_flows(hass)) == {"persistent_notification_persistent_notification"}
 
 
+async def test_renamed_source_updates_pending_discovery(hass: HomeAssistant) -> None:
+    """A pending discovery takes the new name when its source is renamed."""
+    device = _add_phone(hass, "abc", "Pixel")
+    hub = await _setup_hub(hass)
+    placeholders = _flows(hass)["mobile_app_abc"]["context"]["title_placeholders"]
+    assert placeholders["name"] == "Pixel"
+
+    dr.async_get(hass).async_update_device(device.id, name_by_user="Renamed")
+    await hub.runtime_data.async_detect()
+    await hass.async_block_till_done()
+
+    placeholders = _flows(hass)["mobile_app_abc"]["context"]["title_placeholders"]
+    assert placeholders["name"] == "Renamed"
+    assert len(hass.config_entries.flow.async_progress()) == 2
+
+
+async def test_removed_source_drops_pending_discovery(hass: HomeAssistant) -> None:
+    """A pending discovery is dropped when its source disappears."""
+    device = _add_phone(hass, "abc", "Pixel")
+    hub = await _setup_hub(hass)
+    assert "mobile_app_abc" in _flows(hass)
+
+    dr.async_get(hass).async_remove_device(device.id)
+    await hub.runtime_data.async_detect()
+    await hass.async_block_till_done()
+    assert "mobile_app_abc" not in _flows(hass)
+
+
 async def test_disabled_device_not_offered(hass: HomeAssistant) -> None:
     """A disabled source device is not offered."""
     device = _add_phone(hass, "p1", "Phone")
