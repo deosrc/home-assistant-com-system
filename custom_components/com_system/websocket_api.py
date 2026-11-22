@@ -239,9 +239,7 @@ async def ws_dashboard(
             "enabled": sum(r["enabled"] is True for r in receivers),
             "disabled": sum(r["enabled"] is False for r in receivers),
             "unavailable": sum(not r["available"] for r in receivers),
-            "available": sum(
-                r["available"] and not r["device_off"] for r in receivers
-            ),
+            "available": sum(r["available"] and not r["device_off"] for r in receivers),
             "pending_discoveries": len(_pending_discoveries(hass)),
             "history": await hass.data[DOMAIN][DATA_HISTORY].async_stats(),
         },
