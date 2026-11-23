@@ -508,7 +508,10 @@ records the conventions and how things work as built.
   commands to `async_register_commands` and to `COMMANDS` in the test.
 - `frontend/`: the panel source (Lit 3, TypeScript, Vite 6, Vitest, ESLint).
   `com-system-panel.ts` is the shell and navigation (routes `dashboard`,
-  `receivers`, `history` and `test` under `/com-system/`), `api.ts` wraps the websocket
+  `receivers`, `history` and `test` under `/com-system/`). Its toolbar and
+  tab bar copy `hass-tabs-subpage` (`nav#tabbar.bottom-bar` on narrow screens,
+  `a > ha-tab > ha-svg-icon[slot=icon]`) so Home Assistant's theme styles apply;
+  keep that structure and these class names. `api.ts` wraps the websocket
   commands (`ComSystemApi`), and each view is its own element
   (`dashboard-view.ts`, `receivers-view.ts`, `test-view.ts`); the first two
   refetch when switch states change. `test-view.ts` is the testing tool: it
