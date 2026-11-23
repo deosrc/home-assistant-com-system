@@ -216,7 +216,9 @@ describe("panel", () => {
   it("marks the active navigation entry", async () => {
     const { hass } = makeHass();
     const panel = await mount("/receivers", hass);
-    const active = panel.shadowRoot!.querySelector(".tabs a.active")!;
+    const active = panel.shadowRoot!.querySelector(
+      "#tabbar a[aria-current=page]",
+    )!;
     expect(active.textContent).toBe("Receivers");
   });
 
@@ -433,7 +435,9 @@ describe("panel layout", () => {
     await panel.updateComplete;
     expect(panel.hasAttribute("narrow")).toBe(true);
     expect(
-      panel.shadowRoot!.querySelectorAll(".tabs .tab ha-icon"),
+      panel.shadowRoot!.querySelectorAll(
+        "nav#tabbar.bottom-bar a ha-tab ha-svg-icon[slot=icon]",
+      ),
     ).toHaveLength(5);
     expect(panel.shadowRoot!.querySelector("h1")!.textContent).toBe(
       "Com System",

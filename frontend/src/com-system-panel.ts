@@ -1,3 +1,10 @@
+import {
+  mdiBellRing,
+  mdiBullhorn,
+  mdiHistory,
+  mdiSend,
+  mdiViewDashboard,
+} from "@mdi/js";
 import { LitElement, css, html, nothing } from "lit";
 import "./channels-view";
 import "./dashboard-view";
@@ -17,11 +24,11 @@ if (import.meta.env.MODE === "development") {
 }
 
 const VIEWS = [
-  { path: "dashboard", label: "Dashboard", icon: "mdi:view-dashboard" },
-  { path: "receivers", label: "Receivers", icon: "mdi:bell-ring" },
-  { path: "channels", label: "Channels", icon: "mdi:bullhorn" },
-  { path: "history", label: "Recent", icon: "mdi:history" },
-  { path: "test", label: "Test", icon: "mdi:send" },
+  { path: "dashboard", label: "Dashboard", icon: mdiViewDashboard },
+  { path: "receivers", label: "Receivers", icon: mdiBellRing },
+  { path: "channels", label: "Channels", icon: mdiBullhorn },
+  { path: "history", label: "Recent", icon: mdiHistory },
+  { path: "test", label: "Test", icon: mdiSend },
 ] as const;
 
 /** The admin-only Com System panel: navigation and the active view. */
@@ -47,18 +54,27 @@ export class ComSystemPanel extends LitElement {
         background: var(--primary-background-color);
         color: var(--primary-text-color);
       }
-      /* Copies the toolbar and tabs of Home Assistant's own pages
-         (hass-tabs-subpage and ha-tab). */
+      /* Copies the toolbar and tab bar of Home Assistant's own pages
+         (hass-tabs-subpage): same structure, ids and classes. */
       :host([narrow]) {
-        padding-bottom: var(--header-height, 56px);
+        padding-bottom: calc(
+          var(--header-height, 56px) + var(--safe-area-inset-bottom, 0px)
+        );
       }
       .toolbar {
         box-sizing: border-box;
-        height: var(--header-height, 56px);
-        font-size: 20px;
-        font-weight: 400;
+        height: calc(
+          var(--header-height, 56px) + var(--safe-area-inset-top, 0px)
+        );
+        padding-top: var(--safe-area-inset-top);
+        padding-right: var(--safe-area-inset-right);
+        font-size: var(--ha-font-size-xl, 20px);
+        font-weight: var(--ha-font-weight-normal, 400);
         background-color: var(--sidebar-background-color);
         border-bottom: 1px solid var(--divider-color);
+      }
+      :host([narrow]) .toolbar {
+        padding-left: var(--safe-area-inset-left);
       }
       .toolbar-content {
         display: flex;
@@ -71,83 +87,76 @@ export class ComSystemPanel extends LitElement {
         padding: 4px;
       }
       ha-menu-button {
+        display: flex;
         flex-shrink: 0;
         color: var(--sidebar-icon-color);
         margin-inline-end: 24px;
+        margin-inline-start: initial;
       }
-      h1 {
-        flex: 1;
+      .main-title {
         min-width: 0;
-        margin: 0;
-        font-size: inherit;
-        font-weight: inherit;
-        line-height: 1.5;
-        color: var(--sidebar-text-color);
-        white-space: nowrap;
-      }
-      /* Same structure and class names as hass-tabs-subpage. */
-      .tabs {
-        display: flex;
         flex: 1;
-        justify-content: center;
-        overflow: hidden;
-        font-size: 14px;
+        max-height: var(--header-height);
+        line-height: var(--ha-line-height-normal, 1.5);
+        color: var(--sidebar-text-color);
+        margin-inline-start: var(--main-title-margin, var(--ha-space-6, 24px));
       }
-      :host([narrow]) .tabs {
+      .narrow .main-title {
+        margin-inline-start: var(--main-title-margin, var(--ha-space-2, 8px));
+      }
+      .main-title h1 {
+        margin: 0;
+        font: inherit;
+      }
+      #tabbar a {
+        color: var(--sidebar-text-color);
+        text-decoration: none;
+      }
+      .bottom-bar a {
+        width: 25%;
+      }
+      #tabbar {
+        display: flex;
+        font-size: var(--ha-font-size-m, 14px);
+        overflow: hidden;
+      }
+      #tabbar > a {
+        overflow: hidden;
+        max-width: 45%;
+      }
+      #tabbar > a:focus-visible {
+        background-color: rgba(127, 127, 127, 0.08);
+      }
+      #tabbar.bottom-bar {
         position: fixed;
         bottom: 0;
         left: 0;
-        z-index: 2;
-        width: 100%;
+        padding: 0 calc(16px + var(--safe-area-inset-right, 0px))
+          var(--safe-area-inset-bottom, 0px)
+          calc(16px + var(--safe-area-inset-left, 0px));
         box-sizing: border-box;
-        padding: 0 16px env(safe-area-inset-bottom);
-        justify-content: space-around;
-        font-size: 12px;
-        background-color: var(
-          --ha-tabs-background-color,
-          var(--sidebar-background-color)
-        );
+        background-color: var(--sidebar-background-color);
         border-top: 1px solid var(--divider-color);
+        justify-content: space-around;
+        z-index: 2;
+        font-size: var(--ha-font-size-s, 12px);
+        width: 100%;
       }
-      .tab {
-        box-sizing: border-box;
+      #tabbar:not(.bottom-bar) {
+        flex: 1;
+        justify-content: center;
+      }
+      /* Fallback when Home Assistant has not loaded ha-tab yet. */
+      ha-tab:not(:defined) {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         height: var(--header-height, 56px);
-        padding: 0 32px;
-        overflow: hidden;
-        white-space: nowrap;
-        text-decoration: none;
-        color: var(--sidebar-text-color);
-        outline: none;
-      }
-      :host([narrow]) .tab {
-        flex: 1;
-        min-width: 0;
         padding: 0 4px;
       }
-      .tab ha-icon {
-        display: none;
-      }
-      :host([narrow]) .tab ha-icon {
-        display: block;
-        --mdc-icon-size: 24px;
-      }
-      .tab .name {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-      }
-      .tab.active {
+      ha-tab:not(:defined)[active] {
         color: var(--primary-color);
-      }
-      :host(:not([narrow])) .tab.active {
-        border-bottom: 2px solid var(--primary-color);
-      }
-      .tab:focus-visible {
-        background-color: rgba(127, 127, 127, 0.08);
       }
       main {
         padding: 16px;
@@ -174,53 +183,55 @@ export class ComSystemPanel extends LitElement {
   protected render() {
     const active = this.activePath;
     const prefix = this.route?.prefix ?? "/com-system";
-    const tabs = html`
-      <div class="tabs" role="tablist">
-        ${VIEWS.map(
-          (v) =>
-            html`<a
-              class="tab ${v.path === active ? "active" : ""}"
-              role="tab"
-              aria-selected=${v.path === active}
-              href="${prefix}/${v.path}"
-              @click=${(ev: Event) => this.navigate(ev, v.path)}
-              ><ha-icon .icon=${v.icon}></ha-icon
-              ><span class="name">${v.label}</span></a
-            >`,
-        )}
-      </div>
-    `;
+    const links = VIEWS.map(
+      (v) =>
+        html`<a
+          href="${prefix}/${v.path}"
+          aria-current=${v.path === active ? "page" : nothing}
+          @click=${(ev: Event) => this.navigate(ev, v.path)}
+          ><ha-tab
+            .active=${v.path === active}
+            .narrow=${this.narrow}
+            .name=${v.label}
+            ><ha-svg-icon slot="icon" .path=${v.icon}></ha-svg-icon
+            ><span class="fallback-name">${v.label}</span></ha-tab
+          ></a
+        >`,
+    );
+    const tabs = this.narrow
+      ? html`<nav id="tabbar" class="bottom-bar" aria-label="Com System">
+          ${links}
+        </nav>`
+      : html`<div id="tabbar">${links}</div>`;
+    const view =
+      active === "receivers"
+        ? html`<com-system-receivers .hass=${this.hass}></com-system-receivers>`
+        : active === "channels"
+          ? html`<com-system-channels .hass=${this.hass}></com-system-channels>`
+          : active === "history"
+            ? html`<com-system-history .hass=${this.hass}></com-system-history>`
+            : active === "test"
+              ? html`<com-system-test .hass=${this.hass}></com-system-test>`
+              : html`<com-system-dashboard
+                  .hass=${this.hass}
+                ></com-system-dashboard>`;
     return html`
-      <div class="toolbar">
+      <div class=${this.narrow ? "toolbar narrow" : "toolbar"}>
         <div class="toolbar-content">
           <ha-menu-button
             .hass=${this.hass}
             .narrow=${this.narrow}
           ></ha-menu-button>
-          ${this.narrow ? html`<h1>Com System</h1>` : nothing} ${tabs}
+          ${
+            this.narrow
+              ? html`<div class="main-title"><h1>Com System</h1></div>`
+              : nothing
+          }
+          ${this.narrow ? nothing : tabs}
         </div>
+        ${this.narrow ? tabs : nothing}
       </div>
-      <main>
-        ${
-          active === "receivers"
-            ? html`<com-system-receivers
-                .hass=${this.hass}
-              ></com-system-receivers>`
-            : active === "channels"
-              ? html`<com-system-channels
-                  .hass=${this.hass}
-                ></com-system-channels>`
-              : active === "history"
-                ? html`<com-system-history
-                    .hass=${this.hass}
-                  ></com-system-history>`
-                : active === "test"
-                  ? html`<com-system-test .hass=${this.hass}></com-system-test>`
-                  : html`<com-system-dashboard
-                      .hass=${this.hass}
-                    ></com-system-dashboard>`
-        }
-      </main>
+      <main>${view}</main>
     `;
   }
 }
