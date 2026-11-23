@@ -22,10 +22,11 @@ All conditions must pass. A receiver with none always passes.
 3. Each remaining receiver's conditions are evaluated.
 4. Receivers that pass are delivered to.
 
-A receiver whose conditions do not pass is skipped for that notification
-only. The result is `skipped` with the reason `Conditions did not pass`,
-in the [action response](services.md), the receiver entity's last result,
-[history](history.md) and the [Test page](ui.md#test).
+A receiver whose conditions do not pass is skipped for that notification only.
+The result is `skipped` with the reason `Conditions did not pass`, in the
+[action response](services.md), the receiver entity's last result,
+[history](next-steps/dashboard.md#history) and the [Test
+page](next-steps/dashboard.md#test).
 
 ## Variables
 
@@ -91,7 +92,9 @@ Only deliver when the receiver was reached through its person, using
 `resolved_targets`:
 
 ```yaml
-- "{{ resolved_targets | selectattr('kind', 'eq', 'person') | list | length > 0 }}"
+- >-
+  {{ resolved_targets | selectattr('kind', 'eq', 'person')
+  | list | length > 0 }}
 ```
 
 The **Test** page evaluates the conditions with the message, title and

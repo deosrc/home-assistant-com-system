@@ -1,11 +1,35 @@
-# Custom receivers
+# Custom receiver
 
-A custom receiver is a Home Assistant script. Com System detects suitable
-scripts and offers each one as a receiver, like any other
+## Integration
+
+A custom receiver is a Home Assistant
+[script](https://www.home-assistant.io/integrations/script/). Com System
+detects suitable scripts and offers each one as a receiver, like any other
 [detected receiver](README.md#automatic-detection). You write the script, so
 it can do anything Home Assistant can.
 
-## Which scripts are detected
+## Features
+
+- Accepts any content, so nothing is dropped and no unsupported-content
+  warnings are reported.
+- Takes both `text` and `tts` message types.
+- The person is set by hand and the area is that of the receiver's device
+  (see [person](../next-steps/person.md) and
+  [areas](../next-steps/areas.md)).
+
+## Notification parameters
+
+The whole notification is passed in the `notification` field, as a mapping:
+`message` (see [message types](../content.md#message-types); `messages` has
+every type given) and, when given, `title`, `priority` and `image`. `data` is
+the block keyed `custom` in the action's `data`, if there is one (the other
+types' blocks are not passed). Fields added to the action later are passed the
+same way, so a script should read what it needs and ignore the rest. See
+[content](../content.md).
+
+## Other information
+
+### Which scripts are detected
 
 A script is offered only when it has a field named `notification` with the
 **object** selector. It may have other fields, but they must all be
@@ -32,7 +56,7 @@ Detection runs when the hub loads, after scripts are reloaded or added, and
 once an hour. Choose **Add** on the discovery to create the receiver, or
 **Ignore** to never be offered that script again.
 
-## Checking a script
+### Checking a script
 
 If a script you expected is not offered, use **Check a script** on the
 panel's Receivers view. Choose the script and Com System reports:
@@ -48,18 +72,7 @@ When the script is fine and not yet known, **Rescan scripts** runs detection
 now instead of waiting for the next one. The script is then waiting to be
 added, as the alert at the top of the view shows.
 
-## What the script receives
-
-The whole notification is passed in the `notification` field, as a mapping:
-`message` (see [message types](../content.md#message-types); `messages`
-has every type given) and, when given, `title`, `priority` and `image`.
-`data` is the block keyed `custom` in the action's `data`, if there is one (the other
-types' blocks are not passed). Fields added to the action later are passed
-the same way, so a script should read what it needs and ignore the rest.
-A script accepts any content, so nothing is dropped and no
-unsupported-content warnings are reported. See [content](../content.md).
-
-## Editing and removing
+### Editing and removing
 
 - In the panel, click a receiver's row to open its device page. From
   there, or from Devices & services, use **Reconfigure** to rename the

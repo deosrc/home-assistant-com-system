@@ -8,7 +8,18 @@ per receiver.
 
 Every receiver has a type that defines how it is discovered, which content
 it supports and how a notification is delivered to it. Types are defined in
-code, so new types can be added without changing the receiver model.
+code, so new types can be added without changing the receiver model. Each
+type has a page with the same sections: the integration it manages
+notifications for, its features, the notification parameters it supports and
+how each maps, and any other information.
+
+- [Mobile app](mobile-app.md): Home Assistant companion app devices.
+- [Alexa Media Player](alexa-media-player.md): Echo announcements.
+- [Pushover](pushover.md): Pushover devices.
+- [webOS TV](webostv.md): toasts on LG TVs.
+- [Persistent notification](persistent-notification.md): the Home Assistant
+  notification area.
+- [Custom](custom.md): your own scripts.
 
 ## Automatic detection
 
@@ -36,10 +47,8 @@ detected:
 | Music Assistant | Music Assistant player |
 
 Detection offers receivers. Sending is added as each type is built. So far
-[Persistent notification](persistent-notification.md),
-[mobile app](mobile-app.md), [Pushover](pushover.md),
-[webOS TV](webostv.md) and [Alexa Media Player](alexa-media-player.md)
-receivers send.
+the types in the next section send; Music Assistant is detected but does not
+send yet.
 
 ### Deleting, disabling and removed devices
 
@@ -59,22 +68,11 @@ A custom receiver is a script that takes a `notification` object; see
 
 ## People and areas
 
-Choose **Configure** on a receiver to set the people it relates to (not
-offered for receiver types that cannot relate to a person, such as
-Persistent notification and webOS TV, or whose person is worked out for
-them, such as
-[mobile app](mobile-app.md#which-person-a-device-belongs-to)). Pushover has
-no user link, so its person is [chosen here](pushover.md#person-and-area).
-Com System uses this to find the receivers for a person. Leave it empty if the
-receiver is not tied to anyone.
-
-The same form has the receiver's
-[notification conditions](../conditions.md), which are offered for every
-receiver type.
-
-A receiver's area is not set here. It is the area of the receiver's device
-in Home Assistant (or of its entity, if that has its own area). To change
-it, change the area of the device.
+A receiver's person and area decide which targets reach it. See
+[receiver person](../next-steps/person.md) and
+[receiver areas](../next-steps/areas.md). The **Configure** form also has
+the receiver's [notification conditions](../conditions.md), which every
+receiver type offers.
 
 ## Receiver entities
 

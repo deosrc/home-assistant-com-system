@@ -1,7 +1,7 @@
 # Channels
 
 A channel is a named set of default notification content. Select it in the
-`channel` field of [notify.com_system](services.md) and the channel's
+`channel` field of [notify.com_system](../services.md) and the channel's
 defaults fill anything the call leaves out. Channels are useful beyond the
 mobile app: they are a way to reuse a set of options.
 

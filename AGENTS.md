@@ -490,8 +490,8 @@ records the conventions and how things work as built.
   listener and nothing reloads. Pruning happens on record and on list.
   `async_last_attempt(entry_id)` finds a receiver's latest result.
   `async_stats()` summarises the history for the dashboard (rates, success
-  rates and the share stopped by conditions; see `docs/ui.md`). The hub's
-  options flow edits the limits. Docs: `docs/history.md`.
+  rates and the share stopped by conditions). The hub's options flow edits
+  the limits. Docs: `docs/next-steps/dashboard.md`.
 - `websocket_api.py`: the commands behind the panel
   (`com_system/ping`, `dashboard`, `receivers/list`, `receivers/set_enabled`,
   `scripts/check` (`_script_checks`: why a script is or

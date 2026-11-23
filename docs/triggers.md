@@ -37,8 +37,9 @@ The trigger variables are the keys of the
 `trigger.receiver_id`, `trigger.receiver`, `trigger.person` and
 `trigger.reply_text`.
 
-The tag is carried in the action ID the app is sent, so it is known even
-when the notification has since been removed from [history](history.md).
+The tag is carried in the action ID the app is sent, so it is known even when
+the notification has since been removed from
+[history](next-steps/dashboard.md#history).
 
 The trigger fires from the `com_system_action` event, so you can also use an
 `event` trigger on it. This trigger adds the form in the editor and the

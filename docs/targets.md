@@ -7,11 +7,11 @@ people, areas and receivers, in any combination.
 
 - **People**: receivers associated with everyone (any person), or with any
   of the individuals you list, as chosen in the
-  [action](services.md#people). A
-  receiver's people are set on the receiver (see
-  [people and areas](receivers/README.md#people-and-areas)).
+  [action](services.md#people). See
+  [receiver person](next-steps/person.md).
 - **Areas**: receivers whose device is in any of the listed areas. A
-  receiver's area is the area of its device in Home Assistant.
+  receiver's area is the area of its device in Home Assistant (see
+  [receiver areas](next-steps/areas.md)).
 - **Receivers**: receivers named explicitly, or every receiver with an area
   (**All Areas**).
 
@@ -57,5 +57,5 @@ skipped for that notification.
 
 ## Seeing a receiver's targets
 
-The [Receivers](ui.md#receivers) page shows the person and area of each
-receiver as badges.
+The [Receivers](next-steps/dashboard.md#receivers) page shows the person and
+area of each receiver as badges.

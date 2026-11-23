@@ -59,11 +59,11 @@ Two typed fields are validated by the action:
 - `priority` is Low, Normal (the default), High or Critical. In YAML use
   `low`, `normal`, `high` or `critical`; the case does not matter. Each
   receiver type maps it to its own mechanism, described in its page.
-- `image` is a choice of **Entity** (the form's first choice) or **URL**.
-  An entity is an `image` or `camera` entity, sent as its current picture
-  path (with its access token). A URL is an http(s) URL, a `/local/...`
-  path or a media source ID (`media-source://...`). In YAML give the plain
-  string (a URL or an entity id) or the form's `{active_choice: Entity, Entity: camera.door}`.
+- `image` is a choice of **Entity** (the form's first choice) or **URL**. An
+  entity is an `image` or `camera` entity, sent as its current picture path
+  (with its access token). A URL is an http(s) URL, a `/local/...` path or a
+  media source ID (`media-source://...`). In YAML give the plain string (a URL
+  or an entity id) or the form's `{active_choice: Entity, Entity: camera.door}`.
 
 How each type handles them:
 
@@ -84,8 +84,8 @@ a field drops it with a warning.
 
 - `click_action`: a URL or Home Assistant path (such as `/lovelace/cameras`)
   opened when the notification is tapped.
-- `actions`: buttons, each with an `id` and a `label` (the button text), and optionally
-  a `uri` to open instead of firing an event. Pressing one fires
+- `actions`: buttons, each with an `id` and a `label` (the button text), and
+  optionally a `uri` to open instead of firing an event. Pressing one fires
   [`com_system_action`](receivers/mobile-app.md#actions-and-responses).
 - `tag`: notifications with the same tag replace each other. Mobile apps
   can also use it to clear a notification. The
@@ -141,6 +141,6 @@ not a local file for Pushover) is a warning too.
 
 ## Designing a notification
 
-The **Test** page of the [panel](ui.md#test) builds its form from the
-action, so it offers priority, image and `data` as well as the targets, and
-shows any warnings about dropped content in the result.
+The **Test** page of the [panel](next-steps/dashboard.md#test) builds its form
+from the action, so it offers priority, image and `data` as well as the targets,
+and shows any warnings about dropped content in the result.

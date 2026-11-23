@@ -1,41 +1,44 @@
 # Persistent notification receiver
 
-This receiver posts to the notification area in the Home Assistant
-sidebar. Every user sees the same notifications, so it is not tied to a
-person or device. It has no push behaviour, so it suits a record of last
-resort.
+## Integration
 
-## Setup
+Posts to the notification area in the Home Assistant sidebar, using the
+built-in
+[Persistent Notification](https://www.home-assistant.io/integrations/persistent_notification/)
+integration. There is one receiver, offered as a discovery on **Settings >
+Devices & services**.
 
-There is one receiver, offered as a discovery on **Settings > Devices &
-services**. Choose **Add** to create it.
+## Features
 
-It cannot relate to a person, so **Configure** has no people option and
-person targets never reach it. It starts with no area, so it is **only
-used when named explicitly** in the `receivers` target. If you give its
-device an area (see [Receivers](README.md#people-and-areas)), area targets
-reach it like any other receiver. See [Targets](../targets.md).
+- Every user sees the same notifications, so the receiver is not tied to a
+  person and has no push behaviour. It suits a record of last resort.
+- It cannot have a person, so person targets never reach it.
+- It starts with no area, so it is only used when named in the `receivers`
+  target. Give its device an area and area targets reach it like any other
+  receiver. See [areas](../next-steps/areas.md) and
+  [targets](../targets.md).
+- Commands: [clear notification](../commands.md#clear-a-notification).
 
-## Supported content
+## Notification parameters
 
-| Content | Supported |
-| --- | --- |
-| `message` | Yes |
-| `title` | Yes |
-| `tag` | Yes: the same tag replaces the previous notification |
-| Other fields, `data` | No: dropped, with a warning |
+| Parameter | Supported | Mapping |
+| --- | --- | --- |
+| `message` | Yes | `message` |
+| `title` | Yes | `title` |
+| `tag` | Yes | Notification ID; the same tag replaces the old one |
+| `priority`, `image`, others | No | Dropped, with a warning |
+| `data` | No | Dropped, with a warning |
 
-## Behaviour
+There are no receiver-specific `data` options.
+
+## Other information
 
 Delivery calls `persistent_notification.create`. Without a `tag` each
-notification creates its own entry in the notification area. With a `tag`
-the notification's ID is made from it (`com_system_tag_<tag>`), so the next
-notification with the same tag replaces the previous one instead of adding
-another. Notifications sent with a tag can be removed with the
-[clear notification command](../commands.md#clear-a-notification); dismiss
-others in the Home Assistant UI as normal.
-
-## Example
+notification creates its own entry. With a `tag` the notification's ID is
+`com_system_tag_<tag>`, so the next notification with the same tag
+replaces the previous one. Only notifications sent with a tag can be removed
+with the [clear notification command](../commands.md#clear-a-notification);
+dismiss others in the Home Assistant UI as normal.
 
 ```yaml
 action: notify.com_system

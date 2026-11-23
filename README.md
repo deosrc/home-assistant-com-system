@@ -2,7 +2,8 @@
 
 Com System is a notification distribution system for Home Assistant, built
 as a custom integration. See [PLAN.md](PLAN.md) for the design and
-[docs/](docs/README.md) for the documentation.
+[docs/](docs/README.md) for the documentation, starting with
+[getting started](docs/getting-started.md).
 
 ## Development
 

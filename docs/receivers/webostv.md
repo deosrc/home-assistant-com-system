@@ -1,55 +1,36 @@
 # webOS TV receiver
 
-A webOS TV receiver shows a notification as a toast on an LG TV set up with
-the Home Assistant webOS TV integration. Com System offers one receiver for
-each webOS TV config entry (see
-[automatic detection](README.md#automatic-detection)).
+## Integration
 
-## Setup
+Shows a notification as a toast on an LG TV, using Home Assistant's
+[webOS TV](https://www.home-assistant.io/integrations/webostv/)
+integration. One receiver is offered for each webOS TV config entry.
 
-Choose **Add** on the discovery under **Settings > Devices & services**. The
-receiver's entities are placed on the TV's own device.
+## Features
 
-A TV is a shared device, so it has no person: **Configure** has no people
-option and person targets never reach it. Its area is the area of the TV's
-device in Home Assistant, so area targets reach it once the TV has an area.
-To change the area, change it on the TV's device. See
-[Receivers](README.md#people-and-areas) and [Targets](../targets.md).
+- The receiver's entities are placed on the TV's own device. Its area is the
+  area of that device, so area targets reach it once the TV has an area (see
+  [areas](../next-steps/areas.md)).
+- A TV is a shared device: it has no person, so person targets never reach
+  it (see [person](../next-steps/person.md)).
+- A TV that is off is not an error: the notification is `skipped` with the
+  reason `Device is off`, and is not queued.
 
-## Supported content
+## Notification parameters
 
-| Content | Supported |
+| Parameter | Supported | Mapping |
+| --- | --- | --- |
+| `message` | Yes | `message` |
+| `title` | No | Dropped, with a warning |
+| `priority` | No | Dropped, with a warning |
+| `image` | No | Dropped, with a warning; use `data.icon` |
+| Other fields | No | Dropped, with a warning |
+
+`data` is the `webostv` block. Other keys are dropped with a warning.
+
+| Key | Description |
 | --- | --- |
-| `message` | Yes |
-| `title` | No: dropped, with a warning in the result |
-| `priority` | No: dropped, with a warning |
-| `image` | No: dropped, with a warning (use `data.icon`) |
-| `data.icon` | Yes: path or URL of an icon shown in the toast |
-
-`data` is the `webostv` block, for example `data: {webostv: {icon: ...}}`.
-Other keys are dropped with a warning. See [content](../content.md).
-
-## Behaviour
-
-Delivery calls the integration's `notify.<TV name>` action, named from the
-config entry's title (for example `notify.living_room_tv`), with the message
-and, when given, `data.icon`. If that action does not exist (the TV was
-removed, or the integration is not loaded) the delivery fails for that
-receiver only, with the reason in the result.
-
-A TV that is off or unavailable is expected, so it is not an error: the
-result is `skipped` with the reason `Device is off`. This is decided from
-the state of the TV's media player, and also when the notify action fails
-after the TV went off. The notification is not queued: it is lost. Other
-errors from the action are `failed`. Older versions of the webOS TV
-integration only log an error when the TV is unreachable, and are recorded
-as delivered.
-
-The panel shows a TV in that state with a **Device off** status, and does
-not count it in the available receivers on the dashboard. The receiver is
-not unavailable, and its enabled switch still works.
-
-## Example
+| `icon` | Path or URL of an icon shown in the toast |
 
 ```yaml
 action: notify.com_system
@@ -59,4 +40,23 @@ data:
     active_choice: Select
     Select:
       entity_id: notification_receiver.living_room_tv
+  data:
+    webostv:
+      icon: /local/dinner.png
 ```
+
+## Other information
+
+Delivery calls the integration's `notify.<TV name>` action, named from the
+config entry's title (for example `notify.living_room_tv`). If that action
+does not exist (the TV was removed, or the integration is not loaded) the
+delivery fails for that receiver only, with the reason in the result.
+
+Whether the TV is off is decided from the state of its media player, and
+also when the notify action fails after the TV went off. Other errors from
+the action are `failed`. Older versions of the webOS TV integration only log
+an error when the TV is unreachable, and are recorded as delivered.
+
+The panel shows a TV in that state with a **Device off** status, and does
+not count it in the available receivers on the dashboard. The receiver is
+not unavailable, and its enabled switch still works.

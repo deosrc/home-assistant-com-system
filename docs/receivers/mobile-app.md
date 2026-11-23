@@ -1,27 +1,41 @@
-# Mobile app receivers
+# Mobile app receiver
 
-A mobile app receiver sends notifications to one device that runs the Home
-Assistant companion app. Com System offers one receiver for each registered
-device (see [automatic detection](README.md#automatic-detection)).
+## Integration
 
-## Delivery
+Sends notifications to one device running the Home Assistant companion app,
+using Home Assistant's [Mobile
+App](https://www.home-assistant.io/integrations/mobile_app/) integration (see
+also the [companion app
+documentation](https://companion.home-assistant.io/docs/notifications/notifications-basic/)).
+Com System offers one receiver for each registered device (see [automatic
+detection](README.md#automatic-detection)).
 
-A notification is delivered by calling the device's own
-`notify.mobile_app_<device name>` action with the message and, when given,
-the title. If that action does not exist (for example the device has no push
-support or was removed) the delivery fails for that receiver only, with the
-reason in the result.
+## Features
 
-## Supported content
+- Works on Android and iOS; keys for the other platform are ignored by the
+  app.
+- Buttons on the notification, with [responses](#actions-and-responses)
+  that fire events and start automations.
+- [Channels](../next-steps/channels.md): the channel name is sent as the
+  Android notification channel.
+- Commands: [clear notification](../commands.md#clear-a-notification).
+- The person is found automatically, and the device can be personal or
+  shared (see [person](../next-steps/person.md#mobile-app)). The area is the
+  area of the device in Home Assistant (see
+  [areas](../next-steps/areas.md)).
 
-| Content | Supported |
-| --- | --- |
-| `message`, `title` | Yes |
-| `priority` | Yes, mapped to `data` keys (below) |
-| `image` | Yes, as `data.image` |
-| `data` | Yes: the `mobile_app` block, any key |
-| `click_action`, `tag`, `car_ui` | Yes, mapped to `data` keys (below) |
-| `actions` | Yes, with [responses](#actions-and-responses) |
+## Notification parameters
+
+| Parameter | Supported | Mapping |
+| --- | --- | --- |
+| `message`, `title` | Yes | `message`, `title` |
+| `priority` | Yes | `data` keys, see below |
+| `image` | Yes | `data.image` |
+| `click_action` | Yes | `clickAction` (Android) and `url` (iOS) |
+| `actions` | Yes | `actions`, with `id` as `action` and `label` as `title` |
+| `tag` | Yes | `tag` |
+| `car_ui` | Yes | `car_ui: true` (nothing when off) |
+| `data` | Yes | The `mobile_app` block, any key |
 
 `priority` is mapped to the companion app's keys; each platform ignores the
 other's:
@@ -50,22 +64,20 @@ data:
       tag: door
 ```
 
-## Click action, tag, car UI and actions
-
-These typed fields are mapped to the companion app's keys; the `mobile_app`
-block of `data` is merged over them, so it can override them:
-
-| Field | Sent as |
-| --- | --- |
-| `click_action` | `clickAction` (Android) and `url` (iOS) |
-| `actions` | `actions`, with `id` as `action` and `label` as `title` |
-| `tag` | `tag` |
-| `car_ui` | `car_ui: true` (nothing when off) |
-
 The iOS `url` key is from the companion app documentation and has not been
 checked on a device.
 
-## Actions and responses
+## Other information
+
+### Delivery
+
+A notification is delivered by calling the device's own
+`notify.mobile_app_<device name>` action with the message and, when given,
+the title. If that action does not exist (for example the device has no push
+support or was removed) the delivery fails for that receiver only, with the
+reason in the result.
+
+### Actions and responses
 
 Buttons on the notification are the `actions` field: a list of objects
 with an `id`, a `label` (the button text) and optionally a `uri` (other app
@@ -113,49 +125,18 @@ To start an automation from a response, use the
 [action received trigger](../triggers.md).
 
 The response is also stored with the notification in
-[history](../history.md) and shown under Recent. If the notification has
-already left history the event is still fired. Actions with a `uri` open it
-and send no response. Responses to notifications that Com System did not
-send are ignored. Automations that listen to `mobile_app_notification_action`
-directly see the encoded ID, so use `com_system_action`, which has the
-original one.
+[history](../next-steps/dashboard.md#history) and shown under Recent. If the
+notification has already left history the event is still fired. Actions with a
+`uri` open it and send no response. Responses to notifications that Com System
+did not send are ignored. Automations that listen to
+`mobile_app_notification_action` directly see the encoded ID, so use
+`com_system_action`, which has the original one.
 
-In the [testing tool](../ui.md#test), enter the actions in the `data` field
-like any other receiver content; the form has no action editor of its own.
+In the [testing tool](../next-steps/dashboard.md#test), enter the actions in the
+`data` field like any other receiver content; the form has no action editor of
+its own.
 
-## Which person a device belongs to
+### Which person a device belongs to
 
-A device is linked to at most one person, found each time it is needed so
-later changes to people are picked up:
-
-1. The person linked to the Home Assistant user the app is registered with.
-2. Otherwise, the person whose device trackers include the app's device
-   tracker.
-3. Otherwise, no person.
-
-The person cannot be chosen: there is no people option for a mobile app
-receiver. To change it, link the person to the right Home Assistant user or
-device tracker.
-
-## Personal or shared
-
-Each mobile app receiver has a **Device use** select entity (a
-configuration entity) on its device, with two options:
-
-- **Personal**: the device is reached when its person is targeted.
-- **Shared** (for example a wall tablet): the device has no person, so it is
-  never reached by a person target. It is still reached by area or by naming
-  it.
-
-A new receiver starts as personal when a person is linked and as shared
-when not. The choice is kept across restarts. Change it on the
-device page (under Configuration) or with the `select.select_option`
-action:
-
-```yaml
-action: select.select_option
-target:
-  entity_id: select.pixel_device_use
-data:
-  option: shared
-```
+See [receiver person](../next-steps/person.md#mobile-app), including
+[personal or shared](../next-steps/person.md#personal-or-shared) devices.

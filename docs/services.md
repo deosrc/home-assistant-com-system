@@ -12,7 +12,7 @@ send a notification to the receivers that match its [targets](targets.md).
 | `receivers` | no | Selected receivers, or all areas (see below). |
 | `title` | no | A title; folded into the message where there is none. |
 | `message` | yes | The message to send: a string, or a list of `{type, content}` items. See [message types](content.md#message-types). |
-| `channel` | no | A [channel](channels.md): its defaults fill what you leave out. |
+| `channel` | no | A [channel](next-steps/channels.md); its defaults fill gaps. |
 | `priority` | no | Low, Normal, High or Critical (Normal if not given). |
 | `image` | no | A URL, or an image or camera entity. |
 | `click_action` | no | What a tap opens: a URL or path (mobile app). |
@@ -151,5 +151,6 @@ an automation, an error stops the run unless the step has
 
 ## Testing
 
-The **Test** page of the [panel](ui.md#test) sends through this same action
-and shows which receivers a notification would reach before it is sent.
+The **Test** page of the [panel](next-steps/dashboard.md#test) sends through
+this same action and shows which receivers a notification would reach before it
+is sent.

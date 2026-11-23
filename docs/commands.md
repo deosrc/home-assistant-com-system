@@ -7,11 +7,12 @@ action, `com_system.<command>`, that takes the same `people` and `receivers`
 have to send a notification with a special `message` to a device's
 `notify.mobile_app_*` action.
 
-A receiver whose type does not support the command (or whose device OS does
-not) is skipped with a reason; it is not an error. A command raises an error
-only when nothing could be attempted: no targets, no receiver matched, or
-every match is disabled. Commands are not kept in the [history](history.md)
-and do not update the receiver entity.
+A receiver whose type does not support the command (or whose device OS does not)
+is skipped with a reason; it is not an error. A command raises an error only
+when nothing could be attempted: no targets, no receiver matched, or every match
+is disabled. Commands are not kept in the
+[history](next-steps/dashboard.md#history) and do not update the receiver
+entity.
 
 Like `notify.com_system`, a command returns a response (when requested) with
 `results` for each receiver (`entry_id`, `name`, `type`, `result`, `reason`,
