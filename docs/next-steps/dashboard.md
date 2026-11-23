@@ -1,30 +1,17 @@
 # Dashboard and panel
 
-Com System adds a **Com System** entry to the Home Assistant sidebar. The
-panel is for administrators only: it is hidden from other users, and the
-websocket commands behind it reject them with `unauthorized`.
+Com System is designed to use native Home Assistant functionality where
+possible, but given the complexity involved in sending notifications, it
+also provides a user interface for composing, controlling, and diagnosing
+issues.
+
+To access it, select **Com System** from the Home Assistant sidebar. The
+panel is for administrators only: it is hidden from other users.
 
 ## Dashboard
 
-An overview of the receivers and of the [history](#history):
-
-- **Receivers**: available receivers out of all, such as `11/13`. A
-  receiver is not counted when it is unavailable (not loaded, or its source
-  device is gone) or when its device is known to be off, such as a
-  [webOS TV](../receivers/webostv.md) that is switched off.
-- **Notifications per day** or **per hour**: the number of notifications in
-  history divided by the days kept. When the history has reached its count
-  limit it covers less than that, so the average is per hour over whole
-  hours only (the partial first hour is left out). If the full history
-  covers less than one whole hour, a warning is shown instead.
-- **Notification success**: the share of notifications in history where
-  every receiver succeeded or was skipped.
-- **Receiver success**: the share of receiver results in history that
-  succeeded or were skipped.
-- **Filtered by condition**: the share of notifications where at least one
-  receiver was skipped because its conditions did not pass (or errored).
-
-The history figures show **–** while the history is empty.
+The dashboard gives a brief overview of the system. This is likely to change
+so is not covered here in detail, and should be fairly self-explanatory.
 
 When sources are waiting to be added, an alert at the top of the page says
 how many, with a link to **Review in Devices & services**, as on the
@@ -32,95 +19,83 @@ Receivers page.
 
 ## Receivers
 
-A table of every receiver. The first column is a switch that turns the
-receiver on or off; the other columns are its name, status, type, targets
-and conditions.
-The **Status** column shows **Disabled** when the receiver is switched off,
-**Unavailable** when it is not loaded or its source device is gone, and
-**Device off** when its device is known to be off (a webOS TV; its
-notifications are skipped). More than one can show. **Available** shows
-when none apply. Available does not mean a notification will succeed: a
-receiver can still fail when one is sent to it, which shows in the
-[history](#history).
-Targets are shown as badges, one for each area (with an area icon) and
-person (with a person icon) the receiver is linked to, by name. A
-receiver's area is the area of its device; change it in Home Assistant.
-The **Conditions** column says how many [notification
-conditions](../conditions.md) the receiver has, or **None**. It links to the
-receiver's entry on Devices & services, where **Configure** edits them (the
-panel cannot open that dialog itself).
+This allows gives you an overview of the configured receivers and a basic
+status. Click a row to open the receiver's device page.
 
-The switch operates the receiver's enabled switch, so it is the same as
-using the switch entity or an automation, and the list updates when that
-switch changes. An unavailable receiver can still be switched on or off. The
-switch is disabled only when the receiver's state cannot be read (for
-example while it is not loaded). Unavailable rows are dimmed.
+> [!NOTE]
+> The reported status greatly depends on the implementation of the receiver.
+> For example, WebOS TV receivers can report if the TV is online or not.
+> The same is **NOT** available for mobile app receivers.
 
-Click a row (not its switch) to open the receiver's device page, where you
-rename it, set its people or delete it (see [custom
-receivers](../receivers/custom.md#editing-and-removing)). Receivers are added
-from discoveries; see [custom receivers](../receivers/custom.md) for scripts.
+The switch for each receiver can be used to turn it on or off. This is
+directly controlling the switch entity which Com System creates for each
+receiver, so can also be controlled via automations if you wish.
 
-**Check a script**, below the table, explains why a script is or is not
-detected as a [custom receiver](../receivers/custom.md#checking-a-script). You
-choose the script with Home Assistant's entity picker (a plain list if the
-picker is not available), and when it would be offered there is a **Rescan
-scripts** button.
+The targets column will show the areas and people a receiver is assigned to.
+If a receiver is not assigned, it will only be used if named explicitly.
+For managing these settings, see [Areas](./areas.md) and [Person](person.md).
 
-When sources are waiting to be added, an alert at the top of the view says
+Conditions are only displayed as a count and a link as they are configured
+within the options for a receiver config entry. For more details, see
+[conditions](./../conditions.md).
+
+When receivers are waiting to be added, an banner at the top of the page shows
 how many, with a link to **Review in Devices & services** to add or ignore
-them; see [receiver discovery](../receivers/README.md#automatic-detection). The
-sources are not listed. A receiver with a type that is no longer known stays
-in the list, with the type id as its type.
+them; see [receiver discovery](../receivers/README.md#automatic-detection).
+
+Adding a custom or unsupported receiver is done by creating a script in a
+specific format. **Check a script** below the table explains why a script
+is or is not detected. See [custom receiver](../receivers/custom.md#checking-a-script)
+for more details.
 
 ## Channels
 
-Create, edit and delete [channels](channels.md). The forms are Home
-Assistant's action forms for the channel actions; the page reads the list
-over websocket.
+Channels have two functions:
+
+- To set the channel of a notification for the Android Home Assistant app
+- To configure default properties for any notification using the channel
+
+For example, you could create a channel for "Important" which sets the
+priority and displays in Android Auto.
+
+The channels page allows you to create, edit and delete [channels](channels.md).
+
+Deleting a channel will also delete it from any connected Home Assistant apps.
 
 ## Recent
 
-The notifications sent, newest first, each with its title and message, the
-time, and every receiver's result (delivered, failed or skipped) with the
-reason and any warnings. The **Why** column says why the receiver was
-included (see [Why a receiver was included](#why-a-receiver-was-included)).
-**Refresh** reloads the list. Only the most recent notifications are kept;
-see [history](#history). When someone presses a
-notification action, the receivers table gains a **Response** column that
-shows the action on the row of the receiver that sent it, with any reply
-text, the person who responded and the time. A response from a receiver that
-is no longer listed is shown under the message.
+Often notifications may arrive at times when it is inconvenient to debug them.
+The recent page keeps track of notifications which have been sent, what or who
+they were targeting, and any warnings or errors which were raised.
+
+By default, the last 200 notifications or 30 days will be kept, whichever is
+smaller. To change them, open **Settings > Devices & services > Com System**,
+choose the **Com System** hub entry and then **Configure**. The new limits apply
+straight away and nothing is reloaded.
+
+This page does not auto-update, so **Refresh** reloads the list.
+
+When someone presses a notification action, the receivers table gains a
+**Response** column indicating what action was pressed.
 
 ## Test
 
-The testing tool sends a test notification and shows what happens.
+The testing tool sends a test notification and shows what happens. The form is
+identical to the one in **Settings > Tools > Actions**, but with some
+additional components to help see where a notification would be sent.
 
-- The form is Home Assistant's own action form, as on **Developer tools >
-  Actions**, without the action picker. Enter an optional **title** and a
-  **message**, and choose the targets: **Individuals** (one or more
-  people) or **Everyone**, and **Select** (receivers, areas and so on) or
-  **All Areas**. It starts with the defaults of the action (Everyone and All
-  Areas), which Home Assistant reads from the action itself; untick a
-  field to leave that group out, so it is not targeted. The groups are
-  combined as in the [action](../services.md#people). If Home Assistant has
-  not loaded that form, the page says so.
-- Every field of the action is in the form, including priority, image and
-  `data`, because the form is built from the action itself: a field added
-  to the action appears here with no change to the panel. What a receiver
-  type does with content is in [content](../content.md); content it drops is
-  shown as a warning in the result.
-- **Receivers** updates as you change the targets, without sending
-  anything. Each matching receiver is `targeted`, or `skipped` with the
-  reason (it is disabled, or its [conditions](../conditions.md) did not pass
-  or errored). The conditions are evaluated with the content in the form.
-- **Send test** calls the [`notify.com_system` action](../services.md), so it
-  behaves exactly as an automation does, and may send real notifications.
-  It is enabled once there is a message and at least one receiver would be
-  reached. The result shows each receiver's outcome (delivered, failed or
-  skipped) with the reason and any warnings (content a receiver dropped),
-  and the counts.
-- If nothing could be attempted, the error from the action is shown.
+For an explanation of the options, see [services](./../services.md).
+
+Below the form, **Receivers** updates as you change the targets, without sending
+anything. Each matching receiver is `targeted`, or `skipped` with the reason
+(it is disabled, or its [conditions](../conditions.md) did not pass or errored).
+The conditions are evaluated with the content in the form.
+
+Once ready, click **Send test** to call the notify action. A results panel will
+appear below showing each receiver's outcome (delivered, failed or skipped) with
+the reason and any warnings (content a receiver dropped), and the counts.
+
+If nothing could be attempted, the error from the action is shown.
 
 ## Why a receiver was included
 
@@ -138,71 +113,3 @@ several:
 
 A receiver that matched more than one way shows each badge. Records saved
 before this column existed show **None**.
-
-## History
-
-Com System keeps a record of the notifications it sends, so the panel can
-show them under [Recent](#recent). Each record has the notification's
-content (title, message and any other content), the time, and the result of
-every receiver: delivered, failed or skipped, with the reason and any
-warnings about content a receiver dropped. Failures and skipped receivers are
-recorded too. A call that matches no receiver is rejected and not recorded.
-
-A record that had notification actions also stores the responses to them:
-which action, from which receiver and person, and when (see
-[mobile app](../receivers/mobile-app.md#actions-and-responses)).
-
-### Limits
-
-History is capped by both **count** and **age**: a notification is dropped
-when there are more than the count limit, or it is older than the age limit.
-The defaults are the last 200 notifications and 30 days.
-
-To change them, open **Settings > Devices & services > Com System**, choose
-the **Com System** hub entry and then **Configure**. The new limits apply
-straight away and nothing is reloaded.
-
-### Storage
-
-History is saved in Home Assistant's `.storage/com_system.history` file, so
-it survives restarts. Each receiver's `notification_receiver` entity also
-shows its own last attempt.
-
-## Websocket commands
-
-The panel talks to Home Assistant through these commands. All require an
-admin user.
-
-- `com_system/ping`: returns `{"pong": true}`.
-- `com_system/dashboard`: the counts and history statistics shown on the
-  dashboard.
-- `com_system/receivers/list`: each receiver's name, type, enabled state,
-  availability, switch entity id, `notification_receiver` entity id
-  (`receiver_entity_id`), device id (`device_id`, the page a row opens),
-  people, areas and `conditions` (how many
-  [conditions](../conditions.md) it has).
-- `com_system/receivers/set_enabled`: turns the receiver's enabled switch on
-  or off (`entry_id`, `enabled`).
-- `com_system/scripts/check`: checks a script (`entity_id`) and returns
-  `checks` (each `id`, `ok`, `message`) and `can_rescan`.
-- `com_system/scripts/rescan`: runs detection now (needs the hub loaded).
-- `com_system/discoveries/list`: the pending discoveries.
-- `com_system/history/list`: the recent notifications, newest first
-  (optional `limit`). Each has `id`, `time`, `notification` and `results`.
-- `com_system/channels/list`: the [channels](channels.md), each `channel_id`,
-  `name`, `entity_id` and `defaults`. Channels are written through the
-  `com_system` channel actions, not websocket commands.
-- `com_system/notify/preview`: the receivers the targets (`people` and
-  `receivers`, as in the action, and an optional `notification` object of
-  content for the [conditions](../conditions.md)) would reach, each `targeted`
-  or `skipped` with a reason. Sends nothing.
-- `com_system/notify/test`: sends through the `notify.com_system` action
-  (`service_data`, the action's data) and returns its response.
-  A failure to send is the error `send_failed`.
-
-## Installing the panel
-
-The panel is written in TypeScript and is not committed in compiled form.
-Releases attach `com_system.zip`, which HACS installs and which includes the
-compiled panel. When running from a clone, build it first: see
-[developing the panel](../../README.md#developing-the-panel).
