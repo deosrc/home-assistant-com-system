@@ -5,26 +5,25 @@ notification. It needs Home Assistant 2026.10.4 or later.
 
 ## 1. Install
 
-Com System is available in Home Assistant's HACS marketplace.
+Com System is available in Home Assistant's marketplace.
 
-1. Open the repository in the marketplace:
-   [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=deosrc&repository=home-assistant-com-system&category=integration)
-2. Choose **Download**, then restart Home Assistant if asked.
-3. Go to **Settings > Devices & services > Add integration** and choose
-   **Com System**. This creates the hub. Only one hub can exist.
+[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=deosrc&repository=home-assistant-com-system&category=integration)
 
-To install without HACS, copy `custom_components/com_system` into your
-configuration directory and restart.
+Once it is added, check the integrations page for "Com System"
+(**Settings > Devices & services**)
+
+If not present, use **Add integration** and choose **Com System**.
+This creates the hub which manages Com System. Only one hub can exist.
 
 ## 2. Add receivers
 
 A receiver is a device or service Com System can send a notification to,
 such as a phone or tablet running the Home Assistant app, an Echo, or a TV.
 
-Com System finds them for you. After the hub is set up, go to **Settings >
-Devices & services**. Receivers waiting to be added are listed under
-**Discovered**. For each one, choose **Add**, or **Ignore** if you never
-want it offered.
+Com System finds supported receivers for you. After the hub is set up,
+go to **Settings > Devices & services**. Receivers waiting to be added are
+listed under **Discovered**. For each one, choose **Add**, or **Ignore** if
+you never want it offered.
 
 Nothing else is needed to get started:
 
@@ -32,16 +31,14 @@ Nothing else is needed to get started:
 - The **person** of a mobile app is found from the user it is registered
   with.
 
-The receiver types and how each is discovered are in
-[receivers](receivers/README.md). Every receiver gets a device with a
-**Notifications Enabled** switch and a read-only **Receiver** entity that
-shows its last notification.
+We will explore receivers more later, but for now you just need one to send a
+notification to.
 
 ## 3. Send a notification
 
-Open **Developer tools > Actions**, choose **Notify: Com System** and fill
-in the form, or use the **Test** page of the Com System panel in the
-sidebar, which shows who would receive the notification before you send it.
+The easiest way to send a notification is via the Com System UI. We will
+explore this more later, but for now, select **Com System** from the sidebar
+in Home Assistant, then go to **Test**.
 
 A notification needs a message and at least one target:
 
@@ -50,32 +47,17 @@ A notification needs a message and at least one target:
 - **Receivers**: **All Areas**, or a selection of areas and named
   receivers.
 
-The content is the `message` (the display text) and an optional `title`. To
-speak the message on a device that can, such as an Echo, give the message as
-a list with a `tts` item.
+IF your notification doesn't have an area or person it is assigned to (as is
+the default for Persistent Notification), change **Target** to **Select**.
 
-```yaml
-action: notify.com_system
-data:
-  title: Front door
-  message:
-    - type: text
-      content: Someone is at the front door
-    - type: tts
-      content: Someone is at the front door
-  people:
-    active_choice: Individuals
-    Individuals:
-      - person.alice
-  receivers:
-    active_choice: Select
-    Select:
-      area_id: living_room
-```
+The For **Message**, click the **Add** button The default is for the message
+to apply as text (e.g. the text of a mobile app notification), and
+Text-to-speech (TTS) (e.g. read by an Amazon Echo). The receiver will chose
+the most appropriate to use.
 
-A receiver is used when it matches any target, so this reaches Alice's
-phone, and any receiver in the living room. The action's response shows the
-result for each receiver.
+Everything else is optional and, asa a first test, it is recommend to keep
+everything minimal to check the system is working. You can then experiment
+more.
 
 ## Next steps
 
