@@ -50,16 +50,14 @@ export class ComSystemPanel extends LitElement {
     css`
       :host {
         display: block;
-        min-height: 100vh;
-        background: var(--primary-background-color);
+        height: 100%;
         color: var(--primary-text-color);
       }
       /* Copies the toolbar and tab bar of Home Assistant's own pages
          (hass-tabs-subpage): same structure, ids and classes. */
       :host([narrow]) {
-        padding-bottom: calc(
-          var(--header-height, 56px) + var(--safe-area-inset-bottom, 0px)
-        );
+        width: 100%;
+        position: fixed;
       }
       .toolbar {
         box-sizing: border-box;
@@ -158,6 +156,24 @@ export class ComSystemPanel extends LitElement {
       ha-tab:not(:defined)[active] {
         color: var(--primary-color);
       }
+      /* Like hass-tabs-subpage, the content scrolls in its own area that ends
+         above the bottom bar, so nothing scrolls underneath the bar. */
+      .content {
+        position: relative;
+        box-sizing: border-box;
+        height: calc(
+          100% - var(--header-height, 56px) - var(--safe-area-inset-top, 0px)
+        );
+        overflow: auto;
+      }
+      :host([narrow]) .content {
+        height: calc(
+          100% - var(--header-height, 56px) - var(
+              --safe-area-inset-top,
+              0px
+            ) - var(--header-height, 56px) - var(--safe-area-inset-bottom, 0px)
+        );
+      }
       main {
         padding: 16px;
         max-width: 1000px;
@@ -231,7 +247,7 @@ export class ComSystemPanel extends LitElement {
         </div>
         ${this.narrow ? tabs : nothing}
       </div>
-      <main>${view}</main>
+      <div class="content"><main>${view}</main></div>
     `;
   }
 }
