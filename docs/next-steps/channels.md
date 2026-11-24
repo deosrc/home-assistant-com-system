@@ -1,28 +1,30 @@
 # Channels
 
-A channel is a named set of default notification content. Select it in the
-`channel` field of [notify.com_system](../services.md) and the channel's
-defaults fill anything the call leaves out. Channels are useful beyond the
-mobile app: they are a way to reuse a set of options.
+A channel is a named set of default notification content, or for Android
+Notification Channels.
+
+Select it in the `channel` field of [notify.com_system](../services.md) and
+the channel's defaults fill anything the call leaves out. Channels are useful
+beyond the mobile app: they are a way to reuse a set of options.
 
 ## Defaults
 
-A channel can default `title`, `priority`, `image`, `click_action`,
-`actions`, `tag`, `car_ui` and `data`. Whatever a
-call sets itself wins. `data` is merged key by key, with the call's keys
-winning:
+A channel can default most properties used when sending notifications.
+Whatever a notification sets itself wins so individual channel properties
+can be overridden.
 
 ```yaml
 action: notify.com_system
 data:
   message: Someone is at the door
   channel: Doors
-  priority: low   # beats the channel's priority
+  title: Front Door   # beats the channel's title
 ```
 
-The field takes a `notification_channel` entity (`channel:
-notification_channel.doors`); the form's picker lists only channels. Any
-other entity fails the call and sends nothing.
+In the example above, the "Doors" channel is used. If "Doors" is set as the
+title, the title used will still be "Front Door" as it takes priority. 
+
+`data` if provided is merged key by key in the same manner
 
 ## Mobile apps
 
@@ -30,34 +32,29 @@ The channel name is also sent as the Android notification channel
 (`data.channel`), so you do not need to remember it in each call. The
 `mobile_app` block of `data` is merged last and can override it.
 
-When a channel is removed, or renamed, Com System sends the
+When a channel is removed, or renamed, Com System automatically sends the
 `remove_channel` notification to every Android mobile app receiver, so the
 channel disappears from the device. iOS devices are not sent it. A device
-that cannot be reached is logged and skipped; the channel is removed anyway.
+that cannot be reached is logged and skipped. The channel will still be
+removed from Com System regardless.
 
 ## Managing channels
 
-Channels are written with three actions, and the **Channels** page of the
-Com System panel is a front end for them: its forms are Home Assistant's own
-action forms, built from the actions' descriptions. Channels are stored with
-the hub, so they do not appear as separate entries in Devices & services,
-and no configuration or options dialog edits them. Each has a
-`notification_channel` entity whose state is its name and whose attributes
-are its defaults.
+The recommended way to manage channels is via the Com System UI, however,
+they can also be managed via Home Assistant Actions.
 
-- `com_system.create_channel`: creates a channel. Fields: `name`, and any of
-  `title`, `priority`, `image`, `click_action`, `actions`, `tag`, `car_ui`
-  and `data`. Names are unique, ignoring case.
+As with other parts of Com System, notification channels are created as
+entities in the `notification_channel` domain so that they can be used in
+selectors. They are assigned to the Com System hub device. The attributes
+contain the notification channel defaults.
+
+### Actions
+
+- `com_system.create_channel`: creates a channel. Names are unique, ignoring
+  case.
 - `com_system.update_channel`: renames a channel and **replaces** its
-  defaults, so any that are not given are cleared. Fields: `channel` (the
-  entity), an optional `name`, and any of the defaults.
-- `com_system.delete_channel`: deletes a channel. Field: `channel` (the
-  entity).
-
-`create_channel` and `update_channel` return the channel (`channel_id`,
-`name`, `entity_id`, `defaults`) when a response is requested. `image` is
-an http(s) URL, a `/local/` path, a `media-source://` ID, or an image or
-camera entity ID. `data` is keyed by receiver type.
+  defaults, so any that are not given are cleared.
+- `com_system.delete_channel`: deletes a channel.
 
 ```yaml
 action: com_system.create_channel
@@ -70,5 +67,3 @@ data:
 ```
 
 Renaming or deleting a channel removes the old name from Android devices.
-On the Channels page, **Edit** opens the update form filled with the
-channel's current values.

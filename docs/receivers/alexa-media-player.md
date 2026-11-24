@@ -40,6 +40,6 @@ unavailable and returns when the device does (see
 [removed devices](README.md#deleting-disabling-and-removed-devices)).
 
 Announcements are not sent to a device the integration reports as offline;
-the integration skips it without an error, so Com System reports delivered.
-They are also silently skipped on a second Amazon account's devices, whose
-target id is not the serial number.
+the integration skips it without an error which Com System is unable to detect,
+so reports it as delivered. They are also silently skipped on a second Amazon
+account's devices, whose target id is not the serial number.
