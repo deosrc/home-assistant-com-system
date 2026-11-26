@@ -135,21 +135,14 @@ async def async_run_command(
 ) -> dict[str, Any]:
     """Run a command on the receivers the targets match; return the response.
 
-    Raises ``ServiceValidationError`` when nothing could be attempted (no
-    targets, no match, or only disabled receivers). Other outcomes, including
-    failures, are per-receiver results. Commands are not recorded in the
-    notification history.
+    Raises ``ServiceValidationError`` only when no target is given. Targets
+    that match no receiver, or only disabled ones, give no results or only
+    skipped ones, as do other outcomes, including failures. Commands are
+    not recorded in the notification history.
     """
     if ATTR_PEOPLE not in data and ATTR_RECEIVERS not in data:
         raise ServiceValidationError("No targets given: set people, receivers or both")
     resolved = resolve_call_targets(hass, dict(data))
-    if not resolved.receivers:
-        if resolved.skipped:
-            names = ", ".join(r.name for r in resolved.skipped)
-            raise ServiceValidationError(
-                f"No receiver could be reached, they are disabled: {names}"
-            )
-        raise ServiceValidationError("No receiver matches the targets")
     params = {k: v for k, v in data.items() if k not in (ATTR_PEOPLE, ATTR_RECEIVERS)}
     ran = await asyncio.gather(
         *(_run(hass, r, command, params) for r in resolved.receivers)

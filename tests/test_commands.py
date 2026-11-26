@@ -143,6 +143,20 @@ async def test_requires_targets_and_tag(hass: HomeAssistant) -> None:
         await _clear(hass, {"receivers": _target(hass, mobile)})
 
 
+async def test_no_match_is_not_an_error(hass: HomeAssistant) -> None:
+    """Targets that match no receiver give an empty response."""
+    await _setup(hass)
+    response = await _clear(
+        hass,
+        {
+            "tag": "door",
+            "receivers": {"entity_id": ["notification_receiver.nope"]},
+        },
+    )
+    assert response["results"] == []
+    assert response["counts"] == {"delivered": 0, "failed": 0, "skipped": 0}
+
+
 async def test_commands_are_not_recorded_in_history(hass: HomeAssistant) -> None:
     from custom_components.com_system.const import DATA_HISTORY
 

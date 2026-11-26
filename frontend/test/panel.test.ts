@@ -589,6 +589,54 @@ describe("testing tool", () => {
     });
   });
 
+  it("sends to targets that match no receiver", async () => {
+    const { hass, callWS } = makeHass();
+    const panel = await mount("/test", hass);
+    const view = panel.shadowRoot!.querySelector("com-system-test")!;
+    await settle(view);
+    const impl = callWS.getMockImplementation()!;
+    callWS.mockImplementation(async (msg: { type: string }) => {
+      if (msg.type === "com_system/notify/preview") return { receivers: [] };
+      if (msg.type === "com_system/notify/test") {
+        return {
+          id: "n1",
+          results: [],
+          counts: { delivered: 0, failed: 0, skipped: 0 },
+        };
+      }
+      return impl(msg);
+    });
+    const root = view.shadowRoot!;
+    const change = async (data: object) => {
+      root.querySelector("ha-service-control")!.dispatchEvent(
+        new CustomEvent("value-changed", {
+          detail: { value: { action: "notify.com_system", data } },
+        }),
+      );
+      await settle(view);
+    };
+    const send = () => root.querySelector<HTMLButtonElement>(".send")!;
+
+    // Without targets the action would be rejected, so sending is off.
+    await change({ message: "Hello" });
+    expect(send().disabled).toBe(true);
+
+    // Targets that match nothing can still be sent: the action succeeds.
+    await change({
+      message: "Hello",
+      people: { active_choice: "Individuals", Individuals: ["person.zed"] },
+    });
+    expect(root.textContent).toContain("No receiver matches these targets.");
+    expect(send().disabled).toBe(false);
+    send().click();
+    await settle(view);
+    expect(root.querySelector(".error")).toBeNull();
+    expect(root.querySelector(".results")).toBeNull();
+    expect(root.textContent!.replace(/\s+/g, " ")).toContain(
+      "No receiver matched the targets, so none was notified.",
+    );
+  });
+
   it("shows an error when the send is rejected", async () => {
     const { hass, callWS } = makeHass();
     const panel = await mount("/test", hass);

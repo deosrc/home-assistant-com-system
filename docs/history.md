@@ -5,7 +5,7 @@ show them under [Recent](ui.md#recent). Each record has the notification's
 content (title, message and any other content), the time, and the result of
 every receiver: delivered, failed or skipped, with the reason and any
 warnings about content a receiver dropped. Failures and skipped receivers are
-recorded too. A call that matches no receiver is rejected and not recorded.
+recorded too, as is a call that matched no receiver (with no results).
 
 A record that had notification actions also stores the responses to them:
 which action, from which receiver and person, and when (see

@@ -138,12 +138,15 @@ Ignoring the response is fine: the action works without
 
 ## Errors
 
-The action raises an error only when nothing could be attempted:
+The action raises an error only when the call itself is wrong:
 
-- the input is invalid (for example `message` is missing),
-- neither `people` nor `receivers` is given, or
-- no receiver matches the targets, or every receiver that matches is
-  disabled.
+- the input is invalid (for example `message` is missing), or
+- neither `people` nor `receivers` is given.
+
+Targets that match no receiver, or only disabled ones, are not an error, so
+removing or disabling a receiver does not break the automations that notify
+it. The action succeeds with an empty `results` (or only skipped ones) and
+the notification is still recorded in the [history](history.md).
 
 A receiver failing is not an error; check `results` or `counts.failed`. In
 an automation, an error stops the run unless the step has
