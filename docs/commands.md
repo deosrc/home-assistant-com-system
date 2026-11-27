@@ -9,9 +9,9 @@ have to send a notification with a special `message` to a device's
 
 A receiver whose type does not support the command (or whose device OS does
 not) is skipped with a reason; it is not an error. A command raises an error
-only when nothing could be attempted: no targets, no receiver matched, or
-every match is disabled. Commands are not kept in the [history](history.md)
-and do not update the receiver entity.
+only when no targets are given. Targets that match no receiver, or only
+disabled ones, give an empty (or all skipped) `results`. Commands are not
+kept in the [history](history.md) and do not update the receiver entity.
 
 Like `notify.com_system`, a command returns a response (when requested) with
 `results` for each receiver (`entry_id`, `name`, `type`, `result`, `reason`,

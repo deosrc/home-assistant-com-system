@@ -249,10 +249,10 @@ async def test_notify_by_person_reaches_personal_only(hass: HomeAssistant) -> No
         {"entity_id": SELECT, "option": "shared"},
         blocking=True,
     )
-    with pytest.raises(Exception, match="No"):
-        await hass.services.async_call(
-            "notify", "com_system", data, blocking=True, return_response=True
-        )
+    response = await hass.services.async_call(
+        "notify", "com_system", data, blocking=True, return_response=True
+    )
+    assert response["results"] == []
     assert len(calls) == 1
 
 

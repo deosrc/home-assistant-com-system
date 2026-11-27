@@ -248,13 +248,19 @@ async def test_targets(hass: HomeAssistant, types) -> None:
     assert [r["name"] for r in named["results"]] == ["Alice", "Shared"]
 
 
-async def test_raises_when_nothing_can_be_attempted(hass: HomeAssistant, types) -> None:
-    """No match, or only disabled matches, raises; unknown entities match nothing."""
+async def test_no_match_is_not_an_error(hass: HomeAssistant, types) -> None:
+    """Only a call with no targets raises.
+
+    Targets that match nothing, or only disabled receivers, return an empty
+    or all-skipped response, so a change in setup does not break automations.
+    """
     assert await async_setup_component(hass, DOMAIN, {})
     with pytest.raises(ServiceValidationError, match="No targets given"):
         await _send(hass, message="x")
-    with pytest.raises(ServiceValidationError, match="No receiver matches"):
-        await _send(hass, message="x", people=EVERYONE)
+    empty = await _send(hass, message="x", people=EVERYONE)
+    assert empty["results"] == []
+    assert empty["counts"] == {"delivered": 0, "failed": 0, "skipped": 0}
+    assert empty["id"]
 
     await _add(hass, "Off", people=["person.a"])
     await hass.services.async_call(
@@ -263,10 +269,25 @@ async def test_raises_when_nothing_can_be_attempted(hass: HomeAssistant, types) 
         {"entity_id": "switch.off_notifications_enabled"},
         blocking=True,
     )
-    with pytest.raises(ServiceValidationError, match="disabled"):
-        await _send(hass, message="x", people="person.a")
-    with pytest.raises(ServiceValidationError, match="No receiver matches"):
-        await _send(hass, message="x", receivers=_select("notification_receiver.nope"))
+    disabled = await _send(hass, message="x", people="person.a")
+    assert [(r["name"], r["result"]) for r in disabled["results"]] == [
+        ("Off", "skipped")
+    ]
+    nope = await _send(
+        hass, message="x", receivers=_select("notification_receiver.nope")
+    )
+    assert nope["results"] == []
+
+
+async def test_no_match_is_recorded(hass: HomeAssistant, types) -> None:
+    """A call that matched no receiver is still in the history."""
+    from custom_components.com_system.const import DATA_HISTORY
+
+    assert await async_setup_component(hass, DOMAIN, {})
+    response = await _send(hass, message="hello", people=EVERYONE)
+    records = await hass.data[DOMAIN][DATA_HISTORY].async_list()
+    assert [(r["id"], r["results"]) for r in records] == [(response["id"], [])]
+    assert records[0]["notification"]["message"] == "hello"
 
 
 async def test_foreign_entity_matches_nothing(hass: HomeAssistant, types) -> None:
@@ -276,8 +297,10 @@ async def test_foreign_entity_matches_nothing(hass: HomeAssistant, types) -> Non
     er.async_get(hass).async_get_or_create(
         "notification_receiver", "other", "1", suggested_object_id="other"
     )
-    with pytest.raises(ServiceValidationError):
-        await _send(hass, message="x", receivers=_select("notification_receiver.other"))
+    response = await _send(
+        hass, message="x", receivers=_select("notification_receiver.other")
+    )
+    assert response["results"] == []
 
 
 def test_custom_type_unchanged() -> None:
@@ -318,13 +341,13 @@ async def test_people_choice(hass: HomeAssistant, types) -> None:
     assert [r["name"] for r in union["results"]] == ["Alice", "Bob", "Shared"]
 
     # Individuals with nobody chosen is no person target: here, no targets.
-    with pytest.raises(ServiceValidationError, match="No receiver matches"):
-        await _send(
-            hass,
-            message="x",
-            people={"active_choice": "Individuals", "Individuals": []},
-            receivers=_select("notification_receiver.nope"),
-        )
+    response = await _send(
+        hass,
+        message="x",
+        people={"active_choice": "Individuals", "Individuals": []},
+        receivers=_select("notification_receiver.nope"),
+    )
+    assert response["results"] == []
 
 
 async def test_people_choice_invalid(hass: HomeAssistant) -> None:
@@ -440,8 +463,7 @@ async def test_receivers_choice(hass: HomeAssistant, types) -> None:
         _select(label_id=["nope"]),
         _select(area_id=["nope"]),
     ):
-        with pytest.raises(ServiceValidationError, match="No receiver matches"):
-            await _send(hass, message="x", receivers=target)
+        assert (await _send(hass, message="x", receivers=target))["results"] == []
 
 
 async def test_receivers_choice_invalid(hass: HomeAssistant) -> None:

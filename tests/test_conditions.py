@@ -139,21 +139,16 @@ async def test_disabled_reason_wins(hass: HomeAssistant) -> None:
         {"entity_id": "switch.persistent_notifications_enabled"},
         blocking=True,
     )
-    assert (await _send_disabled(hass, entry)) is True
-
-
-async def _send_disabled(hass, entry) -> bool:
-    from homeassistant.exceptions import ServiceValidationError
-
-    with pytest.raises(ServiceValidationError, match="disabled"):
-        await hass.services.async_call(
-            "notify",
-            "com_system",
-            _data(hass, entry, message="hi"),
-            blocking=True,
-            return_response=True,
-        )
-    return True
+    response = await hass.services.async_call(
+        "notify",
+        "com_system",
+        _data(hass, entry, message="hi"),
+        blocking=True,
+        return_response=True,
+    )
+    assert [(r["result"], r["reason"]) for r in response["results"]] == [
+        ("skipped", "Receiver is disabled")
+    ]
 
 
 async def test_options_flow_stores_raw_conditions(hass: HomeAssistant) -> None:

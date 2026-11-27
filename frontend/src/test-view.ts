@@ -1,5 +1,6 @@
 import { LitElement, css, html } from "lit";
 import { ComSystemApi, errorMessage } from "./api";
+import { NO_RECEIVERS, noReceiversStyles } from "./no-receivers";
 import { renderReasons, reasonStyles } from "./reasons";
 import { sharedStyles } from "./styles";
 import type {
@@ -70,6 +71,7 @@ export class ComSystemTest extends LitElement {
   static styles = [
     sharedStyles,
     reasonStyles,
+    noReceiversStyles,
     css`
       /* Copies the cards of Developer tools > Actions. ha-card styles the
          slotted .card-header, .card-content and .card-actions itself. */
@@ -301,35 +303,39 @@ export class ComSystemTest extends LitElement {
         </p>
       </div>
       <div class="card-content">
-        <table class="results">
-          <thead>
-            <tr>
-              <th>Receiver</th>
-              <th>Type</th>
-              <th>Why</th>
-              <th>Outcome</th>
-              <th>Details</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${r.results.map(
-              (x) =>
-                html`<tr>
-                  <td>${x.name}</td>
-                  <td>${x.type}</td>
-                  <td>${renderReasons(this.hass, x.reasons)}</td>
-                  <td class=${x.result}>${x.result}</td>
-                  <td>
-                    ${[x.reason, ...x.warnings.map((w) => `Warning: ${w}`)]
-                      .filter(Boolean)
-                      .join("; ")}
-                  </td>
-                </tr>`,
-            )}
-          </tbody>
-        </table>
+        ${r.results.length ? this.renderResults(r) : NO_RECEIVERS}
       </div>
     </ha-card>`;
+  }
+
+  private renderResults(r: SendResponse) {
+    return html`<table class="results">
+      <thead>
+        <tr>
+          <th>Receiver</th>
+          <th>Type</th>
+          <th>Why</th>
+          <th>Outcome</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${r.results.map(
+          (x) =>
+            html`<tr>
+              <td>${x.name}</td>
+              <td>${x.type}</td>
+              <td>${renderReasons(this.hass, x.reasons)}</td>
+              <td class=${x.result}>${x.result}</td>
+              <td>
+                ${[x.reason, ...x.warnings.map((w) => `Warning: ${w}`)]
+                  .filter(Boolean)
+                  .join("; ")}
+              </td>
+            </tr>`,
+        )}
+      </tbody>
+    </table>`;
   }
 
   /** HA's raised button when it is loaded, otherwise a styled native one. */
@@ -355,7 +361,7 @@ export class ComSystemTest extends LitElement {
     const canSend =
       !this.sending &&
       this.message.trim() !== "" &&
-      (this.preview?.some((p) => p.outcome === "targeted") ?? false);
+      Object.keys(this.targets).length > 0;
     return html`
       <ha-card>
         <div class="card-header">

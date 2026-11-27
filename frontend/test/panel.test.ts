@@ -130,6 +130,13 @@ function makeHass(): {
                 },
               ],
             },
+            {
+              id: "h2",
+              time: "2026-11-11T09:00:00+00:00",
+              notification: { title: "Garage", message: "Open" },
+              responses: [],
+              results: [],
+            },
           ],
         };
       case "com_system/channels/list":
@@ -252,6 +259,17 @@ describe("panel", () => {
       row.querySelector(".response")!.textContent!.replace(/\s+/g, " "),
     ).toContain("OPEN by Alice");
     expect(view.shadowRoot!.querySelector(".responses")).toBeNull();
+
+    // A notification that matched no receiver shows a warning, not a table.
+    const [first, second] = view.shadowRoot!.querySelectorAll(".entry");
+    expect(first.querySelector(".no-receivers")).toBeNull();
+    expect(second.textContent).toContain("Garage");
+    expect(second.querySelector("details")).toBeNull();
+    const alert = second.querySelector(".no-receivers")!;
+    expect(alert.getAttribute("alert-type")).toBe("warning");
+    expect(alert.textContent!.replace(/\s+/g, " ")).toContain(
+      "No receiver matched the targets, so none was notified.",
+    );
   });
 
   it("lists receivers and discoveries and toggles enabled", async () => {
@@ -587,6 +605,54 @@ describe("testing tool", () => {
       receivers: allAreas,
       notification: { message: "Hello" },
     });
+  });
+
+  it("sends to targets that match no receiver", async () => {
+    const { hass, callWS } = makeHass();
+    const panel = await mount("/test", hass);
+    const view = panel.shadowRoot!.querySelector("com-system-test")!;
+    await settle(view);
+    const impl = callWS.getMockImplementation()!;
+    callWS.mockImplementation(async (msg: { type: string }) => {
+      if (msg.type === "com_system/notify/preview") return { receivers: [] };
+      if (msg.type === "com_system/notify/test") {
+        return {
+          id: "n1",
+          results: [],
+          counts: { delivered: 0, failed: 0, skipped: 0 },
+        };
+      }
+      return impl(msg);
+    });
+    const root = view.shadowRoot!;
+    const change = async (data: object) => {
+      root.querySelector("ha-service-control")!.dispatchEvent(
+        new CustomEvent("value-changed", {
+          detail: { value: { action: "notify.com_system", data } },
+        }),
+      );
+      await settle(view);
+    };
+    const send = () => root.querySelector<HTMLButtonElement>(".send")!;
+
+    // Without targets the action would be rejected, so sending is off.
+    await change({ message: "Hello" });
+    expect(send().disabled).toBe(true);
+
+    // Targets that match nothing can still be sent: the action succeeds.
+    await change({
+      message: "Hello",
+      people: { active_choice: "Individuals", Individuals: ["person.zed"] },
+    });
+    expect(root.textContent).toContain("No receiver matches these targets.");
+    expect(send().disabled).toBe(false);
+    send().click();
+    await settle(view);
+    expect(root.querySelector(".error")).toBeNull();
+    expect(root.querySelector(".results")).toBeNull();
+    expect(
+      root.querySelector(".no-receivers")!.textContent!.replace(/\s+/g, " "),
+    ).toContain("No receiver matched the targets, so none was notified.");
   });
 
   it("shows an error when the send is rejected", async () => {

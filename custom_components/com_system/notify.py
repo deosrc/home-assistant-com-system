@@ -480,22 +480,16 @@ def response_data(
 async def async_send(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
     """Resolve, deliver and return the response data.
 
-    Raises ``ServiceValidationError`` only when no receiver could be
-    attempted (no target given, none matched, or all that matched are
-    disabled). Receivers
-    that fail are reported in the response instead.
+    Raises ``ServiceValidationError`` only when no target is given. Targets
+    that match no receiver, or only disabled ones, are not an error, so a
+    change in setup does not break the automations that notify: the
+    response then has no results, or only skipped ones. Receivers that fail
+    are reported in the response too.
     """
     if ATTR_PEOPLE not in data and ATTR_RECEIVERS not in data:
         raise ServiceValidationError("No targets given: set people, receivers or both")
     data = apply_channel(hass, data)
     resolved = resolve_call_targets(hass, data)
-    if not resolved.receivers:
-        if resolved.skipped:
-            names = ", ".join(r.name for r in resolved.skipped)
-            raise ServiceValidationError(
-                f"No receiver could be notified, they are disabled: {names}"
-            )
-        raise ServiceValidationError("No receiver matches the targets")
     notification = {"id": uuid.uuid4().hex, **notification_from(data)}
     requested = {k: data[k] for k in (ATTR_PEOPLE, ATTR_RECEIVERS) if k in data}
     results = await async_dispatch(hass, resolved, notification, requested)

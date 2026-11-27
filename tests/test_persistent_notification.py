@@ -1,6 +1,5 @@
 """Tests for the persistent notification receiver type."""
 
-import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.com_system.const import (
@@ -15,7 +14,6 @@ from custom_components.com_system.const import (
 from homeassistant.components import persistent_notification as pn
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
-from homeassistant.exceptions import ServiceValidationError
 from homeassistant.setup import async_setup_component
 
 
@@ -111,17 +109,17 @@ async def test_not_reached_by_everyone(hass: HomeAssistant) -> None:
     assert await async_setup_component(hass, DOMAIN, {})
     await _add(hass)
 
-    with pytest.raises(ServiceValidationError):
-        await hass.services.async_call(
-            "notify",
-            "com_system",
-            {
-                "message": "Hello",
-                "people": {"active_choice": "Everyone", "Everyone": True},
-            },
-            blocking=True,
-            return_response=True,
-        )
+    response = await hass.services.async_call(
+        "notify",
+        "com_system",
+        {
+            "message": "Hello",
+            "people": {"active_choice": "Everyone", "Everyone": True},
+        },
+        blocking=True,
+        return_response=True,
+    )
+    assert response["results"] == []
     assert not _stored(hass)
 
 

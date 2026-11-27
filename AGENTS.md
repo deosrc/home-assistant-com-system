@@ -307,9 +307,12 @@ records the conventions and how things work as built.
   `people` nor `receivers` raises "No targets given", and the panel leaves
   an unticked field out of the data.
   `async_send` resolves, dispatches and returns `{results, counts}`; it
-  raises `ServiceValidationError` only when no enabled receiver matched
-  (none, or all disabled). The websocket test send calls the action through
-  `hass.services`, so UI and automations share one path.
+  raises `ServiceValidationError` only for no targets. Targets that match
+  no receiver, or only disabled ones, succeed with empty or skipped
+  results and are recorded in history, so a change in setup never breaks
+  an automation (the same holds for commands). The websocket test send
+  calls the action through `hass.services`, so UI and automations share
+  one path.
 - `content.py`: the content parameters. `priority` (`low`, `normal`,
   `high`, `critical`), `image` (http(s) URL, `/local/` path or
   `media-source://` ID, or an `image`/`camera` entity id; the field is a
@@ -514,7 +517,10 @@ records the conventions and how things work as built.
   keep that structure and these class names. `api.ts` wraps the websocket
   commands (`ComSystemApi`), and each view is its own element
   (`dashboard-view.ts`, `receivers-view.ts`, `test-view.ts`); the first two
-  refetch when switch states change. `test-view.ts` is the testing tool: it
+  refetch when switch states change. `no-receivers.ts` holds the warning
+  (an `ha-alert`) that the Recent page and the Test page's result show for
+  a notification that matched no receiver. `test-view.ts` is the testing
+  tool: it
   previews with `notify/preview` on every target change and sends with
   `notify/test`. The form is Home Assistant's
   `ha-service-control` with
