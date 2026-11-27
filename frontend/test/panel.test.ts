@@ -130,6 +130,13 @@ function makeHass(): {
                 },
               ],
             },
+            {
+              id: "h2",
+              time: "2026-11-11T09:00:00+00:00",
+              notification: { title: "Garage", message: "Open" },
+              responses: [],
+              results: [],
+            },
           ],
         };
       case "com_system/channels/list":
@@ -252,6 +259,17 @@ describe("panel", () => {
       row.querySelector(".response")!.textContent!.replace(/\s+/g, " "),
     ).toContain("OPEN by Alice");
     expect(view.shadowRoot!.querySelector(".responses")).toBeNull();
+
+    // A notification that matched no receiver shows a warning, not a table.
+    const [first, second] = view.shadowRoot!.querySelectorAll(".entry");
+    expect(first.querySelector(".no-receivers")).toBeNull();
+    expect(second.textContent).toContain("Garage");
+    expect(second.querySelector("details")).toBeNull();
+    const alert = second.querySelector(".no-receivers")!;
+    expect(alert.getAttribute("alert-type")).toBe("warning");
+    expect(alert.textContent!.replace(/\s+/g, " ")).toContain(
+      "No receiver matched the targets, so none was notified.",
+    );
   });
 
   it("lists receivers and discoveries and toggles enabled", async () => {
@@ -632,9 +650,9 @@ describe("testing tool", () => {
     await settle(view);
     expect(root.querySelector(".error")).toBeNull();
     expect(root.querySelector(".results")).toBeNull();
-    expect(root.textContent!.replace(/\s+/g, " ")).toContain(
-      "No receiver matched the targets, so none was notified.",
-    );
+    expect(
+      root.querySelector(".no-receivers")!.textContent!.replace(/\s+/g, " "),
+    ).toContain("No receiver matched the targets, so none was notified.");
   });
 
   it("shows an error when the send is rejected", async () => {

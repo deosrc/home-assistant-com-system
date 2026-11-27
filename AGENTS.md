@@ -517,7 +517,10 @@ records the conventions and how things work as built.
   keep that structure and these class names. `api.ts` wraps the websocket
   commands (`ComSystemApi`), and each view is its own element
   (`dashboard-view.ts`, `receivers-view.ts`, `test-view.ts`); the first two
-  refetch when switch states change. `test-view.ts` is the testing tool: it
+  refetch when switch states change. `no-receivers.ts` holds the warning
+  (an `ha-alert`) that the Recent page and the Test page's result show for
+  a notification that matched no receiver. `test-view.ts` is the testing
+  tool: it
   previews with `notify/preview` on every target change and sends with
   `notify/test`. The form is Home Assistant's
   `ha-service-control` with

@@ -1,5 +1,6 @@
 import { LitElement, css, html } from "lit";
 import { ComSystemApi, errorMessage } from "./api";
+import { NO_RECEIVERS, noReceiversStyles } from "./no-receivers";
 import { renderReasons, reasonStyles } from "./reasons";
 import { sharedStyles } from "./styles";
 import type {
@@ -70,6 +71,7 @@ export class ComSystemTest extends LitElement {
   static styles = [
     sharedStyles,
     reasonStyles,
+    noReceiversStyles,
     css`
       /* Copies the cards of Developer tools > Actions. ha-card styles the
          slotted .card-header, .card-content and .card-actions itself. */
@@ -301,13 +303,7 @@ export class ComSystemTest extends LitElement {
         </p>
       </div>
       <div class="card-content">
-        ${
-          r.results.length
-            ? this.renderResults(r)
-            : html`<p class="muted">
-                No receiver matched the targets, so none was notified.
-              </p>`
-        }
+        ${r.results.length ? this.renderResults(r) : NO_RECEIVERS}
       </div>
     </ha-card>`;
   }

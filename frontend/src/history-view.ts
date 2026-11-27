@@ -1,5 +1,6 @@
 import { LitElement, css, html } from "lit";
 import { ComSystemApi, errorMessage } from "./api";
+import { NO_RECEIVERS, noReceiversStyles } from "./no-receivers";
 import { renderReasons, reasonStyles } from "./reasons";
 import { sharedStyles } from "./styles";
 import type { ActionResponse, HistoryRecord, HomeAssistant } from "./types";
@@ -19,6 +20,7 @@ export class ComSystemHistory extends LitElement {
   static styles = [
     sharedStyles,
     reasonStyles,
+    noReceiversStyles,
     css`
       .toolbar {
         display: flex;
@@ -221,56 +223,55 @@ export class ComSystemHistory extends LitElement {
               <div class="body">${r.notification.message}</div>
               ${this.renderOrphans(r)}
               <hr />
-              <details>
-                <summary>
-                  <ha-icon class="chevron" icon="mdi:chevron-down"></ha-icon>
-                  <span>Receivers (${r.results.length})</span>
-                  ${this.renderCounts(r)}
-                </summary>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Receiver</th>
-                      <th>Type</th>
-                      <th>Why</th>
-                      <th>Outcome</th>
-                      ${r.responses?.length ? html`<th>Response</th>` : ""}
-                      <th>Details</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${r.results.map(
-                      (x) =>
-                        html`<tr>
-                          <td>${x.name}</td>
-                          <td>${x.type}</td>
-                          <td>${renderReasons(this.hass, x.reasons)}</td>
-                          <td class=${x.result}>${x.result}</td>
-                          ${
-                            r.responses?.length
-                              ? html`<td>
-                                  ${this.renderResponses(r, x.entry_id)}
-                                </td>`
-                              : ""
-                          }
-                          <td>
-                            ${[
-                              x.reason,
-                              ...x.warnings.map((w) => `Warning: ${w}`),
-                            ]
-                              .filter(Boolean)
-                              .join("; ")}
-                          </td>
-                        </tr>`,
-                    )}
-                  </tbody>
-                </table>
-              </details>
+              ${r.results.length ? this.renderResults(r) : NO_RECEIVERS}
             </div>
           `,
         )}
       </div>
     `;
+  }
+
+  private renderResults(r: HistoryRecord) {
+    return html`<details>
+      <summary>
+        <ha-icon class="chevron" icon="mdi:chevron-down"></ha-icon>
+        <span>Receivers (${r.results.length})</span>
+        ${this.renderCounts(r)}
+      </summary>
+      <table>
+        <thead>
+          <tr>
+            <th>Receiver</th>
+            <th>Type</th>
+            <th>Why</th>
+            <th>Outcome</th>
+            ${r.responses?.length ? html`<th>Response</th>` : ""}
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${r.results.map(
+            (x) =>
+              html`<tr>
+                <td>${x.name}</td>
+                <td>${x.type}</td>
+                <td>${renderReasons(this.hass, x.reasons)}</td>
+                <td class=${x.result}>${x.result}</td>
+                ${
+                  r.responses?.length
+                    ? html`<td>${this.renderResponses(r, x.entry_id)}</td>`
+                    : ""
+                }
+                <td>
+                  ${[x.reason, ...x.warnings.map((w) => `Warning: ${w}`)]
+                    .filter(Boolean)
+                    .join("; ")}
+                </td>
+              </tr>`,
+          )}
+        </tbody>
+      </table>
+    </details>`;
   }
 }
 

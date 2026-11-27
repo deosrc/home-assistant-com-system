@@ -92,6 +92,11 @@ shows the action on the row of the receiver that sent it, with any reply
 text, the person who responded and the time. A response from a receiver that
 is no longer listed is shown under the message.
 
+A notification whose targets matched no receiver (for example after the
+receivers it was meant for were removed) is listed with a warning in place
+of the receivers table: the [action](services.md#errors) succeeds then, so
+automations keep running, and this is where it shows.
+
 ## Test
 
 The testing tool sends a test notification and shows what happens.
@@ -119,8 +124,8 @@ The testing tool sends a test notification and shows what happens.
   It is enabled once there is a message and a target, even if no receiver
   would be reached, as the action succeeds then too. The result shows each
   receiver's outcome (delivered, failed or skipped) with the reason and any
-  warnings (content a receiver dropped), and the counts, or says that no
-  receiver matched.
+  warnings (content a receiver dropped), and the counts, or a warning that
+  no receiver matched.
 - If the action is rejected, its error is shown.
 
 ## Why a receiver was included
